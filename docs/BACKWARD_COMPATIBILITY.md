@@ -83,3 +83,26 @@ manifest, migration notes and known limitations. Old evidence remains bound to
 the source/version that produced it. See
 [migration record](MIGRATION_FROM_PORTABLE_1.5.0a2.md) and
 [packaging](PACKAGING_AND_CI.md) for the source and build details.
+
+## Current executed regression and FFmpeg scope
+
+Local `1.6.0a1` regression: **437 passed, 0 failures, 0 errors, 0 skipped**, with
+runtime and test bytes unchanged throughout the run. See
+[the source-bound receipt](REGRESSION_1.6.0a1.json) and
+[changed-file manifest](FEATURE_CHANGED_FILES_1.6.0a1.json).
+
+Windows CI pins the locally validated FFmpeg **8.1.1**. A separate generated-media
+diagnostic on **9.0.2** reproduced three inherited external-AAC coverage failures:
+two conservative packet-duration/priming mapping gaps, and an interior cut with
+11.667 ms of genuinely missing decoded coverage. These remain explicit partial
+coverage; tolerances and retiming guards were not widened. This iteration does
+not qualify FFmpeg 9 external-AAC materialization as equivalent to 8.1.1.
+The newer file-backed video-filter syntax is separately supported and tested.
+
+Builds use a new external first-party source snapshot, so stale ignored
+`build/lib` files cannot enter a wheel. Exact module-byte comparison rejected
+an initial cached candidate; the corrected isolated candidate and clean committed
+build both passed all four distribution/source/install checks. Windows offline
+installation and generated public-scene commands were also executed. Linux
+offline ZIP construction checks do not certify the offline installer on Linux;
+GitHub Actions separately exercises native Linux online installations.

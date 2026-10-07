@@ -1,40 +1,83 @@
 # Current limits
 
-This is 1.5.0a2, a scoped claim-directed analysis iteration. It is not a claim
-that every one of the 32 requested capabilities has a validated perceptual backend.
-Read `docs/CLAIM_DIRECTED_CONFORMANCE.md` for task-by-task state.
+This is the 1.6.0a1 holistic cross-modal iteration. It prepares and validates
+source-bound evidence, dependencies and review records. Its software contracts
+do not certify a literary interpretation, an acting judgment or model perception.
+The [holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md) describes the new
+event-level contracts; [claim-directed conformance](docs/CLAIM_DIRECTED_CONFORMANCE.md)
+retains the earlier task-by-task limits.
 
-- Current regressions test media, clocks, signals, provenance and evidence
-  contracts. They do not certify a literary interpretation or acting judgment.
-- No real auditory observer is configured. Its Python protocol, probe fixtures,
-  chance scoring and human-review bridge exist. The CLI mock cannot establish
-  auditory observation. Passing tone tests would certify only those contrasts.
-- Source separation is explicit derived-witness admission and comparison. This
+- The optional hosted auditory adapter is implemented, but every new task profile
+  remains `UNQUALIFIED` / `NOT_TESTED`. Historical probe failures remain failed.
+  Model identity, a matching successful input-influence probe, authorization and
+  budgets are separate execution guards. A capability declaration, CLI mock or
+  generated-signal regression cannot qualify acting, music or emotion judgments.
+- Stage 2 is a separate contextual inspection of the same audio and source
+  interval. Its agreement with supplied text is dependent agreement. Neither stage
+  establishes the coordinating model's own hearing. A scoped human review can
+  assess one observation without qualifying the backend globally or rewriting it.
+- Ordinary audio limits remain 30 seconds per clip and 60 seconds total. One
+  coherent `PERFORMANCE_MUSIC` section can extend to 120 seconds and 128 MiB only
+  with explicit opt-in and a declared budget. Preparation never authorizes remote
+  submission or automatically increases limits, spending or retry counts.
+- Scene reconciliation checks declared authority, competence, scope and
+  dependencies. It requires attributed adjudication to close supported claims;
+  it does not create that judgment or establish literary truth. A claim delta
+  records the analyst's decision and surviving uncertainty, not automatic
+  improvement in interpretation.
+- Temporal preparation uses ordered original frames at 2, 8 or 12 fps, with
+  bounded escalation to every frame in a short critical window. Extraction alone
+  remains `GENERATED_NOT_REVIEWED` / `OPEN`. Exact contact/order requires the
+  corresponding complete scoped review; audiovisual timing also requires actual
+  audio inspection. No native continuous-video model backend is introduced.
+- Temporal indexing can scan the whole admitted source when no verified cached
+  index exists. Extraction may fall back to full decode; receipts retain this
+  behavior. High bit depth, HDR, rotation, non-square pixels and changing geometry
+  still need an explicitly verified preparation route.
+- Source separation admits declared derived witnesses and comparisons. This
   release does not install or execute Demucs/UVR or establish artifact-free output.
 - Qwen Japanese alignment remains optional. No new multi-aligner comparison or
-  manually verified onset benchmark was executed for this release.
+  manually verified onset benchmark was executed for this iteration. Subtitle
+  display boundaries alone are not phonetic alignment.
 - CPP/openSMILE standard backends, multiple-tracker agreement, general internal
   pause/articulation extraction, semantic gaze/gesture tracking and automatic
   game UI/choice detection remain unvalidated or unimplemented extensions.
 - Game asset/event bindings and shot-cut candidates require declared/reviewed
   identity. Camera focality and subtitle overlap do not identify audible singers.
-- Baselines require reviewed isolated non-singing assets and enough independent
-  performances; they do not supply generic emotional labels.
-- Neutral text export reduces supplied-context leakage. It does not anonymize
-  video or prove the pretrained model has never encountered a work.
-- A/B/C/D packets need independent reasoning runs. No adjudicated human reference
-  means unknown interpretation quality, not a successful benchmark.
+  Mixed-track pitch and intensity measurements do not isolate speakers or prove
+  emotion. Baselines require reviewed isolated non-singing assets and enough
+  independent performances; they do not supply generic emotional labels.
+- Neutral text reduces supplied-context leakage. It does not anonymize video or
+  prove that a pretrained model has never encountered a work. A/B/C/D packets
+  need independent reasoning runs; without an adjudicated reference,
+  interpretation quality remains unknown.
 - Full replay needs separately retained source media and optional model weights.
   Private paths are provenance; cached-query portability is distinct from replay.
-- Native Linux and Python 3.13 execution were not run in the current Windows
-  session. Actual bundled targets and the compatible-host route are in
-  `DELIVERY_PROFILE.json`; do not infer validation from compatible wheel tags.
-- Historical release scripts and guides remain for context/regression tests.
-  Their old reports are not current release certification. Use
-  `reports/PACKAGE_VALIDATION.md` for this delivery's executed checks.
 
-FFmpeg, Python, optional model weights and real perceptual interfaces are supplied
-by the destination. The implemented core needs no paid subscription or VM.
+Platform and decoder validation applies only to its exact executed source and
+environment. The Git baseline passed 277 generated regressions locally with
+FFmpeg 8.1.1; that result does not certify new 1.6 source or every decoder version.
+Baseline Windows CI with FFmpeg 9.0.2 exposed three audio-coverage failures beyond
+the separately addressed filter-option and temporary-path issues. An isolated
+9.0.2 rerun reproduced them: rounded FLAC packet extents create apparent 1 ms gaps,
+AAC priming normalization leaves an apparent 0.333 ms tail gap, and an interior
+AAC copy has an 11.667 ms uncovered decoded prefix. Admission conservatively
+retains `PACKET_IDENTITY_VERIFIED_CLAIM_NOT_COVERED`; packet identity alone must
+not authorize the entire claimed interval. Do not widen tolerances to hide these
+cases. Native 1.6 Linux/Windows CI and decoder compatibility must follow their
+actual source-bound receipts. Python 3.13 is outside the current offline targets.
 
+The bare Git checkout contains no dependency wheels or decoder binaries. Optional
+portable builds select one ABI/platform profile; compatible wheel tags are not
+proof of native execution. See [packaging and CI](docs/PACKAGING_AND_CI.md) and
+[baseline migration](docs/MIGRATION_FROM_PORTABLE_1.5.0a2.md). Historical scripts,
+guides and release reports do not certify the current source.
 
-Explicit `--method` always takes precedence, including in isolated/blind mode. Episode isolation constrains semantic evidence independently. See docs/METHOD_PRECEDENCE_PATCH.md and the current workflow; the embedded method is a fallback only.
+FFmpeg, Python, optional model weights and actual perceptual interfaces are
+supplied by the destination. The implemented core needs no paid subscription,
+hosted call or VM. Standard regressions use generated inputs and injected
+transports, never real anime/game media or paid APIs.
+
+Explicit `--method` always takes precedence, including in isolated/blind mode.
+Episode isolation constrains semantic evidence independently. The embedded method
+is a fallback only; see [method precedence](docs/METHOD_PRECEDENCE_PATCH.md).

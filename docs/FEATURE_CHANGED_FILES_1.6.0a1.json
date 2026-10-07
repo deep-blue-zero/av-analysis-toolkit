@@ -8,7 +8,7 @@
       "path": ".github/workflows/zero-cost-ci.yml",
       "change": "M",
       "baseline_sha256": "963c4b4686b248c781fec26da2464d68080f632e1b91d919501cba5e460f39d8",
-      "feature_sha256": "8b2ff1e42aa5cd57d1a5edc0dd231686729a23fcb1f1acbbfc54abe1fad81670"
+      "feature_sha256": "5a8d76b91215360705cc19e8fd8e8addda23ea680ab2fa841381b787095d7ca1"
     },
     {
       "path": "AGENTS.md",
@@ -39,6 +39,18 @@
       "change": "A",
       "baseline_sha256": null,
       "feature_sha256": "dede21455a16c90b807f4795200de72bfba235aef3de219c23e25295132a684b"
+    },
+    {
+      "path": "CLOUD_START_HERE.md",
+      "change": "M",
+      "baseline_sha256": "69708810e0f22199c3a00f4cdc6c4bf8d1701f9405470ce241df90aed6432b9b",
+      "feature_sha256": "98b87c6609d262331b0a2a7d952a980b0f38ad6dba9d99e79cefe2dd40d4732b"
+    },
+    {
+      "path": "KNOWN_LIMITATIONS.md",
+      "change": "M",
+      "baseline_sha256": "bee9aae210ddddbd7d28ee2e9fc08192a4f39c3301f0ea7ce790dbd31d47ba18",
+      "feature_sha256": "2405c5cd7ce0d7186410f6d323af297d101c5e51844c8095b3a633d45f8673ef"
     },
     {
       "path": "MANIFEST.in",
@@ -212,7 +224,7 @@
       "path": "docs/BACKWARD_COMPATIBILITY.md",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "671d2c6f1c39e7c4985316a57daa1e1c0223be0938a7e65cad900f142e96541a"
+      "feature_sha256": "f599389b740c5584c63f2eebdb3f24a1f4c4672ef2e5b79d2c441dfcc98495c6"
     },
     {
       "path": "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md",
