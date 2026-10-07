@@ -193,28 +193,41 @@ def claim_delta(claims_file, observation_runs, output, *, decisions=None, claim_
                     deps.append(file_record(path, "auditory_unadmitted_response"))
                     continue
                 record = file_record(path, "auditory_observation"); deps.append(record); deps += proofs
-                eid = "AO-" + record["sha256"][:24]
-                applicable = []
-                for cid in selected:
-                    locs = [l for l in rows[cid]["locators"] if l["source_sha256"] == obs["source_sha256"]
-                            and l.get("stream_index", obs.get("stream_index")) == obs.get("stream_index")]
-                    # A broad claim may request a longer interval, but an
-                    # observation cannot be extended beyond its timed coverage.
-                    if locs and any(_overlap(covered, l) for l in locs):
-                        applicable.append(cid)
-                if not applicable:
-                    continue
-                evidence = {"id": eid, "layer": "auditory_observation", "modality": "audio", "observer_type": "model_audio",
-                    "locator": {"source_sha256": obs["source_sha256"], "clock": "original_pts_minus_source_origin",
-                                "stream_index": obs["stream_index"], "intervals_seconds": covered},
-                    "statement": " | ".join(r["description"] for r in obs["parsed"]["observations"]),
-                    "reviewer": obs["backend_identity"].get("provider", "model") + "/" + obs["backend_identity"]["model_revision"],
-                    "inspection_status": "REVIEW_DECLARED", "quality_flags": [], "artifact": {"path": portable_relative+"/"+name, "sha256": record["sha256"]},
-                    "scope": "Attributed model witness; disposition and interpretive significance require separate adjudication"}
-                if eid not in {e["id"] for e in updated.get("evidence", [])+new_evidence}:
-                    new_evidence.append(evidence)
-                for cid in applicable:
-                    affected.setdefault(cid, []).append(eid)
+                observations = obs["parsed"]["observations"]
+                for index, (observation, span) in enumerate(zip(observations, covered)):
+                    # Keep the complete immutable response as the artifact, but
+                    # bind each evidence statement to its own timed record.
+                    # Single-record IDs retain their pre-existing identity.
+                    eid = "AO-" + record["sha256"][:24]
+                    if len(observations) > 1:
+                        eid += "-O%03d" % index
+                    atomic_coverage = [span]
+                    applicable = []
+                    for cid in selected:
+                        locs = [l for l in rows[cid]["locators"] if l["source_sha256"] == obs["source_sha256"]
+                                and l.get("stream_index", obs.get("stream_index")) == obs.get("stream_index")]
+                        # Partial overlap cannot safely narrow the meaning of a
+                        # statement whose observation crosses the claim boundary.
+                        if any(not missing_intervals(atomic_coverage, l["intervals_seconds"]) for l in locs):
+                            applicable.append(cid)
+                        elif any(_overlap(atomic_coverage, l) for l in locs):
+                            affected.setdefault(cid, [])
+                            diagnostics.setdefault(cid, []).append({
+                                "artifact": portable_relative+"/"+name, "sha256": record["sha256"],
+                                "observation_index": index, "source_interval_seconds": span,
+                                "reason": "Atomic observation crosses its claim locator; retained without clipping or attachment",
+                                "admitted_as_auditory_evidence": False})
+                    evidence = {"id": eid, "layer": "auditory_observation", "modality": "audio", "observer_type": "model_audio",
+                        "locator": {"source_sha256": obs["source_sha256"], "clock": "original_pts_minus_source_origin",
+                                    "stream_index": obs["stream_index"], "intervals_seconds": atomic_coverage},
+                        "statement": observation["description"], "observation_index": index,
+                        "reviewer": obs["backend_identity"].get("provider", "model") + "/" + obs["backend_identity"]["model_revision"],
+                        "inspection_status": "REVIEW_DECLARED", "quality_flags": [], "artifact": {"path": portable_relative+"/"+name, "sha256": record["sha256"]},
+                        "scope": "Atomic attributed model witness; disposition and interpretive significance require separate adjudication"}
+                    if eid not in {e["id"] for e in updated.get("evidence", [])+new_evidence}:
+                        new_evidence.append(evidence)
+                    for cid in applicable:
+                        affected.setdefault(cid, []).append(eid)
         if not affected:
             raise AVError("No source-bound observer result overlaps the selected claims; no claim delta fabricated")
         if set(decisions_by_id)-set(affected):

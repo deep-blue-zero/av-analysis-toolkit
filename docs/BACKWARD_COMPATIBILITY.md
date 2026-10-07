@@ -34,6 +34,18 @@ Temporal extraction retains actual timestamps and source frame indices. Existing
 motion windows remain available; new sparse/extracted sequences do not silently
 upgrade old motion claims or declarations of actual inspection.
 
+Media acquisition plans retain the packet's selected absolute audio/video stream
+indices on each applicable route. Newly generated plans explicitly leave missing
+selection unresolved; an executor must obtain a selection rather than assume the
+default track. Historical plans without these extension fields remain readable,
+but their missing selection cannot be treated as execution authority.
+
+Auditory claim attachment separates each timed model observation into its own
+evidence record, retaining the complete original response and artifact hash.
+An observation spanning beyond the selected atomic claim stays unadmitted;
+attachment does not trim its interval or import another passage's description.
+Legacy evidence without an observation selector retains its original semantics.
+
 ## Qualification and cost
 
 Existing failed auditory probes remain failed. Task-scoped usefulness, a human
@@ -86,7 +98,7 @@ the source/version that produced it. See
 
 ## Current executed regression and FFmpeg scope
 
-Local `1.6.0a1` regression: **446 passed, 0 failures, 0 errors, 0 skipped**, with
+Local `1.6.0a1` regression: **459 passed, 0 failures, 0 errors, 0 skipped**, with
 runtime and test bytes unchanged throughout the run. See
 [the source-bound receipt](REGRESSION_1.6.0a1.json) and
 [changed-file manifest](FEATURE_CHANGED_FILES_1.6.0a1.json).

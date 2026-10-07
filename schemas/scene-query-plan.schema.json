@@ -53,6 +53,20 @@
           "clock": {
             "const": "original_pts_minus_source_origin"
           },
+          "audio_stream": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "description": "Selected absolute source audio stream index. Null means explicit selection is required before execution, never permission to use a default track."
+          },
+          "video_stream": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "description": "Selected absolute source video stream index. Null means explicit selection is required before execution, never permission to use a default track."
+          },
+          "stream_selection_status": {
+            "enum": ["SELECTED", "OPEN_SELECTION_REQUIRED"],
+            "description": "New media requests declare selected or unresolved streams. Fields remain optional solely to keep historical plans readable; a legacy omission does not authorize default selection."
+          },
           "interval_seconds": {
             "$ref": "#/$defs/interval"
           },
@@ -141,6 +155,47 @@
           "api_submission_authorized"
         ],
         "allOf": [
+          {
+            "if": {"required": ["stream_selection_status"]},
+            "then": {
+              "required": ["execution_requirement"],
+              "anyOf": [
+                {
+                  "properties": {"route": {"enum": ["AUDITORY", "ACOUSTIC_MEASUREMENT", "ALIGNMENT_REVIEW"]}},
+                  "required": ["audio_stream"],
+                  "not": {"required": ["video_stream"]}
+                },
+                {
+                  "properties": {"route": {"enum": ["STATIC", "TEMPORAL"]}},
+                  "required": ["video_stream"],
+                  "allOf": [
+                    {
+                      "if": {"properties": {"question_type": {"const": "AV_SYNC"}}, "required": ["question_type"]},
+                      "then": {"required": ["audio_stream"]},
+                      "else": {"not": {"required": ["audio_stream"]}}
+                    }
+                  ]
+                },
+                {
+                  "properties": {"route": {"const": "SOURCE_ATTRIBUTION_REVIEW"}},
+                  "required": ["audio_stream", "video_stream"]
+                }
+              ]
+            }
+          },
+          {
+            "if": {"properties": {"stream_selection_status": {"const": "SELECTED"}}, "required": ["stream_selection_status"]},
+            "then": {"properties": {"audio_stream": {"type": "integer"}, "video_stream": {"type": "integer"}}}
+          },
+          {
+            "if": {"properties": {"stream_selection_status": {"const": "OPEN_SELECTION_REQUIRED"}}, "required": ["stream_selection_status"]},
+            "then": {
+              "anyOf": [
+                {"properties": {"audio_stream": {"type": "null"}}, "required": ["audio_stream"]},
+                {"properties": {"video_stream": {"type": "null"}}, "required": ["video_stream"]}
+              ]
+            }
+          },
           {
             "if": {
               "properties": {

@@ -86,7 +86,7 @@
       "path": "avevidence/auditory_claims.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "2167d11c570fd5d20da717ab671f24f4790328a1964e932a717fc1ccd0e96fbf"
+      "feature_sha256": "ab434c0e1b7f5957af5cf517d157cf67742a5e86be5362ec3a5efb1e78f3a265"
     },
     {
       "path": "avevidence/auditory_observer.py",
@@ -128,7 +128,7 @@
       "path": "avevidence/evidence_claims.py",
       "change": "M",
       "baseline_sha256": "9e315752e6321e2376d560323805568ecb4ee8f840c0af4ba33d5360e5980060",
-      "feature_sha256": "95ec4aa19942b234d7f46a2d924f176141acff444e8b277a8b11f851c389db35"
+      "feature_sha256": "9edc2cf8712bb6a0f22ba553a9fc65c5e139ccfef405ce8601e9121fa64358db"
     },
     {
       "path": "avevidence/observation_dependencies.py",
@@ -200,7 +200,7 @@
       "path": "avevidence/scene_planning.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "729564e7ba54eb340743e22de6a049028e2434e9e77180e5be341a2f79108337"
+      "feature_sha256": "6a8cc20aca7d05740264a37014a7fcdb64f9c3db94463cceb08271934ee27c90"
     },
     {
       "path": "avevidence/temporal_inspection.py",
@@ -224,7 +224,7 @@
       "path": "docs/BACKWARD_COMPATIBILITY.md",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "b6fe23879ea0eeaa133f5421f21c65b358883c1a861b06c0542bcb388974f42a"
+      "feature_sha256": "0cd6201ce6c00fe71b9b535cfe809c6393bf94f0c3f58225354253f9bf181e02"
     },
     {
       "path": "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md",
@@ -284,7 +284,7 @@
       "path": "schemas/scene-query-plan.schema.json",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "5d7956c808b1084006daaf75fd72dfb5bb4828e1f43bff6f974eda70d81b7214"
+      "feature_sha256": "1f2b646acd8163622d7eec289fb6decaf2aae3dc8dafe7f4082bc5ee69017679"
     },
     {
       "path": "schemas/scene-reconciliation.schema.json",
@@ -303,6 +303,12 @@
       "change": "M",
       "baseline_sha256": "c6ee369615e31019be53193a609e276906e09a73ebf94f918e52b92da42d92bb",
       "feature_sha256": "0d1e0b8c0c572d666daf41d3eeecebff9bb0672cb3179fc9e5a31059253de75e"
+    },
+    {
+      "path": "tests/test_auditory_atomic_attachment.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "f83d6039819a9657c1945d69e4a5a3f8cfc74155b47bab8b88e447f127736b82"
     },
     {
       "path": "tests/test_auditory_claim_integration.py",
@@ -347,6 +353,12 @@
       "feature_sha256": "4bab7cb83604b14d1150a297e4f8a02e4ee8613b8ab434fa27e8ddae555704b2"
     },
     {
+      "path": "tests/test_scene_planner_streams.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "44368287d13da25cd65037c8f5bf114f3dfb83f154da4e7a48e5d8146fc28e88"
+    },
+    {
       "path": "tests/test_temporal_inspection.py",
       "change": "A",
       "baseline_sha256": null,
@@ -360,7 +372,7 @@
       {
         "path": "avevidence/auditory_claims.py",
         "alpha5_source_sha256": "2167d11c570fd5d20da717ab671f24f4790328a1964e932a717fc1ccd0e96fbf",
-        "feature_sha256": "2167d11c570fd5d20da717ab671f24f4790328a1964e932a717fc1ccd0e96fbf"
+        "feature_sha256": "ab434c0e1b7f5957af5cf517d157cf67742a5e86be5362ec3a5efb1e78f3a265"
       },
       {
         "path": "avevidence/auditory_observer.py",
@@ -380,7 +392,7 @@
       {
         "path": "avevidence/evidence_claims.py",
         "alpha5_source_sha256": "95ec4aa19942b234d7f46a2d924f176141acff444e8b277a8b11f851c389db35",
-        "feature_sha256": "95ec4aa19942b234d7f46a2d924f176141acff444e8b277a8b11f851c389db35"
+        "feature_sha256": "9edc2cf8712bb6a0f22ba553a9fc65c5e139ccfef405ce8601e9121fa64358db"
       },
       {
         "path": "avevidence/observer_execution.py",

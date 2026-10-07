@@ -28,6 +28,26 @@ ROUTES = {
 }
 
 
+def _stream_selection(source, route, question_type):
+    """Carry absolute selections; an absent selection never means the default."""
+    keys = []
+    if route in {"AUDITORY", "ACOUSTIC_MEASUREMENT", "ALIGNMENT_REVIEW", "SOURCE_ATTRIBUTION_REVIEW"}:
+        keys.append("audio_stream")
+    if route in {"TEMPORAL", "STATIC", "SOURCE_ATTRIBUTION_REVIEW"}:
+        keys.append("video_stream")
+    if route == "TEMPORAL" and question_type == "AV_SYNC":
+        keys.append("audio_stream")
+    if not keys:
+        return {}
+    result = {key: source.get(key) for key in keys}
+    result["stream_selection_status"] = "OPEN_SELECTION_REQUIRED" if any(result[key] is None for key in keys) else "SELECTED"
+    result["execution_requirement"] = (
+        "Use these absolute source stream indices in the separate acquisition request. "
+        "Any null selection requires an explicit source-bound selection before execution; "
+        "it must never authorize use of a default track. Authorization, capability and budget guards remain mandatory.")
+    return result
+
+
 def plan_scene_queries(input, output, *, relocations=None, max_requests=60, max_frames=360, max_audio_seconds=120.):
     integer(max_requests, "request ceiling", 1)
     integer(max_frames, "frame ceiling")
@@ -71,12 +91,12 @@ def plan_scene_queries(input, output, *, relocations=None, max_requests=60, max_
                        "interval_seconds": bounds, "question": claim["statement"], "analytical_claims": [claim["statement"]], "status": "REQUEST_PLANNED_NOT_EXECUTED",
                        "estimated_frame_count": frames, "planned_audio_seconds": audio,
                        "analysis_status": "OPEN", "api_submission_authorized": False}
+            request.update(_stream_selection(packet["source"], route, question_type))
             if route == "AUDITORY":
                 from .auditory_profiles import profile_prompt
                 request["question"] = profile_prompt(profile)
                 request.update(stage=1, task_profile=profile, context_policy="CONTEXT_MINIMIZED_NEUTRAL_QUESTION_REQUIRED",
-                               audio_mode="coherent_section" if seconds > 30 else "microclip",
-                               execution_requirement="Separate source-bound observer request, authorization, capability and budget guards remain mandatory")
+                               audio_mode="coherent_section" if seconds > 30 else "microclip")
             if route == "TEMPORAL":
                 request.update(question_type=question_type,
                     escalation_policy="Narrow the critical window; inspect 8fps then12fps then every original frame until adequately reviewed or OPEN",
