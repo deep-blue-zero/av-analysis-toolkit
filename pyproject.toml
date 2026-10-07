@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "av-evidence-toolkit"
+version = "1.5.0a2"
+description = "Portable audiovisual evidence preparation with source clocks, provenance and declared-review accounting"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "AV Evidence Toolkit contributors"}]
+dependencies = ["Pillow>=10"]
+
+[project.optional-dependencies]
+reuse = ["numpy>=1.26,<3", "scipy>=1.11"]
+reuse-parquet = ["numpy>=1.26,<3", "scipy>=1.11", "pyarrow>=14"]
+instruments = ["numpy>=1.26"]
+audio = ["numpy>=1.26", "soundfile>=0.12", "librosa>=0.10"]
+performance = ["numpy>=1.26,<3", "praat-parselmouth==0.4.7", "scipy>=1.11"]
+alignment = ["numpy>=1.26,<3", "praat-parselmouth==0.4.7", "scipy>=1.11", "qwen-asr==0.0.6"]
+all = ["numpy>=1.26,<3", "soundfile>=0.12", "librosa>=0.10", "praat-parselmouth==0.4.7", "scipy>=1.11"]
+
+[project.scripts]
+ave = "avevidence.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["avevidence*"]
+
+[tool.setuptools]
+license-files = ["LICENSE", "LICENSES/*.txt"]

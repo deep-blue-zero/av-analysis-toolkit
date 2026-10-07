@@ -1,0 +1,14 @@
+{
+  "schema": "ave.inventory.config.v1",
+  "required_logical_source_ids": ["REPLACE_LOGICAL_SOURCE_ID"],
+  "sources": [
+    {
+      "logical_source_id": "REPLACE_LOGICAL_SOURCE_ID",
+      "materialization_id": "REPLACE_MATERIALIZATION_ID",
+      "path": "REPLACE_MEDIA_PATH",
+      "selected_streams": {"video": 0, "audio": 1},
+      "required_modalities": ["audio", "motion"],
+      "preferred": true
+    }
+  ]
+}

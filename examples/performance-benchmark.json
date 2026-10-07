@@ -1,0 +1,7 @@
+{
+  "model_dir":"models/Qwen3-ForcedAligner-0.6B",
+  "jobs":[
+    {"name":"episode","input":"REPLACE_WITH_EPISODE.mkv","arguments":["--audio-stream","1","--subtitle-stream","10"]},
+    {"name":"game","input":"REPLACE_WITH_RECORDING.mp4","arguments":["--audio-stream","1","--transcript","REPLACE_WITH_TRANSCRIPT.json"]}
+  ]
+}

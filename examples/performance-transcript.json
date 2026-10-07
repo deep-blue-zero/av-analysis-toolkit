@@ -1,0 +1,9 @@
+{
+  "schema": "ave.performance-transcript.v1",
+  "clock": "original_pts_minus_source_origin",
+  "text_authority": "example_only_replace_with_real_source_bound_text",
+  "utterances": [
+    {"utterance_id":"line-001", "start_s":12.0, "end_s":14.5, "speaker":"Displayed label", "text":"こちらです。"},
+    {"utterance_id":"reaction-002", "start_s":14.5, "end_s":16.0, "text":"（悲鳴）", "kind":"non_speech_caption"}
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "ave.reuse.config.v1",
+  "purpose": "Original synthetic non-speech correspondence demonstration. Generate the local input with the recipe in docs/PERFORMANCE_REUSE.md; no acted-performance or listening conclusion is supplied.",
+  "occurrences": [
+    {
+      "id": "synthetic reference",
+      "source": "../media/reuse-synthetic.wav",
+      "audio_stream": 0,
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "speaker": "synthetic signal",
+      "vocal_status": "verified_nonvocal",
+      "vocal_basis": "The documented original signal generator contains no speech or human vocal recording.",
+      "quality": "clean_derived",
+      "unit_kind": "window",
+      "role": "reference",
+      "context": "Original generated varying signal; repeated samples are digital correspondence, not independent performances."
+    },
+    {
+      "id": "synthetic repeated occurrence",
+      "source": "../media/reuse-synthetic.wav",
+      "audio_stream": 0,
+      "start_s": 2.0,
+      "end_s": 3.0,
+      "speaker": "synthetic signal",
+      "vocal_status": "verified_nonvocal",
+      "vocal_basis": "The documented original signal generator contains no speech or human vocal recording.",
+      "quality": "clean_derived",
+      "unit_kind": "window",
+      "role": "target",
+      "context": "Original generated varying signal; repeated samples are digital correspondence, not independent performances."
+    }
+  ]
+}

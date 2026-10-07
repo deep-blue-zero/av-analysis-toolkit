@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+.cloud-runtime/
+__pycache__/
+*.py[cod]
+*.egg-info/
+runs/
+cache/
+models/
+media/
+downloads/
+dist/
+build/
+wheelhouse/
+dependency-sources/
+*.mkv
+*.mp4
+*.flac
+*.wav
+*.sqlite
+*.zip
+*.whl
+*.tar.gz
+.pytest_cache/
+.ruff_cache/
+# Synthetic fixtures are generated during tests; deliberate tiny tracked
+# fixtures may be added under tests/fixtures with an explicit exception.
