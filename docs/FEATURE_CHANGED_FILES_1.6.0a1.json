@@ -38,7 +38,7 @@
       "path": "CHANGELOG.md",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "dede21455a16c90b807f4795200de72bfba235aef3de219c23e25295132a684b"
+      "feature_sha256": "aae13c3574194811d1e6eabb2bf70eed944d417e31ab431f30d3e5e3da798bcf"
     },
     {
       "path": "CLOUD_START_HERE.md",
@@ -110,7 +110,7 @@
       "path": "avevidence/cross_modal.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "250f69fd9649c485207f1acb1b384b8e92f34fd93cd6e4bedd5a81454756cc4d"
+      "feature_sha256": "e1c431feb19a49e9c31c1918633c103c23e87e88904c4a9ffe3b2873a9b9bc94"
     },
     {
       "path": "avevidence/deep_read.py",
@@ -188,7 +188,7 @@
       "path": "avevidence/scene_delta.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "0f8a2f2af33d69e76db3f0c657afe1a8a8cbff2410999124fae7db7b99781cfc"
+      "feature_sha256": "f32dc429da109a2e77e7806c34f44579fa4d5adfa263c3ec05439d8fa245511a"
     },
     {
       "path": "avevidence/scene_packets.py",
@@ -206,7 +206,7 @@
       "path": "avevidence/temporal_inspection.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "3d9c614a845391a88b4cb2223d08d617552190bf3bd7caebb0dead0d21524f17"
+      "feature_sha256": "9eea2c50b4be27f7bd00cb7415643458fb55aefa38196612b20e466f95fac480"
     },
     {
       "path": "avevidence/visual.py",
@@ -224,13 +224,19 @@
       "path": "docs/BACKWARD_COMPATIBILITY.md",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "f599389b740c5584c63f2eebdb3f24a1f4c4672ef2e5b79d2c441dfcc98495c6"
+      "feature_sha256": "b6fe23879ea0eeaa133f5421f21c65b358883c1a861b06c0542bcb388974f42a"
     },
     {
       "path": "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "b58211b1ebbac9d7c86d3d5a9165d5a68f196aad8170fbad3da576f675db5f13"
+      "feature_sha256": "8079948afab2d70d9d76e3bfe8c6df466205345a41d3d01aff1bc2256057b18a"
+    },
+    {
+      "path": "docs/PACKAGING_AND_CI.md",
+      "change": "M",
+      "baseline_sha256": "ac0d99ee18c332986a270ab7530473a2a380a6ed01505dc97bff4ed8cfa496fc",
+      "feature_sha256": "0a4b862e596a55d05833d4af2bbbecab53176349adce6b26e400f5c0e119f58d"
     },
     {
       "path": "docs/PUBLIC_SOURCE_SAFETY.md",
@@ -242,7 +248,7 @@
       "path": "docs/TEMPORAL_INSPECTION.md",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "ea76f86d1a87ee13a3adcef683891ec7b836ac89c259a77d6682a13a4b2552bb"
+      "feature_sha256": "cff3085c0d6c1320b1822416c118328cb2dd9bcc65c58570bc55d82d46346ecf"
     },
     {
       "path": "examples/build_synthetic_scene.py",
@@ -320,7 +326,7 @@
       "path": "tests/test_hardening_rc2.py",
       "change": "M",
       "baseline_sha256": "877f6caaca8b1f26ca639f12a40055dc84f1b8297773d0e5d8774661e5bce9d4",
-      "feature_sha256": "fcea1615e055986054a245a609de8dabe811db66030997a9d4d8a220dcd1d432"
+      "feature_sha256": "0bab18b60de676a2078e6aa912c3d34a74055e92a3ea9982a9e1102371e2075e"
     },
     {
       "path": "tests/test_hosted_observer.py",
@@ -338,13 +344,13 @@
       "path": "tests/test_scene_events.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "9359057578f3393b98bd3624c4569301a88efac217aa045d4e6623a8fb0da588"
+      "feature_sha256": "4bab7cb83604b14d1150a297e4f8a02e4ee8613b8ab434fa27e8ddae555704b2"
     },
     {
       "path": "tests/test_temporal_inspection.py",
       "change": "A",
       "baseline_sha256": null,
-      "feature_sha256": "08879a4488cdf396834234fdafc2a6caefc28014da7947ec788a77413dd2f47b"
+      "feature_sha256": "333599c04e3f6b04f37665b1b4961feca644b46fddfd0fc636b39e81ce9d2291"
     }
   ],
   "hosted_route_feature_port": {

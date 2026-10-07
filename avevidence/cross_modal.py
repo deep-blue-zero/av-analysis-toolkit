@@ -7,7 +7,7 @@ from pathlib import Path
 from .common import AVError, file_record, finish_run, output_transaction, write_json
 from .event_contracts import read_event_json, span
 from .mapping import missing_intervals
-from .observation_dependencies import dependence_groups, propagate_changes
+from .observation_dependencies import PROPAGATING, dependence_groups, propagate_changes
 from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
 
 COMPETENCE = {
@@ -41,7 +41,7 @@ def evidence_assessment(ref, binding, proposition, interval):
         result["reasons"].append("This channel cannot establish this exact proposition")
         return result
     loc = ref["locator"]
-    if proposition != "visual_fact" and missing_intervals([interval], loc.get("intervals_seconds", [])):
+    if channel != "VIS" and missing_intervals([interval], loc.get("intervals_seconds", [])):
         result["reasons"].append("Evidence locator does not cover this observation interval")
         return result
     if channel == "TXT":
@@ -50,6 +50,9 @@ def evidence_assessment(ref, binding, proposition, interval):
         result["reasons"].append("Text authority is an attributed project declaration; byte hashes do not authenticate a translation")
     elif channel == "VIS":
         result["authority"] = "STATIC_EVIDENCE_REQUIRES_SOURCE_BOUND_REVIEW"
+        if not any(interval[0] <= point < interval[1] for point in loc.get("points_seconds", [])):
+            result["reasons"].append("No identified static source frame lies inside this observation interval")
+            return result
         if binding.get("review_path"):
             from .visual import load_verified_run
             _, _, raw, _, _ = load_verified_run(Path(binding["path"]).parent, {"extract_frames"})
@@ -175,6 +178,10 @@ def reconcile_data(packet, evidence, nodes, bindings):
             claim_interval = row.get("interval_seconds",packet["interval_seconds"])
             same_kind = any(observations[oid]["proposition"] == row["proposition"] and observations[oid]["adequate_for_support"]
                 and not missing_intervals([claim_interval],[nodes[oid]["record"].get("interval_seconds",packet["interval_seconds"])])
+                and any(a["adequate_for_support"] and (a["channel"] != "VIS" or any(
+                    claim_interval[0] <= point < claim_interval[1]
+                    for point in evidence[a["evidence_id"]]["locator"].get("points_seconds", [])))
+                    for a in observations[oid]["evidence_assessments"])
                 for oid in row["observation_ids"])
             if (row["id"] not in packet["adjudication"]["decisions"] or inadequate or direct_fact and not same_kind
                 or any(s in {"CONTRADICTED", "OPEN", "RECHECK", "REPORTED", "PROVISIONAL"} for s in premise_states.values())
@@ -194,7 +201,36 @@ def reconcile_data(packet, evidence, nodes, bindings):
                 overlay["state_overlay"][key].update(after="RECHECK", reason="A transitively dependent premise failed adequacy", changed_premises=value["changed_premises"])
         for row in claim_rows:
             row["state"] = overlay["state_overlay"][row["id"]]["after"]
+    # Every declared propagating prerequisite gates an affirmative node, even
+    # when the unresolved prerequisite was already OPEN/PROVISIONAL and never
+    # changed. Observation lists are not a bypass around the explicit DAG.
+    prerequisites = {key: set() for key in nodes}
+    for edge in packet["dependencies"]:
+        if edge["relation"] in PROPAGATING:
+            prerequisites[edge["to"]].add(edge["from"])
+    affirmative = {"SUPPORTED", "CONFIRMED"}
+    for _ in range(len(nodes)):
+        changed = False
+        for key, state in overlay["state_overlay"].items():
+            if state["after"] not in affirmative:
+                continue
+            unresolved = sorted(parent for parent in prerequisites[key]
+                if overlay["state_overlay"][parent]["after"] not in affirmative)
+            if unresolved:
+                recheck = bool(state["changed_premises"] or any(
+                    overlay["state_overlay"][parent]["after"] == "RECHECK" for parent in unresolved))
+                state.update(after="RECHECK" if recheck else "OPEN",
+                    reason="Unresolved declared prerequisite: " + ", ".join(unresolved))
+                changed = True
+        if not changed:
+            break
+    for row in claim_rows:
+        row["state"] = overlay["state_overlay"][row["id"]]["after"]
+        premise_ids = set(row["premise_states"]) | prerequisites[row["id"]]
+        row["premise_states"] = {key: overlay["state_overlay"][key]["after"] for key in sorted(premise_ids)}
     overlay["recheck_ids"] = sorted(key for key,row in overlay["state_overlay"].items() if row["after"] == "RECHECK")
+    overlay["unaffected_ids"] = [key for key in overlay["unaffected_ids"]
+        if overlay["state_overlay"][key]["after"] == overlay["state_overlay"][key]["before"]]
     conflicts = []
     for conflict in packet["conflicts"]:
         ids = conflict["observation_ids"]

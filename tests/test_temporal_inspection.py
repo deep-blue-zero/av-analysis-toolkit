@@ -220,6 +220,41 @@ class TemporalInspectionTests(unittest.TestCase):
         self.assertEqual(review["status"],"ADEQUATE_DECLARED")
         self.assertFalse(review["synchrony_event_pair"]["within_declared_tolerance"])
 
+    def test_av_sync_audio_scope_and_both_events_must_cover_critical_window(self):
+        source=self.root/"critical-sync-audio.mkv"
+        run(["ffmpeg","-v","error","-nostdin","-n","-i",self.source,
+             "-f","lavfi","-i","anullsrc=r=8000:cl=mono","-t","3","-map","0:v","-map","1:a",
+             "-c:v","copy","-c:a","pcm_s16le",source])
+        output=self.out()
+        critical=[.375,.75]
+        extract_temporal_inspection(source,output,question="Critical-window synchrony contract",question_type="AV_SYNC",
+                                    start=0,end=1,critical_interval=critical,profile="FRAME_COMPLETE_WINDOW",width=0,stream_index=0)
+        _,report,_=load_temporal_inspection(output)
+        audio={"actual_audio_inspection_declared":True,"source_sha256":report["source_sha256"],
+               "stream_index":1,"clock":report["clock"],"inspected_interval_seconds":critical,
+               "audio_event_source_seconds":.5,"visual_event_source_frame_index":12,"tolerance_seconds":.01}
+        declaration=self.declaration(output,report,inspection_mode="synchronized_av",inspected_interval_seconds=[0,1],audio_review=audio)
+        self.assertEqual(validate_temporal_review(output,declaration)["status"],"ADEQUATE_DECLARED")
+        cases=(
+            ("unrelated_context_pair",{"inspected_interval_seconds":[0,.1],"audio_event_source_seconds":.05,"visual_event_source_frame_index":0},"cover the critical interval"),
+            ("partial_audio_scope",{"inspected_interval_seconds":[.375,.7]},"cover the critical interval"),
+            ("audio_event_before",{"inspected_interval_seconds":[0,1],"audio_event_source_seconds":.25},"audio event is outside"),
+            ("visual_event_before",{"visual_event_source_frame_index":6},"visual event is outside"),
+            ("audio_event_at_end",{"inspected_interval_seconds":[0,1],"audio_event_source_seconds":.75},"audio event is outside"),
+            ("visual_event_at_end",{"visual_event_source_frame_index":18},"visual event is outside"),
+        )
+        for label,changes,reason in cases:
+            with self.subTest(case=label):
+                changed=copy.deepcopy(declaration);changed["audio_review"].update(changes)
+                assessment=validate_temporal_review(output,changed)
+                self.assertEqual(assessment["status"],"OPEN")
+                self.assertIsNone(assessment["adequate_interval_seconds"])
+                self.assertTrue(any(reason in item for item in assessment["reasons"]))
+        # Critical intervals include their start and exclude their end.
+        start_pair=copy.deepcopy(declaration)
+        start_pair["audio_review"].update(audio_event_source_seconds=.375,visual_event_source_frame_index=9)
+        self.assertEqual(validate_temporal_review(output,start_pair)["status"],"ADEQUATE_DECLARED")
+
     def test_schema_loads_and_all_receipt_required_fields_exist(self):
         _,report=self.extract()
         schema=json.loads((Path(__file__).resolve().parents[1]/"schemas/temporal-inspection.schema.json").read_text(encoding="utf-8"))

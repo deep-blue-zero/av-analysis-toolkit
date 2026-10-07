@@ -291,11 +291,17 @@ class CodecInteropTests(unittest.TestCase):
         run(['ffmpeg','-v','error','-nostdin','-n','-i',f/'audio.wav','-c','copy',mka])
         out=self.root/'practical';extract_audio(mka,out,storage_profile='practical')
         # Matroska PCM layout reporting differs across FFmpeg versions. A
-        # layout explicitly admitted by the source probe must be preserved;
-        # an unknown layout must remain unknown. Count alone proves neither.
+        # layout explicitly admitted by the source probe must be preserved.
+        # The output decoder may report a layout even when the source did not;
+        # that does not establish source-layout preservation from count alone.
         result=read_json(out/'audio.json')
         admitted=result['identity']['channel_layout']
-        self.assertEqual(result['artifact_channel_layout'],admitted)
+        if admitted is not None:
+            self.assertEqual(result['artifact_channel_layout'],admitted)
+        from avevidence.common import probe_source
+        artifact_probe=probe_source(out/result['artifact_path'])
+        artifact_stream=next(s for s in artifact_probe['streams'] if s['index']==result['derivative_stream_index'])
+        self.assertEqual(result['artifact_channel_layout'],artifact_stream.get('channel_layout'))
         self.assertEqual(result['channel_layout_preservation'],
                          'MATCH' if admitted is not None else 'SOURCE_LAYOUT_UNKNOWN')
         self.assertTrue(result['sample_preservation_verified'])

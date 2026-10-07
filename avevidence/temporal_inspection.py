@@ -362,6 +362,16 @@ def validate_temporal_review(temporal_run, declaration):
             if (audio["stream_index"] not in valid_audio or audio.get("inspected_interval_seconds") is None
                     or not audio_interval[0] <= event < audio_interval[1]):
                 reasons.append("Audio/visual event pair does not support the declared source-clock tolerance")
+            if audio_interval[0] > requested[0]+1e-9 or audio_interval[1] < requested[1]-1e-9:
+                reasons.append("Actual audio inspection must cover the critical interval")
+            # Context frames and sounds may be inspected too, but their pair
+            # cannot establish adequacy for a different critical event window.
+            # As elsewhere, the critical source interval includes its start
+            # and excludes its end; no timing tolerance enlarges this scope.
+            if not requested[0] <= event < requested[1]:
+                reasons.append("Declared audio event is outside the critical half-open interval")
+            if not requested[0] <= visual_time < requested[1]:
+                reasons.append("Declared visual event is outside the critical half-open interval")
     return {"schema": "ave.temporal-review-assessment.v1", "status": "OPEN" if reasons else "ADEQUATE_DECLARED",
             "actual_review_declared": declared, "reviewer": reviewer,
             "source_sha256": report["source_sha256"], "stream_index": report["stream_index"],

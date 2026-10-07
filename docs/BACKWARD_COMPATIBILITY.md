@@ -86,7 +86,7 @@ the source/version that produced it. See
 
 ## Current executed regression and FFmpeg scope
 
-Local `1.6.0a1` regression: **437 passed, 0 failures, 0 errors, 0 skipped**, with
+Local `1.6.0a1` regression: **446 passed, 0 failures, 0 errors, 0 skipped**, with
 runtime and test bytes unchanged throughout the run. See
 [the source-bound receipt](REGRESSION_1.6.0a1.json) and
 [changed-file manifest](FEATURE_CHANGED_FILES_1.6.0a1.json).

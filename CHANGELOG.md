@@ -14,6 +14,11 @@ and platform validation are recorded in their source-bound release receipts.
   export, scoped human review and opt-in coherent musical sections.
 - Track atomic observation/claim dependencies, localized contradictions,
   reconciliation and claim deltas.
+- Gate supported nodes on every declared propagating prerequisite, including
+  unresolved premises that have not changed. Keep static witnesses and AV
+  synchrony pairs inside the claim's actual time scope. Strengthening requires
+  newly adequate evidence; copied witness IDs and unqualified reports cannot
+  count as new support.
 - Escalate temporal evidence through bounded frame sampling and short
   frame-complete windows through `temporal-inspect`, `temporal-review` and
   `temporal-escalate`, while retaining source frame/PTS identity and uncertainty.

@@ -149,6 +149,9 @@ Edges point from premise to dependent. `SUPPORTS`, `CONSTRAINS`, `DEPENDS_ON` an
 `DOES_NOT_DISCRIMINATE` retain their declared relation without automatically
 rewriting node status. A reasoned adjudication records a state decision.
 Reaffirming an unchanged state alone does not invalidate its descendants.
+Every declared propagating prerequisite also gates affirmative support when
+it is already unresolved. A premise need not change before its unresolved state
+prevents a dependent observation or claim from becoming supported.
 
 ## Reconciliation
 
@@ -225,7 +228,10 @@ attributed analyst's `reviewer` and decisions keyed by baseline claim ID. Each
 decision includes `disposition`, `reason`, `what_survived`, `what_changed` and
 `remaining_open_questions`. Without a decision, detected changes remain `OPEN`;
 unchanged claims/premises may be `PRESERVE`. `STRENGTHEN` requires relevant new
-evidence and adequately adjudicated support; `REVISE` requires a changed
+evidence that is adequate for the relevant premise and source scope, together
+with adequately adjudicated support. An unqualified additional report or the
+same witness under a new ID cannot provide that new support. Changed scoped
+review records and locators remain visible. `REVISE` requires a changed
 formulation. The detector does not invent an improved reading or raise confidence.
 
 See [backward compatibility](BACKWARD_COMPATIBILITY.md),

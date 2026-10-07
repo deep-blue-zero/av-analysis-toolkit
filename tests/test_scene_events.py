@@ -306,6 +306,75 @@ class SceneEvents(unittest.TestCase):
                 self.assertTrue(result["observations"]["o-text"]["adequate_for_support"])
                 self.assertEqual(result["claims"][0]["state"], "OPEN")
 
+    def test_extra_unqualified_stage_dependencies_gate_affirmative_claims(self):
+        for stage in (1, 2):
+            packet = self.packet()
+            for row in packet["observations"] + packet["claims"]:
+                row["status"] = "SUPPORTED"
+            packet["evidence"]["AO_STAGE1"] = [self.ref("ao1", self.a1, channel="AO_STAGE1")]
+            eid = "ao1"
+            if stage == 2:
+                packet["evidence"]["AO_STAGE2"] = [self.ref("ao2", self.a2, channel="AO_STAGE2",
+                    stage1_evidence_id="ao1", context_evidence_ids=["txt"])]
+                eid = "ao2"
+            packet["observations"].append(self.obs("o-unqualified", "delivery", eid))
+            packet["claims"].append(self.claim("c-dependent", "interpretation", "o-text", status="SUPPORTED",
+                inference="A declared reading depends on the unresolved auditory premise."))
+            packet["dependencies"] += [self.edge("o-text", "c-dependent"), self.edge("o-unqualified", "c-dependent", "DEPENDS_ON")]
+            self.decide(packet, {"o-text": "SUPPORTED", "c-text": "SUPPORTED", "c-dependent": "SUPPORTED"})
+            result = self.reconciled(packet, "stage-" + str(stage) + "-dependency.json")
+            rows = {row["id"]: row for row in result["claims"]}
+            with self.subTest(stage=stage):
+                self.assertEqual(rows["c-dependent"]["state"], "OPEN")
+                self.assertEqual(rows["c-dependent"]["premise_states"]["o-unqualified"], "PROVISIONAL")
+                self.assertEqual(rows["c-text"]["state"], "SUPPORTED")
+
+    def test_unchanged_open_claim_prerequisite_gates_child(self):
+        packet = self.packet()
+        for row in packet["observations"] + packet["claims"]:
+            row["status"] = "SUPPORTED"
+        packet["claims"] += [self.claim("c-parent", "interpretation", "o-text", status="OPEN",
+            inference="An unresolved declared premise."), self.claim("c-unrelated", "wording", "o-text", status="SUPPORTED")]
+        packet["dependencies"] += [self.edge("o-text", "c-parent"), self.edge("c-parent", "c-text", "DEPENDS_ON"),
+            self.edge("o-text", "c-unrelated")]
+        self.decide(packet, {"o-text": "SUPPORTED", "c-text": "SUPPORTED", "c-unrelated": "SUPPORTED"})
+        result = self.reconciled(packet)
+        rows = {row["id"]: row for row in result["claims"]}
+        self.assertEqual(rows["c-parent"]["state"], "OPEN")
+        self.assertEqual(rows["c-text"]["state"], "OPEN")
+        self.assertEqual(rows["c-text"]["premise_states"]["c-parent"], "OPEN")
+        self.assertEqual(rows["c-unrelated"]["state"], "SUPPORTED")
+
+    def test_observation_dependencies_gate_unresolved_initial_premises(self):
+        packet = self.packet()
+        for row in packet["observations"] + packet["claims"]:
+            row["status"] = "SUPPORTED"
+        packet["evidence"]["AO_STAGE1"] = [self.ref("ao1", self.a1, channel="AO_STAGE1")]
+        packet["observations"] += [self.obs("o-unqualified", "delivery", "ao1"),
+            self.obs("o-dependent", "wording", "txt", status="SUPPORTED")]
+        packet["claims"].append(self.claim("c-dependent", "wording", "o-dependent", status="SUPPORTED"))
+        packet["dependencies"] += [self.edge("o-unqualified", "o-dependent", "DEPENDS_ON"),
+            self.edge("o-dependent", "c-dependent")]
+        self.decide(packet, {key: "SUPPORTED" for key in ("o-text", "c-text", "o-dependent", "c-dependent")})
+        result = self.reconciled(packet)
+        overlay = result["dependency_assessment"]["state_overlay"]
+        self.assertTrue(result["observations"]["o-dependent"]["adequate_for_support"])
+        self.assertEqual(overlay["o-dependent"]["after"], "OPEN")
+        self.assertEqual(overlay["c-dependent"]["after"], "OPEN")
+        self.assertEqual(overlay["c-text"]["after"], "SUPPORTED")
+
+    def test_nonpropagating_relations_do_not_gate_unchanged_claim(self):
+        for relation in ("CONTRADICTS", "DOES_NOT_DISCRIMINATE"):
+            packet = self.packet()
+            for row in packet["observations"] + packet["claims"]:
+                row["status"] = "SUPPORTED"
+            packet["evidence"]["AO_STAGE1"] = [self.ref("ao1", self.a1, channel="AO_STAGE1")]
+            packet["observations"].append(self.obs("o-unqualified", "delivery", "ao1"))
+            packet["dependencies"].append(self.edge("o-unqualified", "c-text", relation))
+            self.decide(packet, {"o-text": "SUPPORTED", "c-text": "SUPPORTED"})
+            with self.subTest(relation=relation):
+                self.assertEqual(self.reconciled(packet, relation + ".json")["claims"][0]["state"], "SUPPORTED")
+
     def test_still_motion_text_delivery_and_rms_emotion_are_not_competent(self):
         packet = self.packet()
         packet["evidence"].update(VIS=[self.ref("vis", self.still)], AM=[self.ref("am", self.measurement, channel="AM")])
@@ -355,8 +424,7 @@ class SceneEvents(unittest.TestCase):
                 self.assertEqual(result["observations"]["o-human"]["adequate_for_support"], kind == "exact")
                 self.assertEqual(result["dependency_assessment"]["state_overlay"]["o-human"]["after"], "SUPPORTED" if kind == "exact" else "OPEN")
 
-    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "Generated static fixture requires FFmpeg/ffprobe")
-    def test_source_bound_static_inventory_and_local_review_can_support_static_fact(self):
+    def static_packet(self):
         raw = self.root / "static-source.gray"
         raw.write_bytes(b"".join(bytes([20 + i * 20]) * 32 * 24 for i in range(8)))
         source = self.root / "static-source.mkv"
@@ -384,6 +452,11 @@ class SceneEvents(unittest.TestCase):
         packet["claims"] = [self.claim("c-static", "visual_fact", "o-static", interval=[.25, .26], status="SUPPORTED")]
         packet["dependencies"] = [self.edge("o-static", "c-static")]
         self.decide(packet, {"o-static": "SUPPORTED", "c-static": "SUPPORTED"})
+        return packet
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "Generated static fixture requires FFmpeg/ffprobe")
+    def test_source_bound_static_inventory_and_local_review_can_support_static_fact(self):
+        packet = self.static_packet()
         result = self.reconciled(packet)
         self.assertTrue(result["observations"]["o-static"]["adequate_for_support"])
         self.assertEqual(result["claims"][0]["state"], "SUPPORTED")
@@ -393,6 +466,18 @@ class SceneEvents(unittest.TestCase):
         result = self.reconciled(packet, "static-motion.json")
         self.assertFalse(result["observations"]["o-static"]["adequate_for_support"])
         self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "Generated static fixture requires FFmpeg/ffprobe")
+    def test_static_review_points_must_lie_inside_observation_and_claim_scopes(self):
+        original = self.static_packet()
+        for kind in ("observation", "claim_subset"):
+            packet = copy.deepcopy(original)
+            packet["claims"][0]["interval_seconds"] = [.75, .8]
+            packet["observations"][0]["interval_seconds"] = [.75, .8] if kind == "observation" else [.2, .8]
+            result = self.reconciled(packet, kind + "-static-scope.json")
+            with self.subTest(kind=kind):
+                self.assertEqual(result["observations"]["o-static"]["adequate_for_support"], kind == "claim_subset")
+                self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
 
     def test_stage2_shared_context_and_parent_are_dependent_not_votes(self):
         packet = self.packet()
@@ -532,6 +617,115 @@ class SceneEvents(unittest.TestCase):
         decision = self.save(self.delta_decision("STRENGTHEN"), "delta-decisions.json")
         with self.assertRaisesRegex(AVError, "STRENGTHEN requires"):
             scene_claim_delta(a, b, self.root / "bad-auditory-strengthen", decisions=decision)
+
+    def test_new_inadequate_or_aliased_evidence_cannot_strengthen_existing_text(self):
+        for kind in ("auditory_guess", "duplicate_witness"):
+            before = self.packet()
+            for row in before["observations"] + before["claims"]:
+                row["status"] = "SUPPORTED"
+            self.decide(before, {"o-text": "SUPPORTED", "c-text": "SUPPORTED"})
+            after = copy.deepcopy(before)
+            if kind == "auditory_guess":
+                after["evidence"]["AO_STAGE1"] = [self.ref("new-ref", self.a1, channel="AO_STAGE1")]
+            else:
+                alias = copy.deepcopy(after["evidence"]["TXT"][0]); alias["id"] = "new-ref"
+                after["evidence"]["TXT"].append(alias)
+            after["observations"][0]["evidence_ids"].append("new-ref")
+            a = self.save(before, kind + "-before.json"); b = self.save(after, kind + "-after.json")
+            decision = self.save(self.delta_decision("STRENGTHEN"), kind + "-decisions.json")
+            with self.subTest(kind=kind), self.assertRaisesRegex(AVError, "STRENGTHEN requires"):
+                scene_claim_delta(a, b, self.root / (kind + "-strengthen"), decisions=decision)
+
+    def test_equivalent_or_irrelevant_locator_extent_cannot_strengthen(self):
+        cases=(
+            ("duplicate",[[.2,.8]],[[.2,.8],[.2,.8]],[],[]),
+            ("reorder",[[.2,.5],[.5,.8]],[[.5,.8],[.2,.5]],[],[]),
+            ("split",[[.2,.8]],[[.2,.5],[.5,.8]],[],[]),
+            ("outside_extension",[[.2,.8]],[[.1,.9]],[],[]),
+            ("outside_interval",[[.2,.8]],[[.2,.8],[1.,1.5]],[],[]),
+            ("outside_point",[[.2,.8]],[[.2,.8]],[],[1.2]),
+            ("point_alias",[[.2,.8]],[[.2,.8]],[.3,.4],[.4,.3,.3]),
+        )
+        for proposition in ("wording","interpretation"):
+            for kind,old_intervals,new_intervals,old_points,new_points in cases:
+                label=proposition+"-"+kind
+                before=self.packet()
+                for row in before["observations"]+before["claims"]:
+                    row["status"]="SUPPORTED"
+                if proposition=="interpretation":
+                    before["claims"][0].update(proposition="interpretation",interval_seconds=[1.,2.],
+                        inference="A declared fixture interpretation depends on the earlier wording premise.")
+                self.decide(before,{"o-text":"SUPPORTED","c-text":"SUPPORTED"})
+                locator=before["evidence"]["TXT"][0]["locator"]
+                locator["intervals_seconds"]=copy.deepcopy(old_intervals)
+                if old_points: locator["points_seconds"]=copy.deepcopy(old_points)
+                after=copy.deepcopy(before)
+                locator=after["evidence"]["TXT"][0]["locator"]
+                locator["intervals_seconds"]=copy.deepcopy(new_intervals)
+                if new_points: locator["points_seconds"]=copy.deepcopy(new_points)
+                a=self.save(before,label+"-before.json");b=self.save(after,label+"-after.json")
+                decision=self.save(self.delta_decision("STRENGTHEN"),label+"-decisions.json")
+                with self.subTest(proposition=proposition,case=kind),self.assertRaisesRegex(AVError,"STRENGTHEN requires"):
+                    scene_claim_delta(a,b,self.root/(label+"-strengthen"),decisions=decision)
+        # Expanded source coverage inside the actual premise/claim scope is
+        # distinct evidence, unlike extent added only to surrounding context.
+        before=self.packet()
+        for row in before["observations"]+before["claims"]: row["status"]="SUPPORTED"
+        self.decide(before,{"o-text":"SUPPORTED","c-text":"SUPPORTED"})
+        before["evidence"]["TXT"][0]["locator"]["intervals_seconds"]=[[.2,.5]]
+        after=copy.deepcopy(before)
+        after["evidence"]["TXT"][0]["locator"]["intervals_seconds"]=[[.2,.8]]
+        a=self.save(before,"new-coverage-before.json");b=self.save(after,"new-coverage-after.json")
+        decision=self.save(self.delta_decision("STRENGTHEN"),"new-coverage-decisions.json")
+        output=self.root/"new-coverage-strengthen"
+        scene_claim_delta(a,b,output,decisions=decision)
+        self.assertEqual(read_json(output/"claim-delta.json")["claims"][0]["disposition"],"STRENGTHEN")
+        # The existing bound-review regression separately covers a genuinely
+        # changed review digest on the same frame inventory.
+        if shutil.which("ffmpeg") and shutil.which("ffprobe"):
+            after=self.static_packet()
+            frames=self.root/"static-multiple"
+            extract_frames(self.root/"static-source.mkv",frames,mode="exact",timestamps=[.25,.75],width=0,stream_index=0)
+            inventory=frames/"frames.json";rows=read_json(inventory)["rows"]
+            review=self.root/"multiple-static-review.json"
+            value=read_json(self.root/"static-review.json")
+            value.update(frame_inventory_sha256=sha256(inventory),inspected_frame_ids=[r["frame_id"] for r in rows])
+            write_json(review,value)
+            ref=after["evidence"]["VIS"][0]
+            ref["artifact"]={"path":"static-multiple/frames.json","sha256":sha256(inventory)}
+            ref["review_artifact"]={"path":review.name,"sha256":sha256(review)}
+            ref["locator"]["points_seconds"]=[.75,.25]
+            after["observations"][0]["interval_seconds"]=[.2,.8]
+            before=copy.deepcopy(after);before["evidence"]["VIS"][0]["locator"]["points_seconds"]=[.75]
+            a=self.save(before,"new-point-before.json");b=self.save(after,"new-point-after.json")
+            value=self.delta_decision("STRENGTHEN")
+            value["decisions"]["c-static"]=value["decisions"].pop("c-text")
+            decision=self.save(value,"new-point-decisions.json")
+            output=self.root/"new-point-strengthen"
+            scene_claim_delta(a,b,output,decisions=decision)
+            self.assertEqual(read_json(output/"claim-delta.json")["claims"][0]["disposition"],"STRENGTHEN")
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "Generated static fixture requires FFmpeg/ffprobe")
+    def test_new_bound_review_can_strengthen_same_static_artifact(self):
+        after = self.static_packet()
+        before = copy.deepcopy(after)
+        ref = before["evidence"]["VIS"][0]
+        old_review = self.root / "unreviewed-static.json"
+        raw = read_json(self.root / ref["review_artifact"]["path"])
+        raw["actual_visual_inspection_declared"] = False
+        write_json(old_review, raw)
+        ref["review_artifact"] = {"path": old_review.name, "sha256": sha256(old_review)}
+        a = self.save(before, "static-before.json"); b = self.save(after, "static-after.json")
+        decision = self.delta_decision("STRENGTHEN")
+        decision["decisions"]["c-static"] = decision["decisions"].pop("c-text")
+        decision_path = self.save(decision, "static-decisions.json")
+        output = self.root / "static-strengthen"
+        scene_claim_delta(a, b, output, decisions=decision_path)
+        row = read_json(output / "claim-delta.json")["claims"][0]
+        self.assertEqual(before["evidence"]["VIS"][0]["artifact"], after["evidence"]["VIS"][0]["artifact"])
+        self.assertEqual(row["relevant_new_evidence"], ["vis"])
+        self.assertEqual(row["after_state"], "SUPPORTED")
+        self.assertEqual(row["disposition"], "STRENGTHEN")
 
     def test_delta_rejects_changed_scene_and_disguised_reformulation(self):
         before = self.packet(); a = self.save(before, "before.json")

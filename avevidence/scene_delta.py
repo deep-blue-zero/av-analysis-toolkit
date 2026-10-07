@@ -9,6 +9,7 @@ from .event_contracts import choice, object_fields, read_event_json, strings
 from .inventory import text_value
 from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
 from .observation_dependencies import PROPAGATING
+from .mapping import missing_intervals, union_intervals
 
 DISPOSITIONS = {"PRESERVE", "STRENGTHEN", "REVISE", "DOWNGRADE", "REJECT", "OPEN"}
 
@@ -34,6 +35,52 @@ def _premise_state(packet, claim_id):
                     records[ref["id"]]["review_artifact"].pop("path",None)
     return {"edges": [e for e in packet["dependencies"] if e["to"] in ancestors], "nodes":nodes,"evidence":records,
             "decisions": {k:v for k,v in packet["adjudication"]["decisions"].items() if k in ancestors}}
+
+
+def _witness_signature(ref, interval=None):
+    """Compare semantic coverage; aliases or irrelevant extent add no evidence."""
+    locator = dict(ref["locator"])
+    intervals = locator.get("intervals_seconds", [])
+    points = locator.get("points_seconds", [])
+    if interval is not None:
+        lo, hi = interval
+        intervals = [[max(a, lo), min(b, hi)] for a, b in intervals
+                     if max(a, lo) < min(b, hi)]
+        points = [point for point in points if lo <= point < hi]
+    locator["intervals_seconds"] = union_intervals(intervals)
+    locator["points_seconds"] = sorted(set(points))
+    return {"artifact": ref["artifact"]["sha256"], "review": ref.get("review_artifact", {}).get("sha256"),
+            "locator": locator, "record_pointer": ref.get("record_pointer")}
+
+
+def _adequate_new_evidence(packet, reconciliation, prior_premises, premise_state, claim, changed_refs):
+    """Changed material must actually support a relevant, source-bound premise."""
+    eligible = set()
+    direct = claim["proposition"] not in {"emotion", "interpretation"}
+    claim_interval = claim.get("interval_seconds", packet["interval_seconds"])
+    evidence = premise_state["evidence"]
+    for node in premise_state["nodes"]:
+        oid = node["id"]
+        if "evidence_ids" not in node or reconciliation["dependency_assessment"]["state_overlay"][oid]["after"] not in {"SUPPORTED", "CONFIRMED"}:
+            continue
+        if direct and (node["proposition"] != claim["proposition"] or missing_intervals(
+            [claim_interval], [node.get("interval_seconds", packet["interval_seconds"])])):
+            continue
+        relevant_interval = claim_interval if direct else node.get("interval_seconds", packet["interval_seconds"])
+        prior_signatures = [_witness_signature(ref, relevant_interval)
+                            for ref in prior_premises["evidence"].values()]
+        for assessment in reconciliation["observations"][oid]["evidence_assessments"]:
+            eid = assessment["evidence_id"]
+            if eid not in changed_refs or not assessment["adequate_for_support"]:
+                continue
+            if _witness_signature(evidence[eid], relevant_interval) in prior_signatures:
+                continue
+            if direct and assessment["channel"] == "VIS" and not any(
+                claim_interval[0] <= point < claim_interval[1]
+                for point in evidence[eid]["locator"].get("points_seconds", [])):
+                continue
+            eligible.add(eid)
+    return eligible
 
 
 def scene_claim_delta(before, after, output, *, decisions=None, relocations=None):
@@ -63,7 +110,11 @@ def scene_claim_delta(before, after, output, *, decisions=None, relocations=None
         before_premises, after_premises = _premise_state(a,cid), _premise_state(b,cid)
         prior_refs = set(before_premises["evidence"])
         new_refs = set(after_premises["evidence"]) if current else set()
-        changed_refs = [eid for eid in sorted(new_refs) if eid not in baseline[1] or completed[1][eid]["artifact"]["sha256"] != baseline[1][eid]["artifact"]["sha256"]]
+        changed_refs = [eid for eid in sorted(new_refs) if eid not in baseline[1]
+            or completed[1][eid]["artifact"]["sha256"] != baseline[1][eid]["artifact"]["sha256"]
+            or completed[1][eid].get("review_artifact", {}).get("sha256") != baseline[1][eid].get("review_artifact", {}).get("sha256")
+            or completed[1][eid]["locator"] != baseline[1][eid]["locator"]
+            or completed[1][eid].get("record_pointer") != baseline[1][eid].get("record_pointer")]
         changed = (current != claim or any(completed[2].get(oid) != baseline[2].get(oid) for oid in set(claim["observation_ids"]) | set(current["observation_ids"] if current else []))
             or bool(changed_refs) or old_assessed[cid] != new_assessed.get(cid)
             or before_premises != after_premises)
@@ -78,7 +129,8 @@ def scene_claim_delta(before, after, output, *, decisions=None, relocations=None
             disposition = decision["disposition"]
             if disposition == "PRESERVE" and (not current or current["statement"] != claim["statement"]):
                 raise AVError("PRESERVE cannot hide a changed formulation")
-            if disposition == "STRENGTHEN" and (not changed_refs or not current or new_assessed[cid]["state"] not in {"SUPPORTED", "CONFIRMED"}):
+            if disposition == "STRENGTHEN" and (not changed_refs or not current or new_assessed[cid]["state"] not in {"SUPPORTED", "CONFIRMED"}
+                or not _adequate_new_evidence(b, br, before_premises, after_premises, current, changed_refs)):
                 raise AVError("STRENGTHEN requires relevant new evidence and adequately adjudicated support")
             if disposition == "REVISE" and (not current or current["statement"] == claim["statement"]):
                 raise AVError("REVISE requires a new claim formulation")

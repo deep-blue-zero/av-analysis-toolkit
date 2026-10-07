@@ -114,6 +114,9 @@ in a scene packet need this separate bound review assessment and matching scope.
 `audio_review` object identifying actual audio inspection, the same source hash,
 an existing audio stream, source clock, inspected audio interval, audio-event
 source time, reviewed visual-event source-frame index and declared tolerance.
+The inspected audio interval must cover the critical window. Both paired events
+must lie inside that window's half-open interval: its start is included, its end
+excluded. Inspected context outside the window cannot establish its adequacy.
 Its assessment retains the event delta and whether it lies within that tolerance.
 A negative synchrony observation can still be adequately reviewed; a numerical
 event pair alone does not establish perceived synchrony. Images cannot substitute
