@@ -18,6 +18,11 @@ generalized before public import; their original and new hashes are recorded in
 `avevidence/` layout is retained. No analytical features are added to this import.
 The existing MIT source license and inherited contributor notices are preserved.
 
+The original Windows edition additionally supplies
+`requirements-windows-offline-cp312.txt`; that text lock is preserved separately
+from the cloud locks. Its byte identity and Windows archive SHA-256 are recorded
+in `PACKAGING_AND_CI.md`. Windows uses SciPy 1.18.0, Linux uses 1.15.3.
+
 Excluded members are classified in the inventory: nine dependency/toolkit
 wheels, the Parselmouth source tarball, archive-specific delivery manifests and
 generated historical receipts. The real-media reuse example is excluded because
@@ -38,6 +43,14 @@ Packaging normalization is a separate commit and records all changed source
 files. Known non-equivalence: the bare checkout does not contain a wheelhouse,
 transfer manifest or delivery profile for the private offline installer. A
 generated portable release supplies those; the checkout installs through pip.
+
+The initial local Git import inherited automatic CRLF normalization for ten
+files (including one runtime UI template). The packaging commit restores exact
+working-source bytes and adds `* -text` in `.gitattributes`, so future platform
+checkouts preserve implementation hashes. This is line-ending preservation,
+not an algorithm change. Runtime/test correspondence is checked again at the
+final baseline gate. Entry guides and dependency notices are adjusted to
+distinguish Git installation from generated portable installation.
 
 Portable targets in the supplied edition are Linux x64 CPython 3.11/3.12
 (glibc 2.17+) and Windows x64 CPython 3.12. The inherited package metadata says

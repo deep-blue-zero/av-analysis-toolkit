@@ -1,5 +1,11 @@
 # Transfer and start
 
+For a **Git checkout**, install from `pyproject.toml` with
+`python -m pip install ".[all,reuse-parquet,dev]"`, then run `ave doctor` and
+`python scripts/self_test.py`. See `docs/PACKAGING_AND_CI.md`.
+The private-runtime instructions below apply to generated portable ZIPs, whose
+wheelhouse and transfer manifests are intentionally absent from Git source.
+
 AV Evidence Toolkit 1.5.0a2 is a local, headless evidence toolchain. Give the cloud
 ZIP to a chat with file access and code execution, then supply media and a method
 separately. The toolkit does not carry prior interpretations or grant the model

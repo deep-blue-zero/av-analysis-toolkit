@@ -1,0 +1,3 @@
+# Runtime evidence records bind exact implementation bytes across platforms.
+# Preserve source line endings rather than transforming checkout bytes.
+* -text

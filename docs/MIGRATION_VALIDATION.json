@@ -1,0 +1,154 @@
+{
+  "schema": "ave.git-migration-validation.v1",
+  "version": "1.5.0a2",
+  "import_commit": "5d96a91d2c76e155a6714de986553f14a283425d",
+  "baseline_marker": "v1.5.0a2-git-baseline",
+  "source_archive_sha256": "e44b33fc58891f4f1d62529f1ad6c93fdc76e890de290cb46e9ce97af1cd6825",
+  "runtime_and_tests_byte_identical_to_archive": true,
+  "runtime_module_count": 53,
+  "test_file_count": 18,
+  "regressions": {
+    "before-regression": {
+      "tests_run": 277,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "implementation_unchanged_during_tests": true,
+      "receipt_sha256": "4de13565570b280589a5a5bb34d9cc59d93743bc04b8783e321a941454e1bc86",
+      "python": "3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "packages": {
+        "Pillow": "12.2.0",
+        "numpy": "2.1.2",
+        "soundfile": "0.14.0",
+        "librosa": "1.0.0"
+      }
+    },
+    "after-regression": {
+      "tests_run": 277,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "implementation_unchanged_during_tests": true,
+      "receipt_sha256": "6e9bd6f32a075376a8ee4f3c49557bc18e5e06b00bc487d8102b48b458c8c5a8",
+      "python": "3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "packages": {
+        "Pillow": "12.2.0",
+        "numpy": "2.1.2",
+        "soundfile": "0.14.0",
+        "librosa": "1.0.0"
+      }
+    },
+    "fresh-dependency-regression": {
+      "tests_run": 277,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "implementation_unchanged_during_tests": true,
+      "receipt_sha256": "cec1a894c4c1e7c46566231b0e112526e3e37fff6b35d8e2148b06743c35a178",
+      "python": "3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "packages": {
+        "Pillow": "12.3.0",
+        "numpy": "2.5.3",
+        "soundfile": "0.14.0",
+        "librosa": "1.0.0"
+      }
+    }
+  },
+  "gate_checks": {
+    "toolkit_import": "PASS",
+    "installed_cli_launch": "PASS",
+    "existing_regressions": "PASS",
+    "synthetic_media_smoke": "PASS",
+    "mock_and_human_contracts": "PASS",
+    "evidence_schema_validators": "PASS",
+    "documented_portable_assumptions": "PASS",
+    "metadata_dependency_installation": "PASS",
+    "zero_paid_api_calls": "PASS",
+    "public_source_policy": "PASS"
+  },
+  "gate_counts": {
+    "PASS": 10,
+    "FAIL": 0,
+    "SKIP": 0
+  },
+  "distribution_checks": {
+    "PASS": 4,
+    "FAIL": 0,
+    "SKIP": 0,
+    "candidate_receipt_sha256": "53a047aaaaf870a0282718f1b372fe03bd0d0e6dea7dc43c0d641e7d064d2af3",
+    "scope": "Snapshot candidate; final committed build runs in CI"
+  },
+  "api_spend_usd": 0,
+  "paid_api_calls": 0,
+  "platform_scope": "Executed locally on Windows x64 CPython3.12; Linux execution awaits CI",
+  "not_certified": [
+    "actual human hearing",
+    "acting accuracy",
+    "literary interpretation",
+    "native Linux offline installer"
+  ],
+  "original_receipts_stored_externally": true,
+  "portable_checks": {
+    "portable-windows-cp312-validation.json": {
+      "schema": "ave.portable.windows-validation.v1",
+      "passed": true,
+      "passed_checks": 3,
+      "failed_checks": 0,
+      "skipped_checks": 0,
+      "archive_sha256": "a7987b1148eecfb6cff8422bbe65f1e39b809295f0bf73a3c5c6bcb2bc9bb311",
+      "checks": [
+        "transfer member/checksum/source-wheel correspondence",
+        "offline private installation and native execution probe",
+        "21 generated-media installed-wheel smoke commands"
+      ],
+      "python": "3.12.4",
+      "platform": "Windows x64",
+      "network_used": false,
+      "pip_required": false,
+      "root_required": false,
+      "packages": {
+        "Pillow": "12.2.0",
+        "numpy": "2.1.2",
+        "scipy": "1.18.0",
+        "praat-parselmouth": "0.4.7"
+      },
+      "portable_smoke_commands": 21,
+      "source_tree_import_used": false,
+      "paid_api_calls": 0,
+      "api_spend_usd": 0,
+      "scope": "Actual Windows native/offline software execution; no native Linux, real-media or perceptual validation"
+    },
+    "portable-linux-cp311-archive-check.json": {
+      "schema": "ave.portable.archive-check.v1",
+      "target": "linux-cp311",
+      "passed": true,
+      "passed_checks": 3,
+      "failed_checks": 0,
+      "skipped_checks": 0,
+      "member_count": 168,
+      "source_wheel_modules": 53,
+      "native_execution_checked": false,
+      "sha256": "7e46004f67bb50f39b9e85f245e28c19f6dcfbbb020ab56e18e202704222aaed",
+      "scope": "Final ZIP member/checksum inventory and all source/wheel bytes; no target execution or perceptual validation"
+    },
+    "portable-linux-cp312-archive-check.json": {
+      "schema": "ave.portable.archive-check.v1",
+      "target": "linux-cp312",
+      "passed": true,
+      "passed_checks": 3,
+      "failed_checks": 0,
+      "skipped_checks": 0,
+      "member_count": 168,
+      "source_wheel_modules": 53,
+      "native_execution_checked": false,
+      "sha256": "cd74f5a2700402836483f57484bbb85b31e77fc8acd1443de4bd03f389f28a8a",
+      "scope": "Final ZIP member/checksum inventory and all source/wheel bytes; no target execution or perceptual validation"
+    }
+  }
+}

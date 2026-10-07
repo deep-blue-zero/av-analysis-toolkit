@@ -1,5 +1,10 @@
 # Run in a ChatGPT-style execution environment
 
+From canonical Git source, install with the host's package manager:
+`python -m pip install ".[all,reuse-parquet,dev]"`.
+The offline instructions below describe generated release artifacts, not the
+bare checkout. Neither route grants the reasoning model audio/video perception.
+
 The cloud edition includes Linux x64 native wheels for CPython 3.11 and 3.12,
 glibc 2.17+. Code execution and file access must actually be enabled in the
 receiving environment. A ZIP cannot grant those capabilities or auditory

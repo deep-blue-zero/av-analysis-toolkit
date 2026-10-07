@@ -1,5 +1,12 @@
 # Dependency notices
 
+The following notice describes the supplied portable release and optional
+offline artifacts. The canonical Git source externalizes downloaded wheels and
+the dependency source archive; they are not tracked here. `build_portable.py`
+requires those external inputs when constructing an offline artifact. Exact
+artifact inventory and hashes are generated at build time. Native upstream
+license metadata remains inside each unmodified wheel.
+
 Toolkit source is MIT; inherited contributor notice is in `LICENSES/GBC_TOOLKIT_MIT.txt`.
 Unmodified native wheels target Linux x64 CPython 3.11/3.12; glibc 2.17+. Their own metadata and license files
 remain intact; readable copies are in `LICENSES/dependencies/`.

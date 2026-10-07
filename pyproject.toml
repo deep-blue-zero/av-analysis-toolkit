@@ -13,6 +13,7 @@ authors = [{name = "AV Evidence Toolkit contributors"}]
 dependencies = ["Pillow>=10"]
 
 [project.optional-dependencies]
+dev = ["build>=1.2", "wheel>=0.41", "setuptools>=68"]
 reuse = ["numpy>=1.26,<3", "scipy>=1.11"]
 reuse-parquet = ["numpy>=1.26,<3", "scipy>=1.11", "pyarrow>=14"]
 instruments = ["numpy>=1.26"]
@@ -28,4 +29,4 @@ ave = "avevidence.cli:main"
 include = ["avevidence*"]
 
 [tool.setuptools]
-license-files = ["LICENSE", "LICENSES/*.txt"]
+license-files = ["LICENSE", "LICENSES/*.txt", "THIRD_PARTY_NOTICES.md"]
