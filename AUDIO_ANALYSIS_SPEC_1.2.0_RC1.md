@@ -79,3 +79,9 @@ existing retiming/portability regressions, wheel smoke, archive verification and
 clean extraction. Native Windows and real performance tests remain separate gates.
 Build with `scripts/build_release.py --candidate` until ALL stable-release report
 requirements pass; this revision does not weaken that inherited release gate.
+# Current extension: 1.6.0-alpha1-holistic-cross-modal
+
+The original instrument specification below remains historical component scope.
+Current event contracts, contextual auditory passes and temporal escalation are
+documented in `docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md`,
+`docs/AUDITORY_TASK_PROFILES.md` and `docs/TEMPORAL_INSPECTION.md`.

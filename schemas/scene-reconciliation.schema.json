@@ -1,0 +1,648 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.scene-reconciliation.v1"
+    },
+    "packet_id": {
+      "$ref": "#/$defs/packetId"
+    },
+    "scene_id": {
+      "$ref": "#/$defs/id"
+    },
+    "source_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "interval_seconds": {
+      "$ref": "#/$defs/interval"
+    },
+    "observations": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "proposition": {
+            "$ref": "#/$defs/proposition"
+          },
+          "evidence_assessments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/evidenceAssessment"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "competent_evidence_available": {
+            "type": "boolean"
+          },
+          "adequate_for_support": {
+            "type": "boolean"
+          },
+          "independence": {
+            "$ref": "#/$defs/independence"
+          }
+        },
+        "required": [
+          "proposition",
+          "evidence_assessments",
+          "competent_evidence_available",
+          "adequate_for_support",
+          "independence"
+        ]
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "statement": {
+            "$ref": "#/$defs/text"
+          },
+          "proposition": {
+            "$ref": "#/$defs/proposition"
+          },
+          "state": {
+            "$ref": "#/$defs/state"
+          },
+          "premise_states": {
+            "type": "object",
+            "propertyNames": {
+              "$ref": "#/$defs/id"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/state"
+            }
+          },
+          "inadequate_premises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "independence": {
+            "$ref": "#/$defs/independence"
+          }
+        },
+        "required": [
+          "id",
+          "statement",
+          "proposition",
+          "state",
+          "premise_states",
+          "inadequate_premises",
+          "independence"
+        ]
+      },
+      "maxItems": 1000,
+      "minItems": 0
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reconciledConflict"
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "dependency_assessment": {
+      "$ref": "#/$defs/dependencyAssessment"
+    },
+    "adjudication": {
+      "$ref": "#/$defs/adjudication"
+    },
+    "holistic_analysis": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "open_questions": {
+      "$ref": "#/$defs/strings"
+    },
+    "proposition_guards": {
+      "$ref": "#/$defs/strings"
+    },
+    "no_majority_vote": {
+      "const": true
+    },
+    "raw_records_preserved": {
+      "const": true
+    },
+    "source_fact_promotion": {
+      "const": "NONE_TOOLKIT_DOES_NOT_ASSIGN_PROJECT_F-AUD"
+    },
+    "scope": {
+      "$ref": "#/$defs/text"
+    }
+  },
+  "required": [
+    "schema",
+    "packet_id",
+    "scene_id",
+    "source_sha256",
+    "interval_seconds",
+    "observations",
+    "claims",
+    "conflicts",
+    "dependency_assessment",
+    "adjudication",
+    "holistic_analysis",
+    "open_questions",
+    "proposition_guards",
+    "no_majority_vote",
+    "raw_records_preserved",
+    "source_fact_promotion",
+    "scope"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deep-blue-zero/av-analysis-toolkit/schemas/scene-reconciliation.schema.json",
+  "title": "Proposition-specific event reconciliation",
+  "description": "Evidence competence and local adjudication remain distinct. Stage 2 and shared origins are dependent; no backend obtains global qualification from this report.",
+  "$defs": {
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reviewer": {
+          "$ref": "#/$defs/text"
+        },
+        "decisions": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/decision"
+          }
+        }
+      },
+      "required": [
+        "decisions"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "decisions": {
+                "minProperties": 1
+              }
+            },
+            "required": [
+              "decisions"
+            ]
+          },
+          "then": {
+            "required": [
+              "reviewer"
+            ]
+          }
+        }
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "reason": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "required": [
+        "state",
+        "reason"
+      ]
+    },
+    "dependencyAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "ave.observation-dependencies.v1"
+        },
+        "edge_direction": {
+          "const": "premise_to_dependent"
+        },
+        "decisions": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/decision"
+          }
+        },
+        "state_overlay": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "before": {
+                "$ref": "#/$defs/state"
+              },
+              "after": {
+                "$ref": "#/$defs/state"
+              },
+              "reason": {
+                "$ref": "#/$defs/text"
+              },
+              "changed_premises": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/id"
+                },
+                "maxItems": 2000,
+                "minItems": 0,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "before",
+              "after",
+              "reason",
+              "changed_premises"
+            ]
+          }
+        },
+        "raw_records_preserved": {
+          "const": true
+        },
+        "recheck_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 2000,
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "unaffected_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 2000,
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schema",
+        "edge_direction",
+        "decisions",
+        "state_overlay",
+        "raw_records_preserved",
+        "recheck_ids",
+        "unaffected_ids"
+      ]
+    },
+    "evidenceAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "$ref": "#/$defs/id"
+        },
+        "channel": {
+          "enum": [
+            "TXT",
+            "VIS",
+            "TVIS",
+            "AM",
+            "AO_STAGE1",
+            "AO_STAGE2",
+            "HL",
+            "VO",
+            "AVO",
+            "INF",
+            "INT"
+          ]
+        },
+        "competent": {
+          "type": "boolean"
+        },
+        "adequate_for_support": {
+          "type": "boolean"
+        },
+        "authority": {
+          "$ref": "#/$defs/text"
+        },
+        "reasons": {
+          "$ref": "#/$defs/strings"
+        },
+        "global_qualification": {
+          "const": false
+        },
+        "temporal_status": {
+          "enum": [
+            "FRAME_COMPLETE_CONFIRMED",
+            "FRAME_SEQUENCE_CONFIRMED"
+          ]
+        },
+        "task_profile": {
+          "$ref": "#/$defs/text"
+        },
+        "validation_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "task_capability_status": {
+          "$ref": "#/$defs/text"
+        },
+        "evidence_class": {
+          "enum": [
+            "AO_STAGE1",
+            "AO_STAGE2"
+          ]
+        },
+        "context_contaminated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "channel",
+        "competent",
+        "adequate_for_support",
+        "authority",
+        "reasons",
+        "global_qualification"
+      ]
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "not": {
+        "enum": [
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "1111111111111111111111111111111111111111111111111111111111111111",
+          "2222222222222222222222222222222222222222222222222222222222222222",
+          "3333333333333333333333333333333333333333333333333333333333333333",
+          "4444444444444444444444444444444444444444444444444444444444444444",
+          "5555555555555555555555555555555555555555555555555555555555555555",
+          "6666666666666666666666666666666666666666666666666666666666666666",
+          "7777777777777777777777777777777777777777777777777777777777777777",
+          "8888888888888888888888888888888888888888888888888888888888888888",
+          "9999999999999999999999999999999999999999999999999999999999999999",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ]
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "dependence_reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "a": {
+                "$ref": "#/$defs/id"
+              },
+              "b": {
+                "$ref": "#/$defs/id"
+              },
+              "shared_origins": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/text"
+                },
+                "maxItems": 30300,
+                "minItems": 0,
+                "uniqueItems": true
+              },
+              "shared_assumptions": {
+                "$ref": "#/$defs/strings"
+              },
+              "graph_dependence": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "shared_origins",
+              "shared_assumptions",
+              "graph_dependence"
+            ]
+          },
+          "maxItems": 10000,
+          "minItems": 0
+        },
+        "independence_not_proven": {
+          "const": true
+        },
+        "not_a_majority_vote": {
+          "const": true
+        }
+      },
+      "required": [
+        "groups",
+        "dependence_reasons",
+        "independence_not_proven",
+        "not_a_majority_vote"
+      ]
+    },
+    "interval": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "minimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Ordered half-open source-clock interval. Runtime enforces start < end and scene bounds."
+    },
+    "packetId": {
+      "type": "string",
+      "pattern": "^scene-[0-9a-f]{64}$"
+    },
+    "proposition": {
+      "enum": [
+        "wording",
+        "delivery",
+        "nonverbal_vocal",
+        "music_structure",
+        "performance_music",
+        "soundscape",
+        "av_sync",
+        "motion",
+        "contact",
+        "event_order",
+        "visual_fact",
+        "sound_level",
+        "emotion",
+        "speaker_identity",
+        "speech_timing",
+        "interpretation"
+      ]
+    },
+    "reconciledConflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "proposition": {
+          "$ref": "#/$defs/proposition"
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 100,
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "question": {
+          "$ref": "#/$defs/text"
+        },
+        "authority": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "observation_id": {
+                "$ref": "#/$defs/id"
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/evidenceAssessment"
+                },
+                "maxItems": 100,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "observation_id",
+              "evidence"
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 2
+        },
+        "independence": {
+          "$ref": "#/$defs/independence"
+        },
+        "recommendation": {
+          "$ref": "#/$defs/text"
+        },
+        "preferred_text_observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 100,
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "potentially_affected_nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 2000,
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "resolution": {
+          "const": "EXPLICIT_ADJUDICATION_REQUIRED"
+        }
+      },
+      "required": [
+        "id",
+        "proposition",
+        "observation_ids",
+        "question",
+        "authority",
+        "independence",
+        "recommendation",
+        "preferred_text_observations",
+        "potentially_affected_nodes",
+        "resolution"
+      ]
+    },
+    "state": {
+      "enum": [
+        "REPORTED",
+        "PROVISIONAL",
+        "CONFIRMED",
+        "SUPPORTED",
+        "CONTRADICTED",
+        "RECHECK",
+        "OPEN"
+      ]
+    },
+    "strings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/text"
+      },
+      "maxItems": 100,
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    }
+  }
+}

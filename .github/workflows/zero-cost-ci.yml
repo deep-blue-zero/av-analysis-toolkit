@@ -32,6 +32,10 @@ jobs:
       PYTHONUTF8: '1'
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
+      # Avoid Windows runner 8.3 user-profile aliases in synthetic source paths.
+      TEMP: ${{ runner.temp }}
+      TMP: ${{ runner.temp }}
+      TMPDIR: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

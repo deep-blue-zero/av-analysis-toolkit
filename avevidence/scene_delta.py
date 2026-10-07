@@ -1,0 +1,120 @@
+"""Frozen before/after claim changes, with explicit analyst dispositions."""
+from __future__ import annotations
+
+from pathlib import Path
+
+from .common import AVError, file_record, finish_run, output_transaction, sha256, write_json
+from .cross_modal import reconcile_data
+from .event_contracts import choice, object_fields, read_event_json, strings
+from .inventory import text_value
+from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
+from .observation_dependencies import PROPAGATING
+
+DISPOSITIONS = {"PRESERVE", "STRENGTHEN", "REVISE", "DOWNGRADE", "REJECT", "OPEN"}
+
+
+def _premise_state(packet, claim_id):
+    ancestors, todo = {claim_id}, [claim_id]
+    while todo:
+        child = todo.pop()
+        for edge in packet["dependencies"]:
+            if edge["to"] == child and edge["relation"] in PROPAGATING and edge["from"] not in ancestors:
+                ancestors.add(edge["from"])
+                todo.append(edge["from"])
+    nodes = [row for kind in ("observations","claims") for row in packet[kind] if row["id"] in ancestors]
+    refs = {eid for row in nodes for eid in row.get("evidence_ids", [])}
+    import copy
+    records = {}
+    for rows in packet["evidence"].values():
+        for ref in rows:
+            if ref["id"] in refs:
+                records[ref["id"]] = copy.deepcopy(ref)
+                records[ref["id"]]["artifact"].pop("path",None)
+                if records[ref["id"]].get("review_artifact"):
+                    records[ref["id"]]["review_artifact"].pop("path",None)
+    return {"edges": [e for e in packet["dependencies"] if e["to"] in ancestors], "nodes":nodes,"evidence":records,
+            "decisions": {k:v for k,v in packet["adjudication"]["decisions"].items() if k in ancestors}}
+
+
+def scene_claim_delta(before, after, output, *, decisions=None, relocations=None):
+    baseline = load_scene_packet(before, relocations=relocations)
+    completed = load_scene_packet(after, relocations=relocations)
+    a, b = baseline[0], completed[0]
+    if (a["scene_id"] != b["scene_id"] or a["source"]["sha256"] != b["source"]["sha256"]
+        or any(a["source"].get(k) != b["source"].get(k) for k in ("audio_stream","video_stream"))
+        or a["interval_seconds"] != b["interval_seconds"]):
+        raise AVError("Claim delta must compare the same scene/source/interval")
+    supplied = read_event_json(decisions) if decisions else {"reviewer": "automatic-change-detector", "decisions": {}}
+    object_fields(supplied, {"reviewer", "decisions"}, {"reviewer", "decisions"}, "delta decisions")
+    text_value(supplied["reviewer"], "delta reviewer")
+    if not isinstance(supplied["decisions"], dict):
+        raise AVError("Delta decisions must map baseline claim IDs")
+    old = {c["id"]: c for c in a["claims"]}
+    new = {c["id"]: c for c in b["claims"]}
+    if set(supplied["decisions"])-old.keys():
+        raise AVError("Delta decision names a missing baseline claim")
+    ar = reconcile_data(*baseline[:4])
+    br = reconcile_data(*completed[:4])
+    old_assessed = {c["id"]: c for c in ar["claims"]}
+    new_assessed = {c["id"]: c for c in br["claims"]}
+    rows = []
+    for cid, claim in old.items():
+        current = new.get(cid)
+        before_premises, after_premises = _premise_state(a,cid), _premise_state(b,cid)
+        prior_refs = set(before_premises["evidence"])
+        new_refs = set(after_premises["evidence"]) if current else set()
+        changed_refs = [eid for eid in sorted(new_refs) if eid not in baseline[1] or completed[1][eid]["artifact"]["sha256"] != baseline[1][eid]["artifact"]["sha256"]]
+        changed = (current != claim or any(completed[2].get(oid) != baseline[2].get(oid) for oid in set(claim["observation_ids"]) | set(current["observation_ids"] if current else []))
+            or bool(changed_refs) or old_assessed[cid] != new_assessed.get(cid)
+            or before_premises != after_premises)
+        decision = supplied["decisions"].get(cid)
+        if decision:
+            object_fields(decision, {"disposition", "reason", "what_survived", "what_changed", "remaining_open_questions"},
+                          {"disposition", "reason", "what_survived", "what_changed", "remaining_open_questions"}, "claim delta decision")
+            choice(decision["disposition"], DISPOSITIONS, "claim disposition")
+            for key in ("reason", "what_survived", "what_changed"):
+                text_value(decision[key], key)
+            strings(decision["remaining_open_questions"], "remaining open questions", 100)
+            disposition = decision["disposition"]
+            if disposition == "PRESERVE" and (not current or current["statement"] != claim["statement"]):
+                raise AVError("PRESERVE cannot hide a changed formulation")
+            if disposition == "STRENGTHEN" and (not changed_refs or not current or new_assessed[cid]["state"] not in {"SUPPORTED", "CONFIRMED"}):
+                raise AVError("STRENGTHEN requires relevant new evidence and adequately adjudicated support")
+            if disposition == "REVISE" and (not current or current["statement"] == claim["statement"]):
+                raise AVError("REVISE requires a new claim formulation")
+        else:
+            disposition = "OPEN" if changed else "PRESERVE"
+            decision = {"reason": "Changed evidence/premises require explicit analyst comparison" if changed else "Claim and relevant premises are unchanged",
+                        "what_survived": "Original formulation retained as the frozen baseline",
+                        "what_changed": "See changed evidence and reconciled premise states" if changed else "No relevant changes detected",
+                        "remaining_open_questions": b["open_questions"] if changed else []}
+        if disposition != "OPEN" and current and new_assessed[cid]["state"] in {"RECHECK", "OPEN"}:
+            if disposition in {"STRENGTHEN", "PRESERVE"} and changed:
+                raise AVError("Changed unreviewed/rechecked premises cannot preserve or strengthen a claim automatically")
+        rows.append({"claim_id": cid, "before": claim, "after": current,
+            "before_state": old_assessed[cid]["state"], "after_state": new_assessed.get(cid, {}).get("state", "OPEN"),
+            "relevant_new_evidence": changed_refs, "retained_evidence": sorted(prior_refs & new_refs),
+            "cross_modal_conflicts": [r for r in br["conflicts"] if set(r["observation_ids"]) & set(current["observation_ids"] if current else [])],
+            "disposition": disposition, **decision, "new_formulation": current["statement"] if current else None,
+            "confidence_change": {"before": claim.get("confidence", "OPEN"), "after": current.get("confidence", "OPEN") if current else "OPEN"}})
+    result = {"schema": "ave.scene-claim-delta.v1", "scene_id": a["scene_id"], "source_sha256": a["source"]["sha256"],
+              "baseline_packet_id": packet_identity(a), "completed_packet_id": packet_identity(b),
+              "baseline_input_sha256": baseline[4]["sha256"], "completed_input_sha256": completed[4]["sha256"],
+              "reviewer": supplied["reviewer"], "claims": rows, "new_claim_ids": sorted(new.keys()-old.keys()),
+              "raw_records_preserved": True, "automatic_confidence_promotion": False,
+              "scope": "Explicit changes to accuracy/scope/mechanism/confidence; more descriptive material alone is not improvement"}
+    inputs = [before, after]+([decisions] if decisions else [])+[r["path"] for data in (baseline, completed) for r in data[3].values()]
+    with output_transaction(output, inputs) as stage:
+        for name, path, data in (("before", before, baseline), ("after", after, completed)):
+            payload = Path(path).read_bytes()
+            import hashlib
+            if hashlib.sha256(payload).hexdigest() != data[4]["sha256"]:
+                raise AVError("Frozen claim input changed after admission")
+            (stage/(name+"-packet.json")).write_bytes(payload)
+        write_json(stage/"claim-delta.json", result)
+        write_json(stage/"before-reconciliation.json", ar)
+        write_json(stage/"after-reconciliation.json", br)
+        verify_scene_snapshot(baseline[4],baseline[3])
+        verify_scene_snapshot(completed[4],completed[3])
+        return finish_run(stage, "scene-delta", [baseline[4], completed[4]]+([file_record(decisions)] if decisions else []),
+                          metadata={"result_file": "claim-delta.json", "claim_count": len(rows), "automatic_confidence_promotion": False})

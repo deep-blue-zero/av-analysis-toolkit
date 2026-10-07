@@ -4,7 +4,7 @@ recursive-include tests *.py
 recursive-include scripts *.py *.sh *.ps1
 recursive-include docs *.md *.json *.txt
 recursive-include schemas *.json
-recursive-include examples *.md *.json
+recursive-include examples *.md *.json *.py
 recursive-include LICENSES *
 recursive-include .github/workflows *.yml *.yaml
 prune wheelhouse

@@ -285,13 +285,20 @@ class CodecInteropTests(unittest.TestCase):
         out=self.root/'bundle';build_bundle(f/'audio.wav',out)
         self.assertEqual(read_json(out/'audio/audio.json')['channel_layout_preservation'],'MATCH')
 
-    def test_native_f64_matroska_unknown_layout_is_not_invented(self):
+    def test_native_f64_matroska_layout_follows_admitted_source(self):
         parent=self.audio('p.flac','flac',1);f=self.root/'forensic'
         extract_audio(parent,f,storage_profile='forensic');mka=self.root/'p.mka'
         run(['ffmpeg','-v','error','-nostdin','-n','-i',f/'audio.wav','-c','copy',mka])
         out=self.root/'practical';extract_audio(mka,out,storage_profile='practical')
-        self.assertIsNone(read_json(out/'audio.json')['artifact_channel_layout'])
-        self.assertEqual(read_json(out/'audio.json')['channel_layout_preservation'],'SOURCE_LAYOUT_UNKNOWN')
+        # Matroska PCM layout reporting differs across FFmpeg versions. A
+        # layout explicitly admitted by the source probe must be preserved;
+        # an unknown layout must remain unknown. Count alone proves neither.
+        result=read_json(out/'audio.json')
+        admitted=result['identity']['channel_layout']
+        self.assertEqual(result['artifact_channel_layout'],admitted)
+        self.assertEqual(result['channel_layout_preservation'],
+                         'MATCH' if admitted is not None else 'SOURCE_LAYOUT_UNKNOWN')
+        self.assertTrue(result['sample_preservation_verified'])
 
     def test_native_f64_matroska_known_mono_uses_mask_preservation(self):
         parent=self.root/'mono.mka'

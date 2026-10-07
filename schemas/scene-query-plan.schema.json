@@ -1,0 +1,359 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.scene-query-plan.v1"
+    },
+    "packet_id": {
+      "$ref": "#/$defs/packetId"
+    },
+    "scene_id": {
+      "$ref": "#/$defs/id"
+    },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "$ref": "#/$defs/id"
+          },
+          "claim_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "route": {
+            "enum": [
+              "TEXT_WITNESS",
+              "AUDITORY",
+              "TEMPORAL",
+              "STATIC",
+              "ACOUSTIC_MEASUREMENT",
+              "ALIGNMENT_REVIEW",
+              "SOURCE_ATTRIBUTION_REVIEW",
+              "PREMISE_REVIEW"
+            ]
+          },
+          "profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_sha256": {
+            "$ref": "#/$defs/hash"
+          },
+          "clock": {
+            "const": "original_pts_minus_source_origin"
+          },
+          "interval_seconds": {
+            "$ref": "#/$defs/interval"
+          },
+          "question": {
+            "$ref": "#/$defs/text"
+          },
+          "analytical_claims": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/text"
+            },
+            "maxItems": 1000,
+            "minItems": 1
+          },
+          "status": {
+            "const": "REQUEST_PLANNED_NOT_EXECUTED"
+          },
+          "estimated_frame_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "planned_audio_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "analysis_status": {
+            "const": "OPEN"
+          },
+          "api_submission_authorized": {
+            "const": false
+          },
+          "stage": {
+            "const": 1
+          },
+          "task_profile": {
+            "enum": [
+              "SPEECH_PERFORMANCE",
+              "NONVERBAL_VOCAL",
+              "MUSIC_STRUCTURE",
+              "PERFORMANCE_MUSIC",
+              "SOUNDSCAPE",
+              "AV_SYNC"
+            ]
+          },
+          "context_policy": {
+            "const": "CONTEXT_MINIMIZED_NEUTRAL_QUESTION_REQUIRED"
+          },
+          "audio_mode": {
+            "enum": [
+              "microclip",
+              "coherent_section"
+            ]
+          },
+          "execution_requirement": {
+            "$ref": "#/$defs/text"
+          },
+          "question_type": {
+            "enum": [
+              "GENERAL_MOTION",
+              "EXACT_CONTACT",
+              "CONTACT_ORDER",
+              "AV_SYNC"
+            ]
+          },
+          "escalation_policy": {
+            "$ref": "#/$defs/text"
+          },
+          "generation_does_not_confirm_motion": {
+            "const": true
+          }
+        },
+        "required": [
+          "request_id",
+          "claim_ids",
+          "route",
+          "profile",
+          "source_sha256",
+          "clock",
+          "interval_seconds",
+          "question",
+          "analytical_claims",
+          "status",
+          "estimated_frame_count",
+          "planned_audio_seconds",
+          "analysis_status",
+          "api_submission_authorized"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "route": {
+                  "const": "AUDITORY"
+                }
+              },
+              "required": [
+                "route"
+              ]
+            },
+            "then": {
+              "required": [
+                "stage",
+                "task_profile",
+                "context_policy",
+                "audio_mode",
+                "execution_requirement"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "route": {
+                  "const": "TEMPORAL"
+                }
+              },
+              "required": [
+                "route"
+              ]
+            },
+            "then": {
+              "required": [
+                "question_type",
+                "escalation_policy",
+                "generation_does_not_confirm_motion"
+              ]
+            }
+          }
+        ]
+      },
+      "maxItems": 200,
+      "minItems": 0
+    },
+    "open_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim_id": {
+            "$ref": "#/$defs/id"
+          },
+          "route": {
+            "enum": [
+              "TEXT_WITNESS",
+              "AUDITORY",
+              "TEMPORAL",
+              "STATIC",
+              "ACOUSTIC_MEASUREMENT",
+              "ALIGNMENT_REVIEW",
+              "SOURCE_ATTRIBUTION_REVIEW",
+              "PREMISE_REVIEW"
+            ]
+          },
+          "status": {
+            "enum": [
+              "OPEN_REFINE_INTERVAL",
+              "OPEN_RESOURCE_CEILING"
+            ]
+          },
+          "reason": {
+            "$ref": "#/$defs/text"
+          },
+          "source_object_interval_seconds": {
+            "$ref": "#/$defs/interval"
+          }
+        },
+        "required": [
+          "claim_id",
+          "route",
+          "status",
+          "reason"
+        ]
+      },
+      "maxItems": 8000,
+      "minItems": 0
+    },
+    "ceilings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_requests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "max_frames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "max_audio_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1200
+        }
+      },
+      "required": [
+        "max_requests",
+        "max_frames",
+        "max_audio_seconds"
+      ]
+    },
+    "planned_resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "audio_seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "frames",
+        "audio_seconds"
+      ]
+    },
+    "api_spend_usd": {
+      "const": 0
+    },
+    "execution": {
+      "const": "NONE"
+    },
+    "scope": {
+      "$ref": "#/$defs/text"
+    }
+  },
+  "required": [
+    "schema",
+    "packet_id",
+    "scene_id",
+    "requests",
+    "open_requests",
+    "ceilings",
+    "planned_resources",
+    "api_spend_usd",
+    "execution",
+    "scope"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deep-blue-zero/av-analysis-toolkit/schemas/scene-query-plan.schema.json",
+  "title": "Bounded unresolved event acquisition plan",
+  "description": "Planning performs no API submission. Runtime enforces aggregate resources against explicit ceilings. Neutral auditory prompts remain separate from analytical claim formulations.",
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "not": {
+        "enum": [
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "1111111111111111111111111111111111111111111111111111111111111111",
+          "2222222222222222222222222222222222222222222222222222222222222222",
+          "3333333333333333333333333333333333333333333333333333333333333333",
+          "4444444444444444444444444444444444444444444444444444444444444444",
+          "5555555555555555555555555555555555555555555555555555555555555555",
+          "6666666666666666666666666666666666666666666666666666666666666666",
+          "7777777777777777777777777777777777777777777777777777777777777777",
+          "8888888888888888888888888888888888888888888888888888888888888888",
+          "9999999999999999999999999999999999999999999999999999999999999999",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ]
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "interval": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "minimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Ordered half-open source-clock interval. Runtime enforces start < end and scene bounds."
+    },
+    "packetId": {
+      "type": "string",
+      "pattern": "^scene-[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    }
+  }
+}

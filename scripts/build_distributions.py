@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import shutil
 import site
 import subprocess
 import sys
@@ -69,6 +70,22 @@ def verify_wheel(wheel):
         if actual != expected:
             raise ValueError('Wheel modules differ from repository source')
     return {'check': 'wheel/source module equality', 'passed': True, 'module_count': len(expected)}
+
+
+def isolated_source_snapshot(identity, output):
+    """Build only reviewed source bytes, never reusable checkout build scratch."""
+    snapshot = output / '_source_snapshot'
+    snapshot.mkdir()
+    for member in identity['members']:
+        source = ROOT / member['path']
+        target = snapshot / member['path']
+        if source.is_symlink() or not source.resolve().is_relative_to(ROOT) or not source.is_file():
+            raise ValueError('Source member changed type or escaped the checkout before snapshot')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+        if target.stat().st_size != member['bytes'] or digest(target) != member['sha256']:
+            raise ValueError(f'Source member changed before snapshot: {member["path"]}')
+    return snapshot
 
 
 def verify_sdist(sdist):
@@ -141,7 +158,8 @@ def main():
     try:
         identity = source_identity(args.allow_dirty)
         output.mkdir(parents=True)
-        run([sys.executable, '-m', 'build', '--no-isolation', '--sdist', '--wheel', '--outdir', str(output)])
+        snapshot = isolated_source_snapshot(identity, output)
+        run([sys.executable, '-m', 'build', '--no-isolation', '--sdist', '--wheel', '--outdir', str(output)], cwd=snapshot)
         wheels = list(output.glob('*.whl'))
         sdists = list(output.glob('*.tar.gz'))
         if len(wheels) != 1 or len(sdists) != 1:
@@ -156,6 +174,7 @@ def main():
         receipt = {'schema': 'ave.distribution.build.v1', 'passed': True,
                    'created_at': datetime.now(timezone.utc).isoformat(),
                    'source': identity, 'python': sys.version, 'platform': sys.platform,
+                   'build_scratch': 'new external source snapshot; ignored checkout build caches excluded',
                    'paid_api_calls': 0, 'api_spend_usd': 0, 'checks': checks,
                    'passed_checks': len(checks), 'failed_checks': 0, 'skipped_checks': 0,
                    'artifacts': artifacts,

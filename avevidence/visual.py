@@ -18,6 +18,13 @@ _PTS = re.compile(r"\bn:\s*\d+\s+pts:\s*(-?\d+)\b")
 _TIME_BASE = re.compile(r"config in time_base:\s*(\d+/\d+)")
 
 
+def _filter_file_option():
+    """Keep file-backed selections on both legacy and current FFmpeg."""
+    help_result = run(["ffmpeg", "-hide_banner", "-h", "full"])
+    help_text = help_result.stdout + help_result.stderr
+    return "-filter_script:v" if re.search(r"(?m)^-filter_script(?:\[|\s)", help_text) else "-/filter:v"
+
+
 def load_verified_run(directory, operation=None):
     """Validate manifest-owned files; directory contents are never inferred evidence."""
     root = Path(directory).resolve()
@@ -272,6 +279,7 @@ def extract_frames(input, output, *, mode="interval", start=None, end=None, inte
         filters.append("format=rgb24")
         script = stage / "selection.filter"
         script.write_text(",".join(filters), encoding="utf-8")
+        filter_file_option = _filter_file_option()
         images = stage / "frames"
 
         def decode(selected_seek):
@@ -287,7 +295,7 @@ def extract_frames(input, output, *, mode="interval", start=None, end=None, inte
                 command += ["-ss", f"{selected_seek:.9f}"]
             command += ["-copyts", "-noautorotate", "-i", source["path"],
                         "-map", f"0:{stream['index']}", "-an", "-sn", "-dn",
-                        "-filter_script:v", script, "-fps_mode", "passthrough",
+                        filter_file_option, script, "-fps_mode", "passthrough",
                         "-frames:v", str(MAX_FRAMES + 1 if mode == "shots" else len(set(selections))),
                         "-c:v", "png", "-pix_fmt", "rgb24", images / "frame_%06d.png"]
             return run(command)
@@ -366,7 +374,8 @@ def extract_frames(input, output, *, mode="interval", start=None, end=None, inte
                   "source_video_endpoint_seconds": endpoint, "video_endpoint_method": endpoint_method,
                   "geometry": geometry, "rows": rows,
                   "frame_index_cache": cache_reference,
-                  "decode_strategy": {"input_seek_requested": bool(input_seek),
+                  "decode_strategy": {"filter_file_option": filter_file_option,
+                                      "input_seek_requested": bool(input_seek),
                                       "seek_preroll_seconds": preroll,
                                       "input_seek_seconds": seek_seconds,
                                       "used": "full_decode_fallback" if fallback_reason else

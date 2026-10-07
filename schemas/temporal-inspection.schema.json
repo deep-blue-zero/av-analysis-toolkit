@@ -1,0 +1,419 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deep-blue-zero/av-analysis-toolkit/schemas/temporal-inspection.schema.json",
+  "title": "Source-bound temporal inspection preparation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "source_sha256",
+    "stream_index",
+    "clock",
+    "origin_seconds",
+    "source_time_base",
+    "question",
+    "question_type",
+    "interval_seconds",
+    "critical_interval_seconds",
+    "profile",
+    "nominal_sampling_fps",
+    "frame_rows",
+    "source_frames_in_interval",
+    "expected_critical_source_frame_indices",
+    "unique_frame_count",
+    "request_row_count",
+    "source_frame_count_in_interval",
+    "all_source_frames_extracted",
+    "frame_index_reference",
+    "frame_sequence_manifest",
+    "extraction_parameters",
+    "decode_strategy",
+    "geometry",
+    "limits",
+    "resource_usage",
+    "assessment",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ave.temporal-inspection.v1"
+    },
+    "status": {
+      "const": "GENERATED_NOT_REVIEWED"
+    },
+    "source_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "stream_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clock": {
+      "const": "original_pts_minus_source_origin"
+    },
+    "origin_seconds": {
+      "type": "number"
+    },
+    "source_time_base": {
+      "type": "string",
+      "pattern": "^[0-9]+/[0-9]+$"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "question_type": {
+      "enum": [
+        "GENERAL_MOTION",
+        "CONTACT_ORDER",
+        "EXACT_CONTACT",
+        "AV_SYNC"
+      ]
+    },
+    "interval_seconds": {
+      "$ref": "#/$defs/interval"
+    },
+    "critical_interval_seconds": {
+      "$ref": "#/$defs/interval"
+    },
+    "profile": {
+      "enum": [
+        "TEMPORAL_LOW",
+        "TEMPORAL_MEDIUM",
+        "TEMPORAL_HIGH",
+        "FRAME_COMPLETE_WINDOW"
+      ]
+    },
+    "nominal_sampling_fps": {
+      "enum": [
+        2,
+        8,
+        12,
+        null
+      ]
+    },
+    "frame_rows": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/frame"
+      }
+    },
+    "source_frames_in_interval": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/sourceFrame"
+      }
+    },
+    "expected_critical_source_frame_indices": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "unique_frame_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "request_row_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "source_frame_count_in_interval": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "all_source_frames_extracted": {
+      "type": "boolean"
+    },
+    "frame_index_reference": {
+      "type": "object",
+      "required": [
+        "run_manifest_path",
+        "run_manifest_sha256",
+        "frame_index_sha256"
+      ],
+      "properties": {
+        "run_manifest_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_manifest_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "frame_index_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "frame_sequence_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "frame-sequence/run.json"
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "extraction_parameters": {
+      "type": "object"
+    },
+    "decode_strategy": {
+      "type": "object"
+    },
+    "geometry": {
+      "type": "object"
+    },
+    "limits": {
+      "type": "object"
+    },
+    "resource_usage": {
+      "type": "object"
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "actual_review_declared",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "const": "OPEN"
+        },
+        "actual_review_declared": {
+          "const": false
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "interval": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "sourceFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_frame_index",
+        "source_pts",
+        "original_pts_seconds",
+        "source_seconds",
+        "decoded_duration_seconds"
+      ],
+      "properties": {
+        "source_frame_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_pts": {
+          "type": "integer"
+        },
+        "original_pts_seconds": {
+          "type": "number"
+        },
+        "source_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "decoded_duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "required": [
+        "frame_id",
+        "path",
+        "sha256",
+        "source_sha256",
+        "stream_index",
+        "source_frame_index",
+        "source_pts",
+        "source_time_base",
+        "original_pts_seconds",
+        "source_seconds",
+        "requested_seconds",
+        "timing_delta_seconds",
+        "duplicate_of",
+        "scene_score",
+        "status"
+      ],
+      "properties": {
+        "frame_id": {
+          "type": "string",
+          "pattern": "^F[0-9]{6}$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^frame-sequence/frames/frame_[0-9]{6}\\.png$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "stream_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_frame_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_pts": {
+          "type": "integer"
+        },
+        "source_time_base": {
+          "type": "string"
+        },
+        "original_pts_seconds": {
+          "type": "number"
+        },
+        "source_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "requested_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "timing_delta_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "duplicate_of": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scene_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "status": {
+          "const": "GENERATED_NOT_REVIEWED"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "FRAME_COMPLETE_WINDOW"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "nominal_sampling_fps": {
+            "const": null
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "TEMPORAL_LOW"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "nominal_sampling_fps": {
+            "const": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "TEMPORAL_MEDIUM"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "nominal_sampling_fps": {
+            "const": 8
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "TEMPORAL_HIGH"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "nominal_sampling_fps": {
+            "const": 12
+          }
+        }
+      }
+    }
+  ]
+}

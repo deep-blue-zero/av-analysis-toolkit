@@ -1,5 +1,16 @@
 # Analyze from claims to evidence
 
+The current targeted unit is one bounded dramatic event. Use `scene prepare`
+and `scene plan`, or attach `--scene-packet` to `deep-read`. Read what dialogue,
+vocal/musical performance, sound, movement, editing and composition jointly
+construct. Preserve their separate evidence IDs beneath integrated prose.
+Use `scene reconcile` to record exact proposition competence and explicit
+adjudication, then `scene delta` to compare the result against a frozen earlier
+packet. A lexical error reopens its dependents; it does not erase unrelated
+delivery observations. Stage 2 contextual audio does not independently confirm
+Stage 1. Generating frames is not a declaration that they were reviewed.
+See [the event contracts and examples](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md).
+
 1. Read the human's scope and method. Do an independent bounded source reading
    before consulting prior verdicts. Record available modalities and perception
    through `preflight`; select absolute streams and hash-bound sources.

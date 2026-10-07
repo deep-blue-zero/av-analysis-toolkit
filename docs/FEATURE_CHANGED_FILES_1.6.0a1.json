@@ -1,0 +1,409 @@
+{
+  "schema": "ave.feature-change-manifest.v1",
+  "version": "1.6.0a1",
+  "baseline_commit": "d44d6a62e4760ea0f8ed7a1b1ad0181c790cb234",
+  "migration_marker": "v1.5.0a2-git-baseline",
+  "changed_files": [
+    {
+      "path": ".github/workflows/zero-cost-ci.yml",
+      "change": "M",
+      "baseline_sha256": "963c4b4686b248c781fec26da2464d68080f632e1b91d919501cba5e460f39d8",
+      "feature_sha256": "8b2ff1e42aa5cd57d1a5edc0dd231686729a23fcb1f1acbbfc54abe1fad81670"
+    },
+    {
+      "path": "AGENTS.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "5a590ad3f8408fecbc3545ea66f0b471d0eda89c15342ba501ebd7d581b36a03"
+    },
+    {
+      "path": "AGENT_START_HERE.md",
+      "change": "M",
+      "baseline_sha256": "37433577b308d16e8cd3f8306544fced756896fa53f31f7c62ae1df8ea66d059",
+      "feature_sha256": "8a7a2bc5405a8ea91412a73dad00a60f0de6d0e01bdccacc46a1adec6bc590fa"
+    },
+    {
+      "path": "ANALYSIS_WORKFLOW.md",
+      "change": "M",
+      "baseline_sha256": "13ccf3cc92f6db0a90bd49d75ced0d005de1f461c949af2ac7daf2932458ccea",
+      "feature_sha256": "86cdbf0f3218c5fc3439469ad2c924816078ecc7c92cb33c6741cd6c9ab87b14"
+    },
+    {
+      "path": "AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md",
+      "change": "M",
+      "baseline_sha256": "3dec4f31fcb054f218ae5c2bad148926221280bbc14827075788f7564213a8db",
+      "feature_sha256": "adf13b4380a0ebd54c228557aec2a45f5bedb1496fb91a44c02a983f89cd0047"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "dede21455a16c90b807f4795200de72bfba235aef3de219c23e25295132a684b"
+    },
+    {
+      "path": "MANIFEST.in",
+      "change": "M",
+      "baseline_sha256": "8f7f501159214d245a71938b5c29cdb45579958eb3b031b87d71cc2b33c5464b",
+      "feature_sha256": "458f442b6ab344debd7b2836cb4a3efa8edb7477b405776e375894cbd9d56252"
+    },
+    {
+      "path": "NEXT_VALIDATION_PLAN.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "142c2c37bac03a86430af4c88193cc8912a948f1d33afdc83817b1c97bd9e846"
+    },
+    {
+      "path": "README.md",
+      "change": "M",
+      "baseline_sha256": "bbedd9ef5b293a67c43f41ff8c442fc6103f11fec6b747147bc922050f9ba7a2",
+      "feature_sha256": "c2637d276a8af41dfe141b353785a243a5e62c57ff73c58694069ffa5432c9aa"
+    },
+    {
+      "path": "START_HERE.md",
+      "change": "M",
+      "baseline_sha256": "6a3f2d681fb17f5d15ef34068aa2d34bfbb4122211db204037da86ebbbc61eb7",
+      "feature_sha256": "afff48e618eba6d6a5881f0ccc52d7baa4d8437abd930629c49e70b014b0d0e8"
+    },
+    {
+      "path": "avevidence/__init__.py",
+      "change": "M",
+      "baseline_sha256": "d7827064b27908a4f872c4c90ee5928b9de76e5ce4a17eccafdbabb4915768f1",
+      "feature_sha256": "fb243db026dfe945eab552de537f04447f7d0b9be55c66f7a89d2ad330b0db60"
+    },
+    {
+      "path": "avevidence/auditory_claims.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "2167d11c570fd5d20da717ab671f24f4790328a1964e932a717fc1ccd0e96fbf"
+    },
+    {
+      "path": "avevidence/auditory_observer.py",
+      "change": "M",
+      "baseline_sha256": "f7fee50e57d7e9fbaa0685398c7a8d073f9ca4e7944377a835003c12c8ab7966",
+      "feature_sha256": "6d6d9722bf71fc65c90231faabf703565c7329162900bf14044f4fc1864d9775"
+    },
+    {
+      "path": "avevidence/auditory_profiles.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "bf4c72612a8acd5665610f9bd96ab4915ddfb244bd1344e12ff8dfb1d8cb9541"
+    },
+    {
+      "path": "avevidence/cli.py",
+      "change": "M",
+      "baseline_sha256": "376df58db7ce92d91138747c90fd999c162897716104649774f7a34b5d55d825",
+      "feature_sha256": "a69bbc41696f2250d28d64ac297db319b836cb211e3c19a01630b89264036ce3"
+    },
+    {
+      "path": "avevidence/cross_modal.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "250f69fd9649c485207f1acb1b384b8e92f34fd93cd6e4bedd5a81454756cc4d"
+    },
+    {
+      "path": "avevidence/deep_read.py",
+      "change": "M",
+      "baseline_sha256": "9c6c538d0ba4a803ae4291da4c131dbd88996138fc9c9bd7798461c2f166894c",
+      "feature_sha256": "02561bb337351a83d72551618a780dcb0b76ef9d39439dffcf6e96ebdb852f65"
+    },
+    {
+      "path": "avevidence/event_contracts.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "be4b81915fb4659ea086b40778dcd3e590f74424b330345b731edc95257c0f19"
+    },
+    {
+      "path": "avevidence/evidence_claims.py",
+      "change": "M",
+      "baseline_sha256": "9e315752e6321e2376d560323805568ecb4ee8f840c0af4ba33d5360e5980060",
+      "feature_sha256": "95ec4aa19942b234d7f46a2d924f176141acff444e8b277a8b11f851c389db35"
+    },
+    {
+      "path": "avevidence/observation_dependencies.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "68c86999ac857d279cf9471bf2598d10d71eeeefdabe7baabca6b7314dc61bd7"
+    },
+    {
+      "path": "avevidence/observer_execution.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "5bb57cd0199414257783a7878bfdac176bc3bb40b714d59736f1c47b69c40591"
+    },
+    {
+      "path": "avevidence/observer_planning.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "1daf52a6e36064dfdaf3798f8a5bf1a7d3cc44f04dd74a02398320e1d38927c1"
+    },
+    {
+      "path": "avevidence/observer_requests.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "9bc751a84208b0ece8d22b6e3200ef8bf4951f968ff6b7123c9095eb207ac785"
+    },
+    {
+      "path": "avevidence/performance_sections.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "a678c4715eff37ecc30da6b7cf0632711de15ef0afa98b8c62bb938c72ff8120"
+    },
+    {
+      "path": "avevidence/providers/__init__.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "f30dfceb1475fa81f8ba9da1d16f54dc386e5e7cb24307f75859f88aec136ec5"
+    },
+    {
+      "path": "avevidence/providers/openai_audio.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "6a0c0c5dedcf6af0ce6830864fe9bddccf6a52a86bbbebc9e96b2f44d2b7f134"
+    },
+    {
+      "path": "avevidence/providers/openai_common.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "138a41c01ecd1570fc65c096f007fb10fe8aaaae0cee061f23b6607bb7948bcc"
+    },
+    {
+      "path": "avevidence/providers/registry.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "476d402de325cd11b4aa0e72e1e1b5fc9d63ec98fba8d1659a39b97022c8802c"
+    },
+    {
+      "path": "avevidence/scene_delta.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "0f8a2f2af33d69e76db3f0c657afe1a8a8cbff2410999124fae7db7b99781cfc"
+    },
+    {
+      "path": "avevidence/scene_packets.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "999d52b38f9b3482c82333b6b84b51fc8cff8968ff48d6c48ea05d5c0fbc09bd"
+    },
+    {
+      "path": "avevidence/scene_planning.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "729564e7ba54eb340743e22de6a049028e2434e9e77180e5be341a2f79108337"
+    },
+    {
+      "path": "avevidence/temporal_inspection.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "3d9c614a845391a88b4cb2223d08d617552190bf3bd7caebb0dead0d21524f17"
+    },
+    {
+      "path": "avevidence/visual.py",
+      "change": "M",
+      "baseline_sha256": "180343aec074548e291f24bd4af9e9315340f1fd063142690c9c3d21cd8f5c6f",
+      "feature_sha256": "8c154456bdeb0433bba6aa3edc560eeb72f9215ceb98e0613367899476807ec3"
+    },
+    {
+      "path": "docs/AUDITORY_TASK_PROFILES.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "2036cba5c4fc1398e39189aebbbd768374994f0f985f2897159a4079d5609aca"
+    },
+    {
+      "path": "docs/BACKWARD_COMPATIBILITY.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "671d2c6f1c39e7c4985316a57daa1e1c0223be0938a7e65cad900f142e96541a"
+    },
+    {
+      "path": "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "b58211b1ebbac9d7c86d3d5a9165d5a68f196aad8170fbad3da576f675db5f13"
+    },
+    {
+      "path": "docs/PUBLIC_SOURCE_SAFETY.md",
+      "change": "M",
+      "baseline_sha256": "f73730e269d252affa379e237002f27f8e6e9585c5da586a2d7418c2fda1e60a",
+      "feature_sha256": "5ba6eb5fad4c6bfedb946ead29b3869f4fccf241fe62e30fa66b12750dd8b5b3"
+    },
+    {
+      "path": "docs/TEMPORAL_INSPECTION.md",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "ea76f86d1a87ee13a3adcef683891ec7b836ac89c259a77d6682a13a4b2552bb"
+    },
+    {
+      "path": "examples/build_synthetic_scene.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "130c3a5de7d30904dbe90539fd6053aa3e7abc37a3ed035482a631643a00c6e4"
+    },
+    {
+      "path": "pyproject.toml",
+      "change": "M",
+      "baseline_sha256": "01760ceb1c37e217e13459d62b27d84ebfbff64413a153b10d7e9f5c686b6e42",
+      "feature_sha256": "501bb0b80ba035c4652e2f163ce5082c4f714ff437228ae56152d44fdc859085"
+    },
+    {
+      "path": "schemas/auditory-task-profiles.schema.json",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "d9b069d455ba63e52b5a5ce02be7555b1099d20f0e00141c2c3f074d6113fa80"
+    },
+    {
+      "path": "schemas/scene-claim-delta.schema.json",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "9e726ab96a1e10c17df56a09069bd0c5b5158bf68b6363da155ee880ee2bdb02"
+    },
+    {
+      "path": "schemas/scene-packet.schema.json",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "4fc4488a17fac3265938c62e0ba541762a354f8cfc315deb6a15cd2aed99c9d3"
+    },
+    {
+      "path": "schemas/scene-query-plan.schema.json",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "5d7956c808b1084006daaf75fd72dfb5bb4828e1f43bff6f974eda70d81b7214"
+    },
+    {
+      "path": "schemas/scene-reconciliation.schema.json",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "249de93c369d9a0df5c75476a45f55490470bcbafc3c91d01472a02e34fc25e3"
+    },
+    {
+      "path": "schemas/temporal-inspection.schema.json",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "93ada80979d737154ce5de3fc93c1c9952822018641f000290819a7aa200023b"
+    },
+    {
+      "path": "scripts/build_distributions.py",
+      "change": "M",
+      "baseline_sha256": "c6ee369615e31019be53193a609e276906e09a73ebf94f918e52b92da42d92bb",
+      "feature_sha256": "0d1e0b8c0c572d666daf41d3eeecebff9bb0672cb3179fc9e5a31059253de75e"
+    },
+    {
+      "path": "tests/test_auditory_claim_integration.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "ce88db337b6dd617b29198602dd7c43913e6f8777170fbd44f534e48f3f465fb"
+    },
+    {
+      "path": "tests/test_auditory_profiles.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "c619507caa027f8f80032f059efd44f80c66dfc6449522fe33faf7c637d478b7"
+    },
+    {
+      "path": "tests/test_ffmpeg_compatibility.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "6fbf67bf18a941ec4420e00da6b2a860a3f2275d0aa7aff8bf133dad6af1c912"
+    },
+    {
+      "path": "tests/test_hardening_rc2.py",
+      "change": "M",
+      "baseline_sha256": "877f6caaca8b1f26ca639f12a40055dc84f1b8297773d0e5d8774661e5bce9d4",
+      "feature_sha256": "fcea1615e055986054a245a609de8dabe811db66030997a9d4d8a220dcd1d432"
+    },
+    {
+      "path": "tests/test_hosted_observer.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "c5b59988dc2407d4c936c74f8a2c468dcf6f9bc9fe0726c070be6c55da89265d"
+    },
+    {
+      "path": "tests/test_scene_cli.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "7bfdcb1596d28da191d3377361a63a0a727d15de396e87bf8051e37569a20214"
+    },
+    {
+      "path": "tests/test_scene_events.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "9359057578f3393b98bd3624c4569301a88efac217aa045d4e6623a8fb0da588"
+    },
+    {
+      "path": "tests/test_temporal_inspection.py",
+      "change": "A",
+      "baseline_sha256": null,
+      "feature_sha256": "08879a4488cdf396834234fdafc2a6caefc28014da7947ec788a77413dd2f47b"
+    }
+  ],
+  "hosted_route_feature_port": {
+    "source_identity": "Previously developed local 1.5 alpha5 hosted-observer source, retained separately",
+    "phase": "Post-baseline feature changes only",
+    "files": [
+      {
+        "path": "avevidence/auditory_claims.py",
+        "alpha5_source_sha256": "2167d11c570fd5d20da717ab671f24f4790328a1964e932a717fc1ccd0e96fbf",
+        "feature_sha256": "2167d11c570fd5d20da717ab671f24f4790328a1964e932a717fc1ccd0e96fbf"
+      },
+      {
+        "path": "avevidence/auditory_observer.py",
+        "alpha5_source_sha256": "6d6d9722bf71fc65c90231faabf703565c7329162900bf14044f4fc1864d9775",
+        "feature_sha256": "6d6d9722bf71fc65c90231faabf703565c7329162900bf14044f4fc1864d9775"
+      },
+      {
+        "path": "avevidence/cli.py",
+        "alpha5_source_sha256": "a7a7075d9cc49b59cbb904a958038f27ac3750ea310b90f270bc318ce406785f",
+        "feature_sha256": "a69bbc41696f2250d28d64ac297db319b836cb211e3c19a01630b89264036ce3"
+      },
+      {
+        "path": "avevidence/deep_read.py",
+        "alpha5_source_sha256": "efaafa80d5f695595716d4b58c7e52975e918255473c65e0e0c41371084482cd",
+        "feature_sha256": "02561bb337351a83d72551618a780dcb0b76ef9d39439dffcf6e96ebdb852f65"
+      },
+      {
+        "path": "avevidence/evidence_claims.py",
+        "alpha5_source_sha256": "95ec4aa19942b234d7f46a2d924f176141acff444e8b277a8b11f851c389db35",
+        "feature_sha256": "95ec4aa19942b234d7f46a2d924f176141acff444e8b277a8b11f851c389db35"
+      },
+      {
+        "path": "avevidence/observer_execution.py",
+        "alpha5_source_sha256": "451312a6eaee87bf769ddb421dc5ec966a5fd82897546cac84100a4982d942fa",
+        "feature_sha256": "5bb57cd0199414257783a7878bfdac176bc3bb40b714d59736f1c47b69c40591"
+      },
+      {
+        "path": "avevidence/observer_planning.py",
+        "alpha5_source_sha256": "34ccca79b7e9b348de8b2c851fb6f7f6c472eae72d1fe1786037c51f49267e83",
+        "feature_sha256": "1daf52a6e36064dfdaf3798f8a5bf1a7d3cc44f04dd74a02398320e1d38927c1"
+      },
+      {
+        "path": "avevidence/observer_requests.py",
+        "alpha5_source_sha256": "4bd2c88f4ae43c8a627004246f07171b8ab6de06471449f806dd65dc506c68ba",
+        "feature_sha256": "9bc751a84208b0ece8d22b6e3200ef8bf4951f968ff6b7123c9095eb207ac785"
+      },
+      {
+        "path": "avevidence/providers/__init__.py",
+        "alpha5_source_sha256": "f30dfceb1475fa81f8ba9da1d16f54dc386e5e7cb24307f75859f88aec136ec5",
+        "feature_sha256": "f30dfceb1475fa81f8ba9da1d16f54dc386e5e7cb24307f75859f88aec136ec5"
+      },
+      {
+        "path": "avevidence/providers/registry.py",
+        "alpha5_source_sha256": "0388a7e7de46cc07776c158268a8e5ef5d51577edf1a46420dd7d3d921efa181",
+        "feature_sha256": "476d402de325cd11b4aa0e72e1e1b5fc9d63ec98fba8d1659a39b97022c8802c"
+      },
+      {
+        "path": "avevidence/providers/openai_common.py",
+        "alpha5_source_sha256": "2573af919319a5be1c5000cab4462a574030d1df097d55836c1f50676cd07add",
+        "feature_sha256": "138a41c01ecd1570fc65c096f007fb10fe8aaaae0cee061f23b6607bb7948bcc"
+      },
+      {
+        "path": "avevidence/providers/openai_audio.py",
+        "alpha5_source_sha256": "e1f74591c83de0ad6cc05a2e35224540635c6d03105517e861a89add3fa80ea3",
+        "feature_sha256": "6a0c0c5dedcf6af0ce6830864fe9bddccf6a52a86bbbebc9e96b2f44d2b7f134"
+      }
+    ]
+  },
+  "self_referential_receipts_excluded": [
+    "docs/FEATURE_CHANGED_FILES_1.6.0a1.json",
+    "docs/REGRESSION_1.6.0a1.json"
+  ],
+  "scope": "First-party source diff; generated runs, media, dependency binaries, credentials and caches remain outside Git"
+}

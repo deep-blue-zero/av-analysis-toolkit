@@ -46,7 +46,8 @@ series-specific governance and conclusions remain outside it.
 ## Source correspondence
 
 Hashes below are SHA-256 over exact file bytes. Original means the supplied
-portable release; current means the sanitized public candidate. These are
+portable release; sanitized candidate means the historical migration baseline,
+before subsequent feature documentation changes. These are
 intentional differences, not archive byte identity. Relative names alone are
 used here to avoid republishing workstation paths.
 
