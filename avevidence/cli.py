@@ -195,10 +195,19 @@ def parser():
         else:
             d.add_argument("--method", help="Governing UTF-8 analytical method; explicit file always overrides the built-in fallback")
             d.add_argument("--claims"); d.add_argument("--contour-run")
+            d.add_argument("--scene-packet", help="Prepare and plan a source-matched bounded dramatic event")
             d.add_argument("--episode-isolated", action="store_true", help="Limit semantic evidence to the supplied source; does not change --method")
-            d.add_argument("--auditory-observer", choices=["human", "mock", "none"], default="human")
+            d.add_argument("--auditory-observer", choices=["human", "mock", "none", "openai-audio"], default="human")
             d.add_argument("--evidence-query-planning", action="store_true", help="Planning is automatic when --claims is supplied")
             d.add_argument("--execute-local-queries", action="store_true")
+            d.add_argument("--prepare-observer-witnesses", action="store_true", help="Prepare only refined delivery intervals of at most 30 s each")
+            d.add_argument("--execute-observer", action="store_true", help="Explicit opt-in: submit prepared hosted requests after authorization and a passed probe")
+            d.add_argument("--observer-request", action="append", default=[], help="Use a refined source-bound observer request instead of automatic slices")
+            d.add_argument("--allow-remote-media", choices=["openai"])
+            d.add_argument("--credential-env", default="OPENAI_API_KEY")
+            d.add_argument("--budget-usd", type=float, default=.50)
+            d.add_argument("--request-budget-usd", type=float, default=.10)
+            d.add_argument("--max-output-tokens", type=int, default=600)
     for name in ("evidence-plan", "audit"):
         d = commands.add_parser(name, help="Validate atomic claims and plan minimum evidence escalation")
         d.add_argument("config"); d.add_argument("output"); d.add_argument("--capabilities")
@@ -225,8 +234,44 @@ def parser():
     d.add_argument("--threshold", type=float, default=.35)
     obs = commands.add_parser("observer", help="Bounded attributed auditory witnesses; mock never establishes listening")
     oc = obs.add_subparsers(dest="observer_command", required=True)
+    oc.add_parser("providers")
+    oc.add_parser("profiles", help="List task-specific auditory profiles; none implies qualification")
+    d = oc.add_parser("capability-profile", help="Export task capability history without rewriting probe verdicts")
+    d.add_argument("config"); d.add_argument("output")
+    d = oc.add_parser("scoped-human-review", help="Record a human judgment for one immutable observation scope")
+    d.add_argument("observation_run"); d.add_argument("config"); d.add_argument("output")
     d = oc.add_parser("fixtures"); d.add_argument("output"); d.add_argument("--trials", type=int, default=24); d.add_argument("--seed", type=int, default=9271)
-    d = oc.add_parser("observe"); d.add_argument("witness_run"); d.add_argument("request"); d.add_argument("output")
+    for name in ("observe", "estimate", "probe"):
+        d = oc.add_parser(name)
+        if name == "observe":
+            # Preserve the original three-position mock command as well as the
+            # new named options; contradictory combinations fail in dispatch.
+            d.add_argument("witness_run_pos", nargs="?"); d.add_argument("request_pos", nargs="?"); d.add_argument("output_pos", nargs="?")
+            d.add_argument("--backend", choices=["mock", "openai-audio"], default="mock")
+            d.add_argument("--capability")
+        elif name == "probe":
+            d.add_argument("--fixtures", required=True)
+            d.add_argument("--backend", choices=["openai-audio"], required=True)
+            d.add_argument("--dry-run", action="store_true", help="Estimate all fixture calls without credentials or submission")
+        else:
+            d.add_argument("--backend", choices=["openai-audio"], required=True)
+        if name != "probe":
+            d.add_argument("--witness-run"); d.add_argument("--request")
+        d.add_argument("--output", required=name == "probe")
+        d.add_argument("--model", default="gpt-audio-1.5")
+        d.add_argument("--credential-env", default="OPENAI_API_KEY")
+        d.add_argument("--allow-remote-media", choices=["openai"])
+        d.add_argument("--budget-usd", type=float, default=.50)
+        d.add_argument("--request-budget-usd", type=float, default=.10)
+        d.add_argument("--queue-ledger", help="Append-only shared queue accounting across separate commands")
+        d.add_argument("--queue-budget-usd", type=float, default=2.)
+        d.add_argument("--max-output-tokens", type=int, default=600)
+    d = oc.add_parser("claim-delta", help="Attach valid source-bound witnesses; preserve verdicts until explicit adjudication")
+    d.add_argument("claims"); d.add_argument("output")
+    d.add_argument("--observation-run", action="append", required=True)
+    d.add_argument("--claim-id", action="append")
+    d.add_argument("--decisions", help="Explicit coordinator dispositions and adjudications; never inferred from model prose")
+    d.add_argument("--prior-reading", action="append", help="Freeze a prior reading byte-for-byte without sending it to the observer")
     d = oc.add_parser("human-import"); d.add_argument("review_import_run"); d.add_argument("output")
     for name in ("musical-relations", "blind-export", "modality-ablation", "evaluate-ablation"):
         d = commands.add_parser(name); d.add_argument("config"); d.add_argument("output")
@@ -241,11 +286,86 @@ def parser():
     d.add_argument("raw_witness_run"); d.add_argument("separated_audio"); d.add_argument("config"); d.add_argument("output")
     d = commands.add_parser("game-bind", help="Bind dialogue IDs, voice assets and declared gameplay/UI states")
     d.add_argument("config"); d.add_argument("output")
+    d = commands.add_parser("performance-sections", help="Preserve a full performance object and declared formal sections")
+    d.add_argument("config"); d.add_argument("output")
+    scene = commands.add_parser("scene", help="Prepare and reconcile one auditable dramatic event")
+    sc = scene.add_subparsers(dest="scene_command", required=True)
+    for name in ("prepare", "validate", "reconcile", "plan", "delta"):
+        d = sc.add_parser(name)
+        if name == "delta":
+            d.add_argument("before"); d.add_argument("after"); d.add_argument("output")
+            d.add_argument("--decisions", help="Explicit before/after dispositions")
+        else:
+            d.add_argument("input")
+            if name != "validate": d.add_argument("output")
+        d.add_argument("--relocations", help="JSON mapping evidence SHA-256 to relocated paths; never filename guessing")
+        if name == "plan":
+            d.add_argument("--max-requests", type=int, default=60)
+            d.add_argument("--max-frames", type=int, default=360)
+            d.add_argument("--max-audio-seconds", type=float, default=120.)
+    d = commands.add_parser("temporal-inspect", help="Bounded ordered frames; generation remains OPEN")
+    d.add_argument("input"); d.add_argument("output")
+    d.add_argument("--question", required=True); d.add_argument("--start", required=True); d.add_argument("--end", required=True)
+    d.add_argument("--profile", choices=["TEMPORAL_LOW", "TEMPORAL_MEDIUM", "TEMPORAL_HIGH", "FRAME_COMPLETE_WINDOW"], default="TEMPORAL_LOW")
+    d.add_argument("--question-type", choices=["GENERAL_MOTION", "CONTACT_ORDER", "EXACT_CONTACT", "AV_SYNC"], default="GENERAL_MOTION")
+    d.add_argument("--critical-start", type=float); d.add_argument("--critical-end", type=float)
+    d.add_argument("--video-stream", type=int); d.add_argument("--frame-index-run")
+    d.add_argument("--width", type=int, default=960); d.add_argument("--max-frames", type=int, default=360)
+    d = commands.add_parser("temporal-review", help="Validate an attributed review against exact frame/PTS coverage")
+    d.add_argument("run_dir"); d.add_argument("declaration"); d.add_argument("output")
+    d = commands.add_parser("temporal-escalate", help="Plan a narrower higher-density inspection or preserve OPEN")
+    d.add_argument("run_dir"); d.add_argument("output"); d.add_argument("--review-assessment")
+    d.add_argument("--critical-start", type=float); d.add_argument("--critical-end", type=float)
+    d.add_argument("--remaining-frame-budget", type=int, default=360)
+    d.add_argument("--remaining-seconds-budget", type=float, default=120.)
     return p
 
 
 def dispatch(a):
     c = a.command
+    if c == "scene":
+        from .event_contracts import read_event_json
+        from .scene_packets import load_scene_packet, packet_identity, prepare_scene_packet
+        relocation = read_event_json(a.relocations) if a.relocations else None
+        if relocation is not None and not isinstance(relocation, dict): raise AVError("Relocations must map digests to paths")
+        if a.scene_command == "validate":
+            data = load_scene_packet(a.input, relocations=relocation)
+            return {"schema": "ave.scene-validation.v1", "status": "VALID", "packet_id": packet_identity(data[0]), "evidence_count": len(data[1]), "source_replay": data[-1]}
+        if a.scene_command == "prepare": return prepare_scene_packet(a.input,a.output,relocations=relocation)
+        if a.scene_command == "reconcile":
+            from .cross_modal import reconcile_scene
+            return reconcile_scene(a.input,a.output,relocations=relocation)
+        if a.scene_command == "plan":
+            from .scene_planning import plan_scene_queries
+            return plan_scene_queries(a.input,a.output,relocations=relocation,max_requests=a.max_requests,max_frames=a.max_frames,max_audio_seconds=a.max_audio_seconds)
+        from .scene_delta import scene_claim_delta
+        return scene_claim_delta(a.before,a.after,a.output,decisions=a.decisions,relocations=relocation)
+    if c in {"temporal-inspect", "temporal-review", "temporal-escalate"}:
+        from .temporal_inspection import extract_temporal_inspection, load_temporal_inspection, validate_temporal_review, plan_escalation
+        from .common import file_record, read_json
+        critical = None
+        if c != "temporal-review":
+            if (a.critical_start is None) != (a.critical_end is None): raise AVError("Supply both critical endpoints")
+            critical = [a.critical_start,a.critical_end] if a.critical_start is not None else None
+        if c == "temporal-inspect":
+            return extract_temporal_inspection(a.input,a.output,question=a.question,start=a.start,end=a.end,profile=a.profile,
+                question_type=a.question_type,critical_interval=critical,stream_index=a.video_stream,frame_index_run=a.frame_index_run,
+                width=a.width,limits={"max_frames": a.max_frames})
+        deps = [a.run_dir]+([a.declaration] if c == "temporal-review" else [a.review_assessment] if a.review_assessment else [])
+        if c == "temporal-review":
+            result = validate_temporal_review(a.run_dir,a.declaration)
+            name = "review-assessment.json"
+        else:
+            _,report,_ = load_temporal_inspection(a.run_dir)
+            assessment = read_json(a.review_assessment) if a.review_assessment else None
+            if assessment is not None and validate_temporal_review(a.run_dir,assessment.get("declaration")) != assessment:
+                raise AVError("Saved assessment differs from its verified review declaration")
+            result = plan_escalation(report,review_assessment=assessment,critical_interval=critical,
+                remaining_frame_budget=a.remaining_frame_budget,remaining_seconds_budget=a.remaining_seconds_budget)
+            name = "escalation.json"
+        with output_transaction(a.output,deps) as stage:
+            write_json(stage/name,result)
+            return finish_run(stage,c,[file_record(Path(a.run_dir)/"run.json")]+[file_record(x) for x in deps[1:]],metadata={"result_file":name,"assessment_status":result["status"]})
     if c in {"preflight", "deep-read"}:
         options = {k: getattr(a,k) for k in ("audio_stream", "video_stream", "external_audio", "external_audio_offset", "transcript",
                     "screenshots_manifest", "direct_receipt", "observer_receipt", "timestamp_tolerance_ms")}
@@ -254,7 +374,10 @@ def dispatch(a):
             return preflight(a.input,a.output, audio_class=a.audio_class,probe_seconds=a.probe_seconds,**options)
         from .deep_read import deep_read
         return deep_read(a.input,a.output,method=a.method,claims=a.claims,contour_run=a.contour_run,
-            episode_isolated=a.episode_isolated,auditory_observer=a.auditory_observer,execute_local_queries=a.execute_local_queries,**options)
+            episode_isolated=a.episode_isolated,auditory_observer=a.auditory_observer,execute_local_queries=a.execute_local_queries,
+            prepare_observer_witnesses=a.prepare_observer_witnesses, execute_observer=a.execute_observer,
+            observer_requests=a.observer_request, allow_remote_media=a.allow_remote_media, credential_env=a.credential_env,
+            budget_usd=a.budget_usd, request_budget_usd=a.request_budget_usd, max_output_tokens=a.max_output_tokens, scene_packet=a.scene_packet, **options)
     if c in {"evidence-plan", "audit"}:
         from .evidence_claims import audit_claims
         return audit_claims(a.config,a.output,capabilities=a.capabilities,filter_flags=[s.strip() for s in a.flags.split(",") if s.strip()])
@@ -274,13 +397,56 @@ def dispatch(a):
         return motion_window(a.input,a.output,start=a.start,end=a.end,audio_stream=a.audio_stream,video_stream=a.video_stream,
                              frame_index_run=a.frame_index_run,threshold=a.threshold,make_clip=not a.no_clip)
     if c == "observer":
-        from .auditory_observer import make_probe,observe_clip,import_human_review
+        from .auditory_observer import make_probe,import_human_review
+        from .providers.registry import providers, create_backend
+        from .observer_execution import estimate_observation, observe_request, probe_backend
+        if a.observer_command == "providers": return providers()
+        if a.observer_command == "profiles":
+            from .auditory_profiles import TASK_PROMPTS
+            return {"profiles":TASK_PROMPTS,"qualification":"NONE_IMPLIED"}
+        if a.observer_command == "scoped-human-review":
+            from .auditory_profiles import scoped_human_review
+            return scoped_human_review(a.observation_run,a.config,a.output)
+        if a.observer_command == "capability-profile":
+            from .auditory_profiles import capability_profile
+            from .event_contracts import read_event_json, object_fields
+            from .common import file_record
+            config = read_event_json(a.config)
+            object_fields(config,{"backend_identity","historical_probes","scoped_reviews"},{"backend_identity"},"capability profile")
+            result = capability_profile(config["backend_identity"],historical_probes=config.get("historical_probes",[]),scoped_reviews=config.get("scoped_reviews",[]))
+            with output_transaction(a.output,[a.config]) as stage:
+                write_json(stage/"task-capabilities.json",result)
+                return finish_run(stage,"observer-capability-profile",[file_record(a.config)],metadata={"result_file":"task-capabilities.json"})
         if a.observer_command == "fixtures": return make_probe(a.output,trials=a.trials,seed=a.seed)
-        if a.observer_command == "observe": return observe_clip(a.witness_run,a.request,a.output)
         if a.observer_command == "human-import": return import_human_review(a.review_import_run,a.output)
+        if a.observer_command == "claim-delta":
+            from .auditory_claims import claim_delta
+            return claim_delta(a.claims,a.observation_run,a.output,decisions=a.decisions,claim_ids=a.claim_id,prior_readings=a.prior_reading)
+        if a.observer_command in {"observe", "estimate", "probe"}:
+            if a.observer_command == "observe":
+                for key in ("witness_run", "request", "output"):
+                    pos, named = getattr(a,key+"_pos"), getattr(a,key)
+                    if pos and named: raise AVError("Do not combine positional and named observer inputs")
+                    setattr(a,key,named or pos)
+                if not a.output: raise AVError("Observer observe requires an output run")
+            if a.observer_command != "probe" and not a.request:
+                raise AVError("Observer request file is required")
+            config = {} if a.backend == "mock" else dict(model=a.model,credential_env=a.credential_env,
+                allow_remote_media=a.allow_remote_media,max_output_tokens=a.max_output_tokens)
+            backend = create_backend(a.backend,**config)
+            if a.observer_command == "estimate":
+                return estimate_observation(a.request,witness_run=a.witness_run,backend=backend,output=a.output)
+            execution = dict(budget_usd=a.budget_usd,request_budget_usd=a.request_budget_usd,
+                queue_ledger=a.queue_ledger,queue_budget_usd=a.queue_budget_usd)
+            if a.observer_command == "probe":
+                return probe_backend(a.fixtures,a.output,backend=backend,dry_run=a.dry_run,**execution)
+            return observe_request(a.request,a.output,witness_run=a.witness_run,backend=backend,capability=a.capability,**execution)
     if c == "musical-relations":
         from .musical_relations import musical_relations
         return musical_relations(a.config,a.output)
+    if c == "performance-sections":
+        from .performance_sections import performance_sections
+        return performance_sections(a.config,a.output)
     if c in {"blind-export", "modality-ablation", "evaluate-ablation"}:
         from .analysis_benchmark import blind_export,modality_ablation,evaluate_ablation
         if c == "blind-export":
@@ -444,6 +610,9 @@ def main(argv=None):
             return 0 if meta.get("full_required_coverage", False) and not meta.get("extent_qualifications") else 3
         if a.command == "doctor":
             return 0 if all(x.get("path") for x in value["programs"].values()) else 2
+        if a.command == "observer" and a.observer_command in {"observe", "probe"}:
+            status = value.get("metadata",{}).get("execution_status")
+            return 0 if status in {"OBSERVATION_VALID", "PROBE_PASSED", "PLANNED_NOT_SUBMITTED"} else 3
         return 0
     except (AVError, OSError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

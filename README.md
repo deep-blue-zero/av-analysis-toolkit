@@ -1,6 +1,46 @@
-# AV Evidence Toolkit 1.5.0-alpha2-method-precedence
+# AV Evidence Toolkit 1.6.0-alpha1-holistic-cross-modal
 
-This patch preserves an explicitly supplied analytical method byte-for-byte in
+Canonical software source: [deep-blue-zero/av-analysis-toolkit](https://github.com/deep-blue-zero/av-analysis-toolkit).
+Git contains source, tests, schemas and generic workflows. Media, analytical
+conclusions, credentials, model weights and installed binaries stay outside it.
+The original `1.5.0a2` behavior is preserved by tag `v1.5.0a2-git-baseline`;
+the migration and its platform-specific results are recorded in
+[the migration manifest](docs/MIGRATION_FROM_PORTABLE_1.5.0a2.md).
+
+This prerelease connects text, sound, performance, motion and visual structure
+through one bounded dramatic event: **separate provenance; integrated interpretation**.
+Scene packets reference hashed evidence; observation dependencies localize errors;
+reconciliation records competence, authority and contextual dependence; claim
+deltas compare the reading against a frozen baseline. A reasoning analyst still
+performs the interpretation and records the actual review.
+
+It adds six auditory task profiles, immutable context-minimized/contextual passes,
+scoped human judgments and formal performance sections. Hosted execution remains
+opt-in, authorized, capability-gated and budgeted. Current task capabilities remain
+unqualified; historical failed probes remain failed. Planning and normal CI cost $0.
+Temporal inspection offers 2/8/12 fps and bounded complete-frame windows, retaining
+original source PTS. Generated frames remain OPEN until an attributed review is
+validated; sparse samples do not confirm exact contact or continuous motion.
+
+```text
+python -m pip install ".[all,reuse-parquet,dev]"
+ave doctor
+ave scene validate event.json
+ave scene prepare event.json runs/event
+ave scene reconcile event.json runs/reconciliation
+ave scene plan event.json runs/queries
+ave scene delta before.json after.json runs/delta --decisions decisions.json
+```
+
+See [the holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md),
+[auditory profiles](docs/AUDITORY_TASK_PROFILES.md),
+[temporal inspection](docs/TEMPORAL_INSPECTION.md),
+[compatibility notes](docs/BACKWARD_COMPATIBILITY.md), and
+[packaging/CI](docs/PACKAGING_AND_CI.md). Portable offline ZIPs are build artifacts,
+not canonical source. FFmpeg and Python are external dependencies; no virtual
+machine is needed. The inherited component guides below describe earlier layers.
+
+The inherited method-precedence patch preserves an explicitly supplied analytical method byte-for-byte in
 `deep-read` and `blind-export`, records matching source/copy hashes, and keeps
 method selection independent of the episode-isolated semantic evidence boundary.
 The embedded method is a fallback only; invalid explicit paths fail early.
@@ -14,7 +54,8 @@ See [the claim-directed workflow](docs/CLAIM_DIRECTED_ANALYSIS.md) and its
 [task-by-task scope](docs/CLAIM_DIRECTED_CONFORMANCE.md).
 
 The high-level `deep-read` command prepares evidence for a reasoning analyst.
-It does not itself generate a literary interpretation or call a paid model.
+It does not itself generate a literary interpretation. Paid calls require the
+explicit hosted execution route and all its authorization/budget gates.
 Mock observers never establish hearing. Advanced auditory inference, validated
 CPP, automatic semantic visual tracking and alternate-aligner comparisons remain
 explicitly unvalidated rather than represented by placeholder successes.

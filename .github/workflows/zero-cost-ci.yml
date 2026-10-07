@@ -44,12 +44,16 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-            choco install ffmpeg --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
+          # The external AAC materialization fixtures are validated against 8.1.1.
+          # 9.0.2 changes decoded preroll and retains explicit partial coverage.
+          choco install ffmpeg --version=8.1.1 --allow-downgrade --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ffmpeg -version
           ffprobe -version
+          $avCiFFmpegVersion = (ffmpeg -version | Select-Object -First 1)
+          if ($avCiFFmpegVersion -notmatch '^ffmpeg version 8\.1\.1(?:-|\s)') {
+            throw 'Expected the validated FFmpeg 8.1.1 Windows binary'
+          }
       - name: Install dependencies from repository metadata
         run: python -m pip install ".[all,reuse-parquet,dev]"
       - name: Check Python syntax
@@ -58,6 +62,11 @@ jobs:
         run: python scripts/scan_public_source.py
       - name: Run synthetic regression suite
         shell: bash
+        env:
+          # runner context is available here, not at job-level env evaluation.
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+          TMPDIR: ${{ runner.temp }}
         run: python scripts/self_test.py --report-dir "$RUNNER_TEMP/regression"
       - name: Build and verify wheel and source distribution
         shell: bash

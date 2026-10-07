@@ -1,0 +1,773 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.scene-packet.v1"
+    },
+    "packet_id": {
+      "$ref": "#/$defs/packetId"
+    },
+    "scene_id": {
+      "$ref": "#/$defs/id"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "clock": {
+          "const": "original_pts_minus_source_origin"
+        },
+        "path": {
+          "$ref": "#/$defs/text"
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "audio_stream": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "video_stream": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "sha256",
+        "clock"
+      ]
+    },
+    "interval_seconds": {
+      "$ref": "#/$defs/interval"
+    },
+    "narrative_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "$ref": "#/$defs/text"
+        },
+        "description": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "required": [
+        "basis",
+        "description"
+      ]
+    },
+    "question": {
+      "$ref": "#/$defs/text"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "TXT": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidenceRef"
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "VIS": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidenceRef"
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "TVIS": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "AM": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "AO_STAGE1": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "AO_STAGE2": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/evidenceRef"
+                  },
+                  {
+                    "required": [
+                      "stage1_evidence_id",
+                      "context_evidence_ids"
+                    ],
+                    "properties": {
+                      "context_evidence_ids": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "HL": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "VO": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "AVO": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "INF": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidenceRef"
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
+        "INT": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidenceRef"
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        }
+      },
+      "required": []
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      },
+      "maxItems": 1000,
+      "minItems": 0
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      },
+      "maxItems": 1000,
+      "minItems": 0
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dependency"
+      },
+      "maxItems": 10000,
+      "minItems": 0
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/conflict"
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "adjudication": {
+      "$ref": "#/$defs/adjudication"
+    },
+    "open_questions": {
+      "$ref": "#/$defs/strings"
+    },
+    "holistic_analysis": {
+      "$ref": "#/$defs/text"
+    }
+  },
+  "required": [
+    "schema",
+    "scene_id",
+    "source",
+    "interval_seconds",
+    "narrative_boundary",
+    "question",
+    "evidence",
+    "observations",
+    "claims",
+    "dependencies",
+    "conflicts",
+    "adjudication",
+    "open_questions"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deep-blue-zero/av-analysis-toolkit/schemas/scene-packet.schema.json",
+  "title": "Bounded source-bound dramatic event packet",
+  "description": "Preparation preserves distinct provenance. Runtime additionally verifies hashes, identity, unique IDs, acyclic explicit premises, exact Stage 1/2 bindings and source/stream/scene bounds. A packet is not proof of actual perception or truth.",
+  "$defs": {
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reviewer": {
+          "$ref": "#/$defs/text"
+        },
+        "decisions": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/decision"
+          }
+        }
+      },
+      "required": [
+        "decisions"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "decisions": {
+                "minProperties": 1
+              }
+            },
+            "required": [
+              "decisions"
+            ]
+          },
+          "then": {
+            "required": [
+              "reviewer"
+            ]
+          }
+        }
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/text"
+        },
+        "sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "proposition": {
+          "$ref": "#/$defs/proposition"
+        },
+        "statement": {
+          "$ref": "#/$defs/text"
+        },
+        "status": {
+          "$ref": "#/$defs/state"
+        },
+        "observation_ids": {
+          "$ref": "#/$defs/ids"
+        },
+        "interval_seconds": {
+          "$ref": "#/$defs/interval"
+        },
+        "shared_assumptions": {
+          "$ref": "#/$defs/strings"
+        },
+        "inference": {
+          "$ref": "#/$defs/text"
+        },
+        "interpretation": {
+          "$ref": "#/$defs/text"
+        },
+        "alternatives": {
+          "$ref": "#/$defs/strings"
+        },
+        "confidence": {
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "OPEN"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "proposition",
+        "statement",
+        "status",
+        "observation_ids"
+      ]
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "proposition": {
+          "$ref": "#/$defs/proposition"
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 100,
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "question": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "required": [
+        "id",
+        "proposition",
+        "observation_ids",
+        "question"
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "reason": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "required": [
+        "state",
+        "reason"
+      ]
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/id"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        },
+        "relation": {
+          "enum": [
+            "SUPPORTS",
+            "CONSTRAINS",
+            "CONTRADICTS",
+            "DEPENDS_ON",
+            "REQUIRES_RECHECK_IF_CHANGED",
+            "DOES_NOT_DISCRIMINATE"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "relation",
+        "reason"
+      ]
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "artifact": {
+          "$ref": "#/$defs/artifact"
+        },
+        "locator": {
+          "$ref": "#/$defs/locator"
+        },
+        "record_pointer": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "authority": {
+          "enum": [
+            "canonical_text",
+            "best_available_text",
+            "generated",
+            "measurement",
+            "observer_report",
+            "human_declaration",
+            "inference",
+            "interpretation"
+          ]
+        },
+        "origin_ids": {
+          "$ref": "#/$defs/strings"
+        },
+        "shared_assumptions": {
+          "$ref": "#/$defs/strings"
+        },
+        "context_evidence_ids": {
+          "$ref": "#/$defs/strings"
+        },
+        "stage1_evidence_id": {
+          "$ref": "#/$defs/id"
+        },
+        "review_artifact": {
+          "$ref": "#/$defs/artifact"
+        }
+      },
+      "required": [
+        "id",
+        "artifact",
+        "locator"
+      ]
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "not": {
+        "enum": [
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "1111111111111111111111111111111111111111111111111111111111111111",
+          "2222222222222222222222222222222222222222222222222222222222222222",
+          "3333333333333333333333333333333333333333333333333333333333333333",
+          "4444444444444444444444444444444444444444444444444444444444444444",
+          "5555555555555555555555555555555555555555555555555555555555555555",
+          "6666666666666666666666666666666666666666666666666666666666666666",
+          "7777777777777777777777777777777777777777777777777777777777777777",
+          "8888888888888888888888888888888888888888888888888888888888888888",
+          "9999999999999999999999999999999999999999999999999999999999999999",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ]
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "interval": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "minimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Ordered half-open source-clock interval. Runtime enforces start < end and scene bounds."
+    },
+    "locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "clock": {
+          "const": "original_pts_minus_source_origin"
+        },
+        "stream_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "intervals_seconds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interval"
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "points_seconds": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "source_sha256",
+        "clock"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "intervals_seconds"
+          ],
+          "properties": {
+            "intervals_seconds": {
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "points_seconds"
+          ],
+          "properties": {
+            "points_seconds": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "proposition": {
+          "$ref": "#/$defs/proposition"
+        },
+        "statement": {
+          "$ref": "#/$defs/text"
+        },
+        "status": {
+          "$ref": "#/$defs/state"
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/ids"
+        },
+        "interval_seconds": {
+          "$ref": "#/$defs/interval"
+        },
+        "shared_assumptions": {
+          "$ref": "#/$defs/strings"
+        },
+        "value": {},
+        "temporal_status": {
+          "enum": [
+            "STATIC_CONFIRMED",
+            "TEMPORAL_SAMPLED",
+            "FRAME_SEQUENCE_CONFIRMED",
+            "FRAME_COMPLETE_CONFIRMED",
+            "VIDEO_OBSERVER_REPORTED",
+            "OPEN"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "proposition",
+        "statement",
+        "status",
+        "evidence_ids"
+      ]
+    },
+    "packetId": {
+      "type": "string",
+      "pattern": "^scene-[0-9a-f]{64}$"
+    },
+    "proposition": {
+      "enum": [
+        "wording",
+        "delivery",
+        "nonverbal_vocal",
+        "music_structure",
+        "performance_music",
+        "soundscape",
+        "av_sync",
+        "motion",
+        "contact",
+        "event_order",
+        "visual_fact",
+        "sound_level",
+        "emotion",
+        "speaker_identity",
+        "speech_timing",
+        "interpretation"
+      ]
+    },
+    "state": {
+      "enum": [
+        "REPORTED",
+        "PROVISIONAL",
+        "CONFIRMED",
+        "SUPPORTED",
+        "CONTRADICTED",
+        "RECHECK",
+        "OPEN"
+      ]
+    },
+    "strings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/text"
+      },
+      "maxItems": 100,
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    }
+  }
+}

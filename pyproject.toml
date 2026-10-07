@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "av-evidence-toolkit"
-version = "1.5.0a2"
+version = "1.6.0a1"
 description = "Portable audiovisual evidence preparation with source clocks, provenance and declared-review accounting"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,7 +13,7 @@ authors = [{name = "AV Evidence Toolkit contributors"}]
 dependencies = ["Pillow>=10"]
 
 [project.optional-dependencies]
-dev = ["build>=1.2", "wheel>=0.41", "setuptools>=68"]
+dev = ["build>=1.2", "wheel>=0.41", "setuptools>=68", "jsonschema>=4.18"]
 reuse = ["numpy>=1.26,<3", "scipy>=1.11"]
 reuse-parquet = ["numpy>=1.26,<3", "scipy>=1.11", "pyarrow>=14"]
 instruments = ["numpy>=1.26"]

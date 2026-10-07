@@ -1,12 +1,20 @@
 # Transfer and start
 
+Current source is `1.6.0a1`, maintained in `deep-blue-zero/av-analysis-toolkit`.
+Begin with [the holistic event workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md).
+Preserve source/method scope, prepare a bounded scene, reconcile atomic
+observations and dependencies, and compare claim changes to a frozen baseline.
+Actual interpretation and listening/viewing declarations belong to the reviewer.
+An optional hosted auditory adapter requires explicit authorization, a matching
+capability receipt and a budget; ordinary preparation, tests and CI use no paid API.
+
 For a **Git checkout**, install from `pyproject.toml` with
 `python -m pip install ".[all,reuse-parquet,dev]"`, then run `ave doctor` and
 `python scripts/self_test.py`. See `docs/PACKAGING_AND_CI.md`.
 The private-runtime instructions below apply to generated portable ZIPs, whose
 wheelhouse and transfer manifests are intentionally absent from Git source.
 
-AV Evidence Toolkit 1.5.0a2 is a local, headless evidence toolchain. Give the cloud
+AV Evidence Toolkit is a local, headless evidence toolchain. Give a generated cloud
 ZIP to a chat with file access and code execution, then supply media and a method
 separately. The toolkit does not carry prior interpretations or grant the model
 audio/video perception. No paid API, account, browser, or virtual machine is

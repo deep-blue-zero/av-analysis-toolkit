@@ -1,7 +1,7 @@
 """Provider-independent observer contract, blinded probes, human-review bridge.
 
-No paid or remote backend is configured by this module. Local adapters are
-explicit operator-supplied implementations; mock output is never audio evidence.
+No paid or remote backend is selected by default. Provider transport lives in
+providers/ and requires separate authorization; mock output is never audio evidence.
 """
 from __future__ import annotations
 
@@ -31,18 +31,23 @@ class MockObserver:
     def probe_capability(self, fixture, configuration):
         return {"status": "NOT_CONFIGURED", "semantic_probe_passed": False, "scope": "Mock tests transport only"}
     def observe(self, request, source_bound_clip, optional_text=None):
-        return json.dumps({"observations": [], "alternatives": [], "interference": [],
-                           "abstentions": ["Mock backend has no auditory perception"], "confidence": "unknown"})
+        empty = {"observations": [], "alternatives": [], "interference": [],
+                 "abstentions": ["Mock backend has no auditory perception"], "confidence": "unknown"}
+        if "clips" in source_bound_clip:
+            return json.dumps({"clips": [{"label": c["label"], "observation": empty} for c in source_bound_clip["clips"]],
+                "comparison": [], "alternatives": [], "interference": [], "abstentions": empty["abstentions"], "confidence": "unknown"})
+        return json.dumps(empty)
 
 
 def validate_response(raw, duration):
     # Preserve malformed responses instead of manufacturing observations.
     try:
-        obj = json.loads(raw, parse_constant=lambda _: (_ for _ in ()).throw(ValueError("nonfinite JSON")))
+        from .providers.openai_common import strict_json
+        obj = strict_json(raw)
     except (ValueError, TypeError) as exc:
         raise AVError("Observer response is not strict JSON") from exc
     keys = {"observations", "alternatives", "interference", "abstentions", "confidence"}
-    if not isinstance(obj, dict) or set(obj) != keys or obj["confidence"] not in {"high", "medium", "low", "unknown"}:
+    if not isinstance(obj, dict) or set(obj) != keys or not isinstance(obj["confidence"], str) or obj["confidence"] not in {"high", "medium", "low", "unknown"}:
         raise AVError("Observer response schema is invalid")
     for name in ("observations", "alternatives", "interference", "abstentions"):
         if not isinstance(obj[name], list) or len(obj[name]) > 100:
@@ -60,68 +65,16 @@ def validate_response(raw, duration):
     return obj
 
 
-def observe_clip(witness_run, request_file, output, *, backend=None, capability=None):
-    folder = Path(witness_run).resolve()
-    verify_run(folder)
-    clip = read_json(folder / "witness.json")
-    if clip["identity"]["sample_frames"]/clip["identity"]["sample_rate_hz"] > 30:
-        raise AVError("Auditory observer clips must be at most 30 s; split a longer listening witness")
-    request = read_json(request_file)
-    if not isinstance(request,dict) or set(request)-{"request_id","question","source_sha256","stage","text","context","character_names","expected_emotion"}:
-        raise AVError("Unknown observer request fields; credentials/configuration do not belong in prompts or evidence")
-    text_value(request.get("request_id"), "request ID")
-    text_value(request.get("question"), "observer question")
-    if request.get("stage", 1) not in {1,2}:
-        raise AVError("Observer stage must be 1 or 2")
-    if request.get("stage", 1) == 1 and any(request.get(k) for k in ("text", "context", "character_names", "expected_emotion")):
-        raise AVError("Stage 1 must minimize supplied context; use logged stage 2 for interpretation")
-    if request.get("source_sha256") != clip["source_sha256"]:
-        raise AVError("Observer question is bound to a different source")
-    backend = backend or MockObserver()
-    status = "NOT_CONFIGURED"
-    deps = [file_record(folder / "run.json"), file_record(folder / "audio.wav"), file_record(request_file)]
-    if capability:
-        from .analysis_preflight import capability_receipt
-        receipt = capability_receipt(read_json(capability))
-        if receipt.get("backend_identity") != backend.identity:
-            raise AVError("Capability probe belongs to another adapter/model revision")
-        status = receipt["status"]
-        deps.append(file_record(capability))
-    is_mock = backend.identity.get("type") == "mock"
-    if not is_mock and status != "PROBE_PASSED":
-        raise AVError("Real auditory backend requires a matching passed semantic probe")
-    if not is_mock and backend.identity.get("route_type") not in {"local", "human"}:
-        raise AVError("Hosted media submission requires a separately selected and authorized provider adapter")
-    prompt = NEUTRAL_PROMPT + "\nQuestion: " + request["question"]
-    actual_request = dict(request, prompt=prompt)
-    supplied = {k: request[k] for k in ("text", "context", "character_names", "expected_emotion") if k in request}
-    started = utc_now()
-    raw = backend.observe(actual_request, dict(clip, execution_audio_path=str(folder / "audio.wav")), supplied or None)
-    if not isinstance(raw,str) or len(raw.encode("utf-8"))>1048576:
-        raise AVError("Auditory adapter response exceeds the 1 MiB receipt budget")
-    validation_error = None
-    try:
-        parsed = validate_response(raw, clip["identity"]["sample_frames"]/clip["identity"]["sample_rate_hz"])
-    except AVError as exc:
-        parsed, validation_error = None, str(exc)
-    with output_transaction(output, [folder, request_file] + ([capability] if capability else [])) as stage:
-        report = {"schema": "ave.auditory-observation.v1", "observer_type": "mock" if is_mock else "model_audio",
-            "backend_identity": backend.identity, "request_id": request["request_id"], "source_sha256": clip["source_sha256"],
-            "source_interval_seconds": clip["source_interval_seconds"], "clip_sha256": clip["artifact_sha256"],
-            "clip_to_source_mapping": clip["review_mapping"], "transformations": clip["transformations"],
-            "sample_rate_hz": clip["identity"]["sample_rate_hz"], "channels": clip["identity"]["channels"],
-            "prompt": prompt, "prompt_sha256": digest(prompt), "stage": request.get("stage", 1), "supplied_context": supplied,
-            "raw_response": raw, "parsed": parsed, "validation_status": "INVALID" if validation_error else "VALID",
-            "validation_error": validation_error, "capability_status": status,
-            "started_at": started, "completed_at": utc_now(), "confidence_calibration": "UNCALIBRATED_REVIEWER_JUDGMENT",
-            "scope": "Attributed auditory witness; never the coordinating model's own hearing"}
-        write_json(stage / "observation.json", report)
-        return finish_run(stage, "observer-observe", deps, metadata={"result_file": "observation.json", "validation_status": report["validation_status"]})
+def observe_clip(witness_run, request_file, output, *, backend=None, capability=None, **execution_options):
+    from .observer_execution import observe_request
+    return observe_request(request_file, output, witness_run=witness_run, backend=backend,
+                           capability=capability, **execution_options)
+
 
 
 def score_probe(predictions, answers):
     """One-sided binomial test; acceptance also needs accuracy and enough trials."""
-    if len(answers) < 12 or len(predictions) != len(answers) or any(a not in {0,1} for a in answers):
+    if len(answers) < 12 or len(predictions) != len(answers) or any(type(a) is not int or a not in {0,1} for a in answers):
         raise AVError("Capability probe requires at least 12 balanced binary trials")
     if abs(sum(answers)-len(answers)/2) > 1:
         raise AVError("Probe answer distribution must be balanced")

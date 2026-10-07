@@ -54,15 +54,30 @@ def validate_claims(data, base):
                 raise AVError("Auditory witness must separately identify human or model")
             if e["observer_type"] == "model_audio":
                 # The record itself must be a validated observation, not a fluent paragraph.
-                obs = read_json(artifact["path"])
-                if (obs.get("schema") != "ave.auditory-observation.v1" or obs.get("validation_status") != "VALID"
-                        or obs.get("capability_status") != "PROBE_PASSED" or obs.get("observer_type") != "model_audio"
-                        or not obs.get("parsed", {}).get("observations")):
+                from .auditory_claims import validate_model_observation
+                try:
+                    obs, observed_spans, proof_files = validate_model_observation(artifact["path"])
+                except (AVError, ValueError, TypeError, KeyError) as exc:
+                    if "observation_index" in e:
+                        raise AVError("Atomic auditory evidence requires a validated retained observation") from exc
                     qflags.append("UNVALIDATED_AUDITORY_ROUTE")
-                elif obs.get("source_sha256") != e["locator"]["source_sha256"]:
-                    raise AVError("Observer record is bound to another source")
-                elif missing_intervals(e["locator"]["intervals_seconds"], [obs["source_interval_seconds"]]):
-                    raise AVError("Auditory evidence exceeds its actual witness interval")
+                else:
+                    for proof in proof_files:
+                        dependencies[proof["path"]] = proof
+                    if "observation_index" in e:
+                        index = e["observation_index"]
+                        if type(index) is not int or not 0 <= index < len(obs["parsed"]["observations"]):
+                            raise AVError("Atomic auditory evidence needs a valid observation index")
+                        observed_spans = [observed_spans[index]]
+                        if (e["statement"] != obs["parsed"]["observations"][index]["description"]
+                            or e["locator"]["intervals_seconds"] != observed_spans):
+                            raise AVError("Atomic auditory evidence differs from its retained observation")
+                    if obs.get("source_sha256") != e["locator"]["source_sha256"]:
+                        raise AVError("Observer record is bound to another source")
+                    if obs.get("stream_index") is not None and obs["stream_index"] != e["locator"]["stream_index"]:
+                        raise AVError("Observer record is bound to another audio stream")
+                    if missing_intervals(e["locator"]["intervals_seconds"], observed_spans):
+                        raise AVError("Auditory evidence exceeds its actual timed observations")
         if e["layer"] == "measured" and e["modality"] != "audio" and e.get("method") is None:
             raise AVError("Non-audio measurements must identify their measurement method")
         witnesses[eid] = dict(e, quality_flags=sorted(set(qflags)))
@@ -89,7 +104,7 @@ def validate_claims(data, base):
         if set(supporting) & set(counter):
             raise AVError("The same witness cannot be both support and counterevidence without a separate atomic observation")
         supported_modalities, blockers, present = set(), set(flags(c.get("quality_flags", []))), []
-        for eid in supporting:
+        for eid in supporting + counter:
             e = witnesses[eid]
             matching = [loc for loc in wanted if loc["source_sha256"] == e["locator"]["source_sha256"]]
             if not matching:
@@ -103,6 +118,8 @@ def validate_claims(data, base):
                     raise AVError("Still evidence does not occur in the claim interval")
             elif not any(not missing_intervals(e["locator"]["intervals_seconds"], loc["intervals_seconds"]) for loc in matching):
                 raise AVError("Evidence interval lies outside its claim locator")
+            if eid in counter:
+                continue
             credible_layer = e["layer"] not in {"inference", "interpretation"}
             if credible_layer:
                 supported_modalities.add(e["modality"])
@@ -160,6 +177,8 @@ def _next_step(claim, capabilities):
     if kind in {"delivery", "speaker_identity"}:
         if capabilities.get("auditory_observer", {}).get("status") == "PROBE_PASSED":
             return "BOUNDED_AUDITORY_OBSERVER", "Use a context-minimized observer question with source-bound clips"
+        if capabilities.get("auditory_observer", {}).get("backend_id") == "openai-audio":
+            return "HOSTED_PROBE_REQUIRED", "The explicitly selected hosted route needs its own passed probe; no automatic human or mock fallback"
         return "HUMAN_LISTENING", "Ask one consequential listening comparison using the existing review form"
     return "SOURCE_REVIEW", "Adjudicate the atomic claim against its sources and counterevidence"
 

@@ -9,7 +9,9 @@ weights, downloaded wheels and virtual environments remain external.
 layout and `ave` CLI are retained. Install the core with `python -m pip install .`;
 select existing optional extras for the features needed. Development installation
 is `python -m pip install ".[all,reuse-parquet,dev]"`. Tests use Python's standard
-`unittest` runner; `dev` supplies the wheel/sdist build tools. Qwen alignment is a
+`unittest` runner; `dev` supplies wheel/sdist build tools and JSON-schema
+validation. The runtime-only offline profile does not supply the full development
+test dependencies. Qwen alignment is a
 separate optional installation and model acquisition, never a CI requirement.
 
 FFmpeg/ffprobe are external system dependencies, checked by `ave doctor`. On
@@ -27,8 +29,10 @@ python scripts/build_distributions.py --output ../distribution-build
 
 Choose a new output directory outside the repository. The script builds one
 wheel and one source distribution without build isolation or network downloads;
-missing build tools fail explicitly. It checks exact runtime-module agreement,
-sdist content policy and source correspondence, then installs each distribution
+missing build tools fail explicitly. A fresh external source snapshot prevents
+stale checkout build caches from entering the distributions. The builder checks
+exact runtime-module agreement, sdist content policy and source correspondence,
+then installs each distribution
 in a separate environment and checks imports and CLI launch from outside the
 source tree. Installation checks explicitly expose the build interpreter's
 already installed dependency directories to each fresh environment and execute a
@@ -54,7 +58,7 @@ without pip, root access or network access. Git contains their implementation;
 wheels are supplied externally only when producing an optional release artifact.
 
 ```text
-python scripts/build_portable.py --sdist ../distribution-build/av_evidence_toolkit-1.5.0a2.tar.gz --wheel ../distribution-build/av_evidence_toolkit-1.5.0a2-py3-none-any.whl --wheelhouse /external/wheelhouse --target linux-cp312 --parselmouth-source /external/praat_parselmouth-0.4.7.tar.gz --output /external/av-toolkit-linux-cp312.zip
+python scripts/build_portable.py --sdist ../distribution-build/av_evidence_toolkit-1.6.0a1.tar.gz --wheel ../distribution-build/av_evidence_toolkit-1.6.0a1-py3-none-any.whl --wheelhouse /external/wheelhouse --target linux-cp312 --parselmouth-source /external/praat_parselmouth-0.4.7.tar.gz --output /external/av-toolkit-linux-cp312.zip
 ```
 
 Targets retain the existing offline profiles: Linux x64 CPython 3.11 or 3.12
@@ -90,6 +94,10 @@ The workflow tests Linux CPython 3.11/3.12 and Windows CPython 3.12, matching th
 existing portable profile targets. It installs dependencies through package
 managers, makes FFmpeg available, checks Python syntax, runs the full generated
 synthetic regression suite, builds both distributions and verifies installations.
+Windows CI pins the locally tested FFmpeg 8.1.1. Linux uses the distribution's
+decoder; a test of modern filter-file syntax is skipped when that syntax is not
+available, while the selected legacy route is still executed. See
+[decoder scope](BACKWARD_COMPATIBILITY.md) for retained failures and limits.
 Test receipts preserve exact failures/errors/skips. Workflow artifacts retain
 the distributions, hashes and build receipt; generated binaries are never committed.
 

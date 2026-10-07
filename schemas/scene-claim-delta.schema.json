@@ -1,0 +1,588 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.scene-claim-delta.v1"
+    },
+    "scene_id": {
+      "$ref": "#/$defs/id"
+    },
+    "source_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "baseline_packet_id": {
+      "$ref": "#/$defs/packetId"
+    },
+    "completed_packet_id": {
+      "$ref": "#/$defs/packetId"
+    },
+    "baseline_input_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "completed_input_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "reviewer": {
+      "$ref": "#/$defs/text"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim_id": {
+            "$ref": "#/$defs/id"
+          },
+          "before": {
+            "$ref": "#/$defs/claim"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/claim"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before_state": {
+            "$ref": "#/$defs/state"
+          },
+          "after_state": {
+            "$ref": "#/$defs/state"
+          },
+          "relevant_new_evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "maxItems": 3000,
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "retained_evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "maxItems": 3000,
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "cross_modal_conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/reconciledConflict"
+            },
+            "maxItems": 100,
+            "minItems": 0
+          },
+          "disposition": {
+            "enum": [
+              "PRESERVE",
+              "STRENGTHEN",
+              "REVISE",
+              "DOWNGRADE",
+              "REJECT",
+              "OPEN"
+            ]
+          },
+          "reason": {
+            "$ref": "#/$defs/text"
+          },
+          "what_survived": {
+            "$ref": "#/$defs/text"
+          },
+          "what_changed": {
+            "$ref": "#/$defs/text"
+          },
+          "remaining_open_questions": {
+            "$ref": "#/$defs/strings"
+          },
+          "new_formulation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidence_change": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "before": {
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "OPEN"
+                ]
+              },
+              "after": {
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "OPEN"
+                ]
+              }
+            },
+            "required": [
+              "before",
+              "after"
+            ]
+          }
+        },
+        "required": [
+          "claim_id",
+          "before",
+          "after",
+          "before_state",
+          "after_state",
+          "relevant_new_evidence",
+          "retained_evidence",
+          "cross_modal_conflicts",
+          "disposition",
+          "reason",
+          "what_survived",
+          "what_changed",
+          "remaining_open_questions",
+          "new_formulation",
+          "confidence_change"
+        ]
+      },
+      "maxItems": 1000,
+      "minItems": 0
+    },
+    "new_claim_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "maxItems": 1000,
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "raw_records_preserved": {
+      "const": true
+    },
+    "automatic_confidence_promotion": {
+      "const": false
+    },
+    "scope": {
+      "$ref": "#/$defs/text"
+    }
+  },
+  "required": [
+    "schema",
+    "scene_id",
+    "source_sha256",
+    "baseline_packet_id",
+    "completed_packet_id",
+    "baseline_input_sha256",
+    "completed_input_sha256",
+    "reviewer",
+    "claims",
+    "new_claim_ids",
+    "raw_records_preserved",
+    "automatic_confidence_promotion",
+    "scope"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deep-blue-zero/av-analysis-toolkit/schemas/scene-claim-delta.schema.json",
+  "title": "Frozen before and after event claim comparison",
+  "description": "Exact input bytes are frozen separately. Runtime rejects unsupported strengthening, concealed reformulation, and comparisons across different sources, scenes or intervals. More description does not automatically improve confidence.",
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "proposition": {
+          "$ref": "#/$defs/proposition"
+        },
+        "statement": {
+          "$ref": "#/$defs/text"
+        },
+        "status": {
+          "$ref": "#/$defs/state"
+        },
+        "observation_ids": {
+          "$ref": "#/$defs/ids"
+        },
+        "interval_seconds": {
+          "$ref": "#/$defs/interval"
+        },
+        "shared_assumptions": {
+          "$ref": "#/$defs/strings"
+        },
+        "inference": {
+          "$ref": "#/$defs/text"
+        },
+        "interpretation": {
+          "$ref": "#/$defs/text"
+        },
+        "alternatives": {
+          "$ref": "#/$defs/strings"
+        },
+        "confidence": {
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "OPEN"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "proposition",
+        "statement",
+        "status",
+        "observation_ids"
+      ]
+    },
+    "evidenceAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "$ref": "#/$defs/id"
+        },
+        "channel": {
+          "enum": [
+            "TXT",
+            "VIS",
+            "TVIS",
+            "AM",
+            "AO_STAGE1",
+            "AO_STAGE2",
+            "HL",
+            "VO",
+            "AVO",
+            "INF",
+            "INT"
+          ]
+        },
+        "competent": {
+          "type": "boolean"
+        },
+        "adequate_for_support": {
+          "type": "boolean"
+        },
+        "authority": {
+          "$ref": "#/$defs/text"
+        },
+        "reasons": {
+          "$ref": "#/$defs/strings"
+        },
+        "global_qualification": {
+          "const": false
+        },
+        "temporal_status": {
+          "enum": [
+            "FRAME_COMPLETE_CONFIRMED",
+            "FRAME_SEQUENCE_CONFIRMED"
+          ]
+        },
+        "task_profile": {
+          "$ref": "#/$defs/text"
+        },
+        "validation_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "task_capability_status": {
+          "$ref": "#/$defs/text"
+        },
+        "evidence_class": {
+          "enum": [
+            "AO_STAGE1",
+            "AO_STAGE2"
+          ]
+        },
+        "context_contaminated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "channel",
+        "competent",
+        "adequate_for_support",
+        "authority",
+        "reasons",
+        "global_qualification"
+      ]
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "not": {
+        "enum": [
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "1111111111111111111111111111111111111111111111111111111111111111",
+          "2222222222222222222222222222222222222222222222222222222222222222",
+          "3333333333333333333333333333333333333333333333333333333333333333",
+          "4444444444444444444444444444444444444444444444444444444444444444",
+          "5555555555555555555555555555555555555555555555555555555555555555",
+          "6666666666666666666666666666666666666666666666666666666666666666",
+          "7777777777777777777777777777777777777777777777777777777777777777",
+          "8888888888888888888888888888888888888888888888888888888888888888",
+          "9999999999999999999999999999999999999999999999999999999999999999",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ]
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "dependence_reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "a": {
+                "$ref": "#/$defs/id"
+              },
+              "b": {
+                "$ref": "#/$defs/id"
+              },
+              "shared_origins": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/text"
+                },
+                "maxItems": 30300,
+                "minItems": 0,
+                "uniqueItems": true
+              },
+              "shared_assumptions": {
+                "$ref": "#/$defs/strings"
+              },
+              "graph_dependence": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "shared_origins",
+              "shared_assumptions",
+              "graph_dependence"
+            ]
+          },
+          "maxItems": 10000,
+          "minItems": 0
+        },
+        "independence_not_proven": {
+          "const": true
+        },
+        "not_a_majority_vote": {
+          "const": true
+        }
+      },
+      "required": [
+        "groups",
+        "dependence_reasons",
+        "independence_not_proven",
+        "not_a_majority_vote"
+      ]
+    },
+    "interval": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "minimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Ordered half-open source-clock interval. Runtime enforces start < end and scene bounds."
+    },
+    "packetId": {
+      "type": "string",
+      "pattern": "^scene-[0-9a-f]{64}$"
+    },
+    "proposition": {
+      "enum": [
+        "wording",
+        "delivery",
+        "nonverbal_vocal",
+        "music_structure",
+        "performance_music",
+        "soundscape",
+        "av_sync",
+        "motion",
+        "contact",
+        "event_order",
+        "visual_fact",
+        "sound_level",
+        "emotion",
+        "speaker_identity",
+        "speech_timing",
+        "interpretation"
+      ]
+    },
+    "reconciledConflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "proposition": {
+          "$ref": "#/$defs/proposition"
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 100,
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "question": {
+          "$ref": "#/$defs/text"
+        },
+        "authority": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "observation_id": {
+                "$ref": "#/$defs/id"
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/evidenceAssessment"
+                },
+                "maxItems": 100,
+                "minItems": 1
+              }
+            },
+            "required": [
+              "observation_id",
+              "evidence"
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 2
+        },
+        "independence": {
+          "$ref": "#/$defs/independence"
+        },
+        "recommendation": {
+          "$ref": "#/$defs/text"
+        },
+        "preferred_text_observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 100,
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "potentially_affected_nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 2000,
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "resolution": {
+          "const": "EXPLICIT_ADJUDICATION_REQUIRED"
+        }
+      },
+      "required": [
+        "id",
+        "proposition",
+        "observation_ids",
+        "question",
+        "authority",
+        "independence",
+        "recommendation",
+        "preferred_text_observations",
+        "potentially_affected_nodes",
+        "resolution"
+      ]
+    },
+    "state": {
+      "enum": [
+        "REPORTED",
+        "PROVISIONAL",
+        "CONFIRMED",
+        "SUPPORTED",
+        "CONTRADICTED",
+        "RECHECK",
+        "OPEN"
+      ]
+    },
+    "strings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/text"
+      },
+      "maxItems": 100,
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    }
+  }
+}
