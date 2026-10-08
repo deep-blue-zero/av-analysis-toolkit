@@ -9,6 +9,11 @@ from .inventory import integer, number
 from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
 
 ROUTES = {
+    "recording_identity": [("MUSIC_IDENTITY", "RECORDING")],
+    "composition_identity": [("MUSIC_IDENTITY", "COMPOSITION")],
+    "arrangement_identity": [("MUSIC_IDENTITY", "ARRANGEMENT")],
+    "performance_identity": [("MUSIC_IDENTITY", "PERFORMANCE")],
+    "musical_reference": [("MUSIC_IDENTITY", "PHRASE")],
     "wording": [("TEXT_WITNESS", None)],
     "delivery": [("AUDITORY", "SPEECH_PERFORMANCE")],
     "nonverbal_vocal": [("AUDITORY", "NONVERBAL_VOCAL")],
@@ -31,7 +36,7 @@ ROUTES = {
 def _stream_selection(source, route, question_type):
     """Carry absolute selections; an absent selection never means the default."""
     keys = []
-    if route in {"AUDITORY", "ACOUSTIC_MEASUREMENT", "ALIGNMENT_REVIEW", "SOURCE_ATTRIBUTION_REVIEW"}:
+    if route in {"AUDITORY", "ACOUSTIC_MEASUREMENT", "ALIGNMENT_REVIEW", "SOURCE_ATTRIBUTION_REVIEW", "MUSIC_IDENTITY"}:
         keys.append("audio_stream")
     if route in {"TEMPORAL", "STATIC", "SOURCE_ATTRIBUTION_REVIEW"}:
         keys.append("video_stream")

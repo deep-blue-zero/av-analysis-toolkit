@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.music-identity.lookup.v1"
+    },
+    "query_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "alias": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "audio_stream": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clock": {
+          "const": "original_pts_minus_source_origin"
+        },
+        "interval_seconds": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "alias",
+        "sha256",
+        "display_name",
+        "audio_stream",
+        "clock",
+        "interval_seconds"
+      ]
+    },
+    "submission_class": {
+      "enum": [
+        "LOCAL_ONLY",
+        "DERIVED_FINGERPRINT_LOOKUP",
+        "REMOTE_MEDIA_LOOKUP"
+      ]
+    },
+    "media_uploaded": {
+      "const": false
+    },
+    "fingerprint_sent": {
+      "type": "boolean"
+    },
+    "duration_sent": {
+      "type": "boolean"
+    },
+    "authorization": {
+      "enum": [
+        "NOT_REQUIRED_LOCAL",
+        "EXPLICIT_EXTERNAL_LOOKUP"
+      ]
+    },
+    "status": {
+      "enum": [
+        "CONFIRMED",
+        "SUPPORTED",
+        "CANDIDATE",
+        "AMBIGUOUS",
+        "CONTRADICTED",
+        "UNRESOLVED",
+        "NOT_TESTED"
+      ]
+    },
+    "fingerprint_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "queried_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    },
+    "candidate_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "maxItems": 1000
+    },
+    "normalized_metadata": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "maxItems": 1000
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      },
+      "maxItems": 1000
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    },
+    "response_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "external_request_performed": {
+      "type": "boolean"
+    },
+    "test_double": {
+      "type": "boolean"
+    },
+    "requested_recording_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "metadata_retrieved_at": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "observation_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "schema",
+    "query_id",
+    "provider",
+    "source",
+    "submission_class",
+    "media_uploaded",
+    "fingerprint_sent",
+    "duration_sent",
+    "authorization",
+    "status",
+    "fingerprint_sha256",
+    "queried_at",
+    "candidate_ids",
+    "normalized_metadata",
+    "missing_fields",
+    "reason"
+  ]
+}

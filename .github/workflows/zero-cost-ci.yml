@@ -28,6 +28,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       OPENAI_API_KEY: ''
+      ACOUSTID_API_KEY: ''
+      AVE_RUN_NETWORK_INTEGRATION: '0'
       AVE_ENABLE_PAID_TESTS: '0'
       PYTHONUTF8: '1'
       OPENBLAS_NUM_THREADS: '1'

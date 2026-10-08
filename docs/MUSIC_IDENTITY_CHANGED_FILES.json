@@ -1,0 +1,225 @@
+{
+  "schema": "ave.feature.changed-files.v1",
+  "feature": "music identity",
+  "version": "1.6.0a2",
+  "base_commit": "5ef302c26f1658832b817e68b15a9a800ca6e9e9",
+  "branch": "feature/music-identity",
+  "created_at": "2026-10-08T04:42:35.286201+00:00",
+  "changed_file_count": 41,
+  "files": [
+    {
+      "path": ".github/workflows/zero-cost-ci.yml",
+      "bytes": 3100,
+      "sha256": "f3f38486b931bc3024fffbd85dd0acc74d21ef4c87d01a958e10c749cc32e0af"
+    },
+    {
+      "path": "AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md",
+      "bytes": 6388,
+      "sha256": "47c60fd29f4de0027f80cb6ceb5969e025afeff9a2f8c00bc8769d2f5f8bdc54"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 3926,
+      "sha256": "e1a3b5c3a3ec4bd2433bb159fd44afbf3a1e6beddb04f6358cb3dd97b67d24a9"
+    },
+    {
+      "path": "KNOWN_LIMITATIONS.md",
+      "bytes": 6475,
+      "sha256": "af6bd65d903b7a21bf6925e1eb7dac9acf09ffccf99761720b1f1f6aa3883a76"
+    },
+    {
+      "path": "README.md",
+      "bytes": 15568,
+      "sha256": "02c7f1fc6bcccc3240cfa83854a76a17b981cc88f73235a7c0c928525b4b201e"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "bytes": 1825,
+      "sha256": "0a1932ecb49b1c9bb86fa829b7447a7c7c1b3dd29edfcd05f5ec93944cc5d5a9"
+    },
+    {
+      "path": "avevidence/__init__.py",
+      "bytes": 155,
+      "sha256": "38b96bd34ebba26c360881193875fdcb3e4abbe1bc16944b37c12839ac2ec448"
+    },
+    {
+      "path": "avevidence/cli.py",
+      "bytes": 52252,
+      "sha256": "bb7efccd7fd5cccb1120382c2ba4b6817c1675841ef4f8c89e2c3053f84de91f"
+    },
+    {
+      "path": "avevidence/cross_modal.py",
+      "bytes": 22522,
+      "sha256": "5324ae806712f70f2bb0cd39773e6df1db535a1c1670af70e14a0acd19e03a98"
+    },
+    {
+      "path": "avevidence/event_contracts.py",
+      "bytes": 3869,
+      "sha256": "69336c87508188c694e0e54aedf853a2172f5524959c2563b6e9840c74c797bc"
+    },
+    {
+      "path": "avevidence/music_identity/__init__.py",
+      "bytes": 304,
+      "sha256": "982b5aa813c51cc9e04ed4c496aab93b06218b56af2aae3974efe6a2e4a94645"
+    },
+    {
+      "path": "avevidence/music_identity/backends.py",
+      "bytes": 16461,
+      "sha256": "6b578e507e9f7f8eb0ac38568bb2cfb2e19aa2fdbe7c65197953c83f46868300"
+    },
+    {
+      "path": "avevidence/music_identity/contracts.py",
+      "bytes": 11528,
+      "sha256": "4d2e13d839937b169dcd65ebe79f5767e0a2d9ce73d8bdab322fad74e7864a79"
+    },
+    {
+      "path": "avevidence/music_identity/families.py",
+      "bytes": 3212,
+      "sha256": "115dec8fc2b6dbcaf915e4bc6c0d4ca019c34c7f895f623c06d6fb9fe94dec7e"
+    },
+    {
+      "path": "avevidence/music_identity/fingerprint.py",
+      "bytes": 3695,
+      "sha256": "9bd160166acd86689b766299a24150c5a697d57f4f16dbbf9d81d9ac8a6427c5"
+    },
+    {
+      "path": "avevidence/music_identity/local.py",
+      "bytes": 9619,
+      "sha256": "5ca37ba8783f5dbda581b3c74f7ce239171262b26195d56dad7832107e0c8517"
+    },
+    {
+      "path": "avevidence/music_identity/metadata.py",
+      "bytes": 2697,
+      "sha256": "c1e3121031107105bb9f1dd79386bc66992ff7b8792d87b95f78d7009cf23e17"
+    },
+    {
+      "path": "avevidence/music_identity/portability.py",
+      "bytes": 9327,
+      "sha256": "be9679dfac0802ffe686d0bc19e75aef6c24a90f6aef2931e8f78b8c6cbf9671"
+    },
+    {
+      "path": "avevidence/music_identity/review.py",
+      "bytes": 12028,
+      "sha256": "359ba2d949b5e347c92da1598c16460d731cbadc7c0442669ec8af76b35b4245"
+    },
+    {
+      "path": "avevidence/music_identity/workflow.py",
+      "bytes": 13693,
+      "sha256": "8f2403eb2bc84cbf3612c0c2ab02162537892f23ce4b7d0b4234efbd892009fa"
+    },
+    {
+      "path": "avevidence/scene_packets.py",
+      "bytes": 22203,
+      "sha256": "afc226191eec30a819c49ffecaf32214e9d2618776a72d6f18490e4b7addb00c"
+    },
+    {
+      "path": "avevidence/scene_planning.py",
+      "bytes": 7935,
+      "sha256": "590e8092d37ea430ca6b41e697dcd4d48efa890fcd3334448d2405dfbd970be5"
+    },
+    {
+      "path": "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md",
+      "bytes": 15080,
+      "sha256": "fa191804dca199b8074bfc4340440a0b12b0a10a7b72b5bfaee829f41c429398"
+    },
+    {
+      "path": "docs/MUSIC_IDENTITY.md",
+      "bytes": 13528,
+      "sha256": "bf52c8f0419011388c824b529248d566c2ad642750a19ab01867122d37357592"
+    },
+    {
+      "path": "docs/MUSIC_IDENTITY_CHANGED_FILES.json",
+      "binding": "Self-entry has no self-referential hash; clean distribution receipt binds every source member."
+    },
+    {
+      "path": "docs/MUSIC_IDENTITY_IMPLEMENTATION.md",
+      "bytes": 10427,
+      "sha256": "27579b52d02ed2d7db0acce1054b36c381fc858fae56c28aa8e438ee977b3775"
+    },
+    {
+      "path": "docs/MUSIC_IDENTITY_PREFLIGHT.json",
+      "bytes": 1827,
+      "sha256": "daab166ff89656cadeb5daca51ddf1ed96f6fcd2f049365a4e06d23bda8640ff"
+    },
+    {
+      "path": "docs/MUSIC_IDENTITY_REGRESSION_RECEIPT.json",
+      "bytes": 15060,
+      "sha256": "0b5d27f39fc66f640bb3b8ef471fac45956eb3775f25be49eb70e8bdac8ffa01"
+    },
+    {
+      "path": "docs/MUSIC_IDENTITY_VALIDATION_PLAN.md",
+      "bytes": 2580,
+      "sha256": "3ea9e3cce47646d70ba0ef7b907df03e3752b01c2c0dde1bbc4dcbe87d0709b7"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 1240,
+      "sha256": "03b47513bcbdbc5a0f308a1ad8223b41234092be0952e6bfb782f1a790174723"
+    },
+    {
+      "path": "schemas/music-identity-aliases.schema.json",
+      "bytes": 2439,
+      "sha256": "d574cff47e9d64e0d0520aa5349847b5bb3b4dbab05c10fa1b5a4db51c0198d9"
+    },
+    {
+      "path": "schemas/music-identity-family.schema.json",
+      "bytes": 2217,
+      "sha256": "7643eceaf3833d8ae1f7066f8356a1ff8fabc566faa64caea7f19d4ef87c1499"
+    },
+    {
+      "path": "schemas/music-identity-lookup.schema.json",
+      "bytes": 3770,
+      "sha256": "035209b4fb18e1d4a90e4199ef533fac741cc682b3e89546353f7089d75cb3f2"
+    },
+    {
+      "path": "schemas/music-identity.schema.json",
+      "bytes": 16045,
+      "sha256": "c30bcc488a15141af15734f3150c44996771d8586a7851348d313d3b6e8c3be5"
+    },
+    {
+      "path": "schemas/scene-claim-delta.schema.json",
+      "bytes": 15093,
+      "sha256": "39b7e689bb94ea186c57b444737b61ab1ac5f1f1113c8c8237aad9021b868a60"
+    },
+    {
+      "path": "schemas/scene-packet.schema.json",
+      "bytes": 18389,
+      "sha256": "68c4aa3564abd5a0d557175c8d80367c144c0f985a545b79819df1da9fb25a53"
+    },
+    {
+      "path": "schemas/scene-query-plan.schema.json",
+      "bytes": 12234,
+      "sha256": "a57cf8aaf4464716e7f521caa25c3040604f4dc0dd21a12b76e55ce6bb10ab19"
+    },
+    {
+      "path": "schemas/scene-reconciliation.schema.json",
+      "bytes": 16490,
+      "sha256": "9f7d7459d368f6ac521283f0bcba61efc494edc8c92aab3a2a6c3cea78f7f362"
+    },
+    {
+      "path": "scripts/build_distributions.py",
+      "bytes": 12517,
+      "sha256": "fbffad9c7230e78189d23c35ed177b13fd79393cf0fb1cc884b19d9065d1cfce"
+    },
+    {
+      "path": "tests/test_music_identity.py",
+      "bytes": 29666,
+      "sha256": "3c8be39fbff662c36d4e5afecfc38f5cb7e74115639697ac8577ba30e534296e"
+    },
+    {
+      "path": "tests/test_music_identity_integration.py",
+      "bytes": 22095,
+      "sha256": "bc1e78dd339bd0fad8da8a8fddc0731adbbe8aefb2566ac9d43fa89b0d2aa7fa"
+    }
+  ],
+  "excluded": [
+    "Primary media",
+    "Credentials",
+    "Host execution paths",
+    "Binaries",
+    "Caches",
+    "Distributions",
+    "Historical raw receipts"
+  ],
+  "scope": "Relative first-party source/schema/test/documentation/CI paths changed against the preflight base"
+}

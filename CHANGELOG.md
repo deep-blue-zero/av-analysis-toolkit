@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.6.0a2 — Source-bound music identity
+
+- Add `music identify`, `adjudicate`, `plan`, `export` and `rebind`, with immutable
+  source/stream/interval receipts and separate composition, arrangement,
+  performance, phrase and recording judgments.
+- Reuse the local correspondence engine/index; add optional external `fpcalc`,
+  fingerprint-only authorized AcoustID and cached MusicBrainz recording/work/
+  release normalization. Network remains off by default.
+- Group explicit work relations conservatively; retain cover ambiguity, weak
+  title candidates and partial medleys without score voting or promotion.
+- Add proposition-specific `MID` evidence and logical source/artifact aliases.
+  Portable export omits private paths/media and requires hash-verified source/
+  evidence rebinding. Historical receipts remain unchanged.
+- Add generated/mocked regressions, schemas, privacy/qualification guards,
+  implementation preflight and an explicitly unexecuted real-media validation plan.
+
 ## 1.6.0a1 — Holistic cross-modal analysis
 
 Feature work follows the separately verified `1.5.0a2` Git baseline. This entry

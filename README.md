@@ -1,4 +1,4 @@
-# AV Evidence Toolkit 1.6.0-alpha1-holistic-cross-modal
+# AV Evidence Toolkit 1.6.0-alpha2-music-identity
 
 Canonical software source: [deep-blue-zero/av-analysis-toolkit](https://github.com/deep-blue-zero/av-analysis-toolkit).
 Git contains source, tests, schemas and generic workflows. Media, analytical
@@ -22,9 +22,18 @@ Temporal inspection offers 2/8/12 fps and bounded complete-frame windows, retain
 original source PTS. Generated frames remain OPEN until an attributed review is
 validated; sparse samples do not confirm exact contact or continuous motion.
 
+**Source-bound music identification** adds local metadata/reuse, optional
+Chromaprint, authorized fingerprint-only AcoustID lookup, cached MusicBrainz
+work relations and conservative cover families. Composition, arrangement,
+performance, phrase and recording identity stay separate. `MID` scene evidence
+requires scoped adjudication; a lookup/nonmatch alone cannot establish musical
+truth or originality. See [the music workflow](docs/MUSIC_IDENTITY.md) for CLI,
+privacy, portable replay and the proposed real-media validation.
+
 ```text
 python -m pip install ".[all,reuse-parquet,dev]"
 ave doctor
+ave music identify source.mkv music-run --audio-stream 1 --start 12 --end 42
 ave scene validate event.json
 ave scene prepare event.json runs/event
 ave scene reconcile event.json runs/reconciliation
