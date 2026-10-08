@@ -79,9 +79,19 @@ existing retiming/portability regressions, wheel smoke, archive verification and
 clean extraction. Native Windows and real performance tests remain separate gates.
 Build with `scripts/build_release.py --candidate` until ALL stable-release report
 requirements pass; this revision does not weaken that inherited release gate.
-# Current extension: 1.6.0-alpha1-holistic-cross-modal
+# Previous extension: 1.6.0-alpha1-holistic-cross-modal
 
 The original instrument specification below remains historical component scope.
 Current event contracts, contextual auditory passes and temporal escalation are
 documented in `docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md`,
 `docs/AUDITORY_TASK_PROFILES.md` and `docs/TEMPORAL_INSPECTION.md`.
+
+# Current extension: 1.6.0-alpha2-music-identity
+
+Source-bound music identity adds local metadata/reuse, optional external
+Chromaprint, explicitly authorized AcoustID/MusicBrainz, conservative work families,
+separate identity-level adjudication and MID scene evidence. Its contracts and
+privacy are documented in `docs/MUSIC_IDENTITY.md`. Historical specifications,
+receipts and the migration baseline are preserved. Generated/mocked tests cannot
+qualify real-song recognition or auditory perception; real-media trials are a
+separately authorized plan. The inherited stable-release gates remain controlling.

@@ -120,10 +120,10 @@ def validate_packet(packet):
                 raise AVError("Evidence IDs must be unique across channels")
             _artifact(ref["artifact"], "raw evidence")
             _locator(ref["locator"], source, bounds)
-            selected_key = "audio_stream" if channel in {"AM", "AO_STAGE1", "AO_STAGE2", "HL"} else "video_stream" if channel in {"VIS", "TVIS", "VO"} else None
+            selected_key = "audio_stream" if channel in {"AM", "AO_STAGE1", "AO_STAGE2", "HL", "MID"} else "video_stream" if channel in {"VIS", "TVIS", "VO"} else None
             if selected_key and selected_key in source and ref["locator"].get("stream_index") != source[selected_key]:
                 raise AVError("Evidence locator differs from the scene's explicitly selected stream")
-            if channel in {"AO_STAGE1", "AO_STAGE2", "HL", "AM", "TVIS", "VO", "AVO"} and "stream_index" not in ref["locator"]:
+            if channel in {"AO_STAGE1", "AO_STAGE2", "HL", "AM", "TVIS", "VO", "AVO", "MID"} and "stream_index" not in ref["locator"]:
                 raise AVError("Temporal/audio evidence needs its selected absolute stream")
             if "record_pointer" in ref:
                 text_value(ref["record_pointer"], "record pointer")
@@ -254,6 +254,15 @@ def load_scene_packet(path, *, relocations=None):
     # Stage 2 is structurally attributed and immutably parent-bound; validity
     # is not capability qualification, independent corroboration, or truth.
     for eid, ref in evidence.items():
+        if ref["channel"] == "MID":
+            from .music_identity.workflow import load_music_run
+            from .mapping import missing_intervals
+            music_folder, music = load_music_run(Path(bindings[eid]["path"]).parent)
+            src, loc = music["source"], ref["locator"]
+            if (sha256(music_folder / "music-identity.json") != ref["artifact"]["sha256"] or src["sha256"] != loc["source_sha256"]
+                or src["audio_stream"] != loc["stream_index"] or src["clock"] != loc["clock"]
+                or missing_intervals(loc.get("intervals_seconds", []), [src["interval_seconds"]])):
+                raise AVError("MID reference differs from its verified source/stream/clock/identity artifact")
         if ref["channel"] not in {"AO_STAGE1", "AO_STAGE2"}:
             continue
         raw = read_event_json(bindings[eid]["path"])

@@ -38,7 +38,8 @@
               "ACOUSTIC_MEASUREMENT",
               "ALIGNMENT_REVIEW",
               "SOURCE_ATTRIBUTION_REVIEW",
-              "PREMISE_REVIEW"
+              "PREMISE_REVIEW",
+              "MUSIC_IDENTITY"
             ]
           },
           "profile": {
@@ -259,7 +260,8 @@
               "ACOUSTIC_MEASUREMENT",
               "ALIGNMENT_REVIEW",
               "SOURCE_ATTRIBUTION_REVIEW",
-              "PREMISE_REVIEW"
+              "PREMISE_REVIEW",
+              "MUSIC_IDENTITY"
             ]
           },
           "status": {
