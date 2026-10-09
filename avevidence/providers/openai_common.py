@@ -51,7 +51,7 @@ def model_matches(configured, returned):
 class HostedError(AVError):
     def __init__(self, code, message, *, details=None):
         if code not in {"OPENAI_CREDENTIAL_NOT_CONFIGURED", "HOSTED_MEDIA_NOT_AUTHORIZED", "BACKEND_NOT_PROBED",
-            "BACKEND_PROBE_FAILED", "BUDGET_GUARD", "PROVIDER_REQUEST_FAILED", "PROVIDER_RATE_LIMITED", "PROVIDER_RESPONSE_INVALID"}:
+            "BACKEND_PROBE_FAILED", "TASK_NOT_QUALIFIED", "BUDGET_GUARD", "PROVIDER_REQUEST_FAILED", "PROVIDER_RATE_LIMITED", "PROVIDER_RESPONSE_INVALID"}:
             code = "PROVIDER_REQUEST_FAILED"
         self.code = code
         self.details = details if isinstance(details, dict) else {}
