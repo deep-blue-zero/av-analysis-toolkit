@@ -293,6 +293,14 @@ def load_scene_packet(path, *, relocations=None):
         # rather than silently trusting a caller's independence assertion.
         if raw.get("backend_identity"):
             origins = list(ref.get("origin_ids", []))
+            backend = raw["backend_identity"]
+            provider = backend.get("provider", backend.get("backend_id"))
+            origins.append("auditory-model-"+canonical_digest({
+                "provider": provider, "model_revision": backend.get("model_revision")}))
+            returned_model = (raw.get("provider_receipt") or {}).get("returned_model")
+            if returned_model:
+                origins.append("auditory-returned-model-"+canonical_digest({
+                    "provider": provider, "returned_model": returned_model}))
             origins.append("auditory-model-context-"+canonical_digest({
                 "backend": raw["backend_identity"],
                 "clips": [(c.get("clip_sha256"), c.get("source_sha256"), c.get("stream_index"),

@@ -42,3 +42,11 @@ model. Analysts still prepare references, assess observations, adjudicate exact
 propositions and supply the event interpretation. Qualification remains limited
 to its tested task/media/route scope. Initial natural-media validation remains
 outstanding; the recommended next test is one separately authorized Jensen microclip.
+
+PR review corrections require every conflict rival to have a resolved effective
+disposition, including adequate evidence and material prerequisites. Rejecting one
+rival leaves the other pending rivals open, independently of observation order.
+Model-level origins also join repeated judgments across different clips and
+prompts; supplied independence declarations cannot override a shared configured
+or provider-returned model. `AUDITORY_REVIEW_FIX_RECEIPT.json` records the later
+source-bound regression without replacing the original 596-test receipt.

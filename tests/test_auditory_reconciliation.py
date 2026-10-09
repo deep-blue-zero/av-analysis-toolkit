@@ -227,6 +227,85 @@ class AuditoryReconciliation(unittest.TestCase):
         result = self.reconciled(packet)
         self.assertFalse(result["observations"]["o-delivery"]["adequate_for_support"])
 
+    def test_multiway_conflict_rejecting_one_rival_does_not_resolve_the_rest(self):
+        base = self.delivery_packet()
+        unreviewed = copy.deepcopy(base["evidence"]["AO_STAGE1"][0])
+        unreviewed["id"] = "unreviewed-rival"
+        del unreviewed["review_artifact"]
+        base["evidence"]["AO_STAGE1"].append(unreviewed)
+        for state in ("OPEN", "RECHECK", "PROVISIONAL", "REPORTED", "SUPPORTED", "CONTRADICTED"):
+            for reverse in (False, True):
+                packet = copy.deepcopy(base)
+                packet["observations"].extend([
+                    self.obs("o-rejected", "delivery", "audio-new", status="CONTRADICTED",
+                             interval=[.2, .7], statement="The pace slows."),
+                    self.obs("o-rival", "delivery", "unreviewed-rival", status=state,
+                             interval=[.2, .7], statement="The pace remains constant.")])
+                if reverse:
+                    packet["observations"].reverse()
+                packet["conflicts"] = [{"id": "three-way", "proposition": "delivery",
+                    "observation_ids": ["o-delivery", "o-rejected", "o-rival"],
+                    "question": "Have all competing delivery readings been adjudicated?"}]
+                self.decide(packet, {"o-delivery": "SUPPORTED", "o-rejected": "CONTRADICTED",
+                                     "o-rival": state, "c-delivery": "SUPPORTED"})
+                result = self.reconciled(packet, state+str(reverse)+".json")
+                with self.subTest(state=state, reverse=reverse):
+                    if state == "CONTRADICTED":
+                        self.assertTrue(result["observations"]["o-delivery"]["adequate_for_support"])
+                        self.assertEqual(result["claims"][0]["state"], "SUPPORTED")
+                    else:
+                        self.assertFalse(result["observations"]["o-delivery"]["adequate_for_support"])
+                        self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
+
+    def test_same_model_different_clips_and_prompts_remain_dependent(self):
+        base = self.delivery_packet()
+        declaration = {"reviewer": "Separate fixture reviewer", "basis": "Independently declared preparation",
+                       "upstream_evidence_ids": []}
+        base["evidence"]["AO_STAGE1"][0]["independence_declaration"] = declaration
+        for same_model in (True, False):
+            packet = copy.deepcopy(base)
+            raw = observation(1, source_sha256=self.source_hash)
+            raw["backend_identity"]["prompt_revision"] = "different-neutral-prompt"
+            raw["backend_identity"]["configuration_revision"] = "different-config"
+            if not same_model:
+                raw["backend_identity"]["model_revision"] = "another-fixture-model"
+            folder = self.root/("different-clip-"+str(same_model)); folder.mkdir()
+            path = folder/"observation.json"
+            write_json(path, raw); finish_run(folder, "manufactured-observer-record", [])
+            packet["evidence"]["AO_STAGE1"].append({"id": "different-clip",
+                "artifact": {"path": str(path), "sha256": sha256(path)},
+                "locator": {"source_sha256": self.source_hash, "stream_index": 0,
+                    "clock": "original_pts_minus_source_origin", "intervals_seconds": [[1., 2.]]},
+                "independence_declaration": copy.deepcopy(declaration)})
+            packet["observations"].append(self.obs("o-other-clip", "delivery", "different-clip", interval=[1.1, 1.8]))
+            packet["claims"][0]["observation_ids"].append("o-other-clip")
+            packet["dependencies"].append(self.edge("o-other-clip", "c-delivery"))
+            result = self.reconciled(packet, "clips-"+str(same_model)+".json")
+            assessment = result["claims"][0]["independence"]
+            with self.subTest(same_model=same_model):
+                self.assertEqual(assessment["agreement_class"],
+                                 "DEPENDENT_CONSISTENCY" if same_model else "INDEPENDENT_CORROBORATION")
+                self.assertEqual(len(assessment["groups"]), 1 if same_model else 2)
+
+    def test_conflict_rival_with_unresolved_material_prerequisite_stays_unresolved(self):
+        packet = self.delivery_packet()
+        packet["evidence"]["TXT"] = [self.ref("pending-text", self.text)]
+        packet["observations"].extend([
+            self.obs("o-rejected", "delivery", "audio-new", status="CONTRADICTED",
+                     interval=[.2, .7], statement="The pace slows."),
+            self.obs("o-rival", "delivery", "audio-new", status="SUPPORTED",
+                     interval=[.2, .7], statement="The pace slows."),
+            self.obs("o-premise", "wording", "pending-text", status="OPEN")])
+        packet["dependencies"].append(self.edge("o-premise", "o-rival", "DEPENDS_ON"))
+        packet["conflicts"] = [{"id": "dependent-rival", "proposition": "delivery",
+            "observation_ids": ["o-delivery", "o-rejected", "o-rival"],
+            "question": "Does an affirmative rival still depend on unresolved wording?"}]
+        self.decide(packet, {"o-delivery": "SUPPORTED", "o-rejected": "CONTRADICTED",
+                             "o-rival": "SUPPORTED", "o-premise": "OPEN", "c-delivery": "SUPPORTED"})
+        result = self.reconciled(packet)
+        self.assertFalse(result["observations"]["o-delivery"]["adequate_for_support"])
+        self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
+
     def test_extended_scene_outputs_match_public_schemas(self):
         import jsonschema
         packet = self.delivery_packet()

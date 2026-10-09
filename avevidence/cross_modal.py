@@ -243,18 +243,6 @@ def reconcile_data(packet, evidence, nodes, bindings):
             adequate = (any(a["adequate_for_support"] for a in positive)
                         and all(a["adequate_for_support"] for a in positive if a["role"] == "REQUIRED")
                         and not any(a["adequate_for_support"] for a in assessments if a["role"] == "CONTRADICTORY"))
-        for conflict in packet["conflicts"]:
-            if row["id"] not in conflict["observation_ids"]:
-                continue
-            resolved = (all(key in decisions for key in conflict["observation_ids"])
-                        and any(decisions[key]["state"] == "CONTRADICTED" for key in conflict["observation_ids"]))
-            if not resolved:
-                for assessment in assessments:
-                    if assessment.get("admission_status") == "ELIGIBLE_FOR_SUPPORT":
-                        assessment.update(adequate_for_support=False, admission_status="INADEQUATE")
-                        assessment["reasons"].append("Unresolved same-proposition packet conflict prevents scoped auditory support")
-                if any(a.get("authority") == "SCOPED_QUALIFIED_AUDITORY_WITNESS" for a in assessments):
-                    adequate = False
         observations[row["id"]] = {"proposition": row["proposition"], "evidence_assessments": assessments,
                                   "competent_evidence_available": any(a["competent"] for a in assessments),
                                   "adequate_for_support": adequate,
@@ -262,6 +250,42 @@ def reconcile_data(packet, evidence, nodes, bindings):
         proposed = decisions.get(row["id"], {}).get("state", row["status"])
         if proposed in {"SUPPORTED", "CONFIRMED"} and (not adequate or row["id"] not in decisions):
             decisions[row["id"]] = {"state": "OPEN", "reason": "Affirmative observation needs competent adequate evidence and explicit attributed adjudication"}
+    # Assess every rival before resolving conflicts. A nominal affirmative
+    # decision may have failed adequacy or a material prerequisite; neither
+    # observation order nor rejecting one rival settles the remaining rivals.
+    affirmative = {"SUPPORTED", "CONFIRMED"}
+    for _ in range(len(observations) + 1 if packet["conflicts"] else 0):
+        preliminary = propagate_changes(packet["observations"], packet["claims"], packet["dependencies"], decisions)
+        effective = {key: "RECHECK" if value["changed_premises"] and value["after"] in affirmative else value["after"]
+                     for key, value in preliminary["state_overlay"].items()}
+        for _ in range(len(nodes)):
+            before = effective.copy()
+            for edge in packet["dependencies"]:
+                if material_edge(edge) and effective[edge["to"]] in affirmative and effective[edge["from"]] not in affirmative:
+                    effective[edge["to"]] = "RECHECK"
+            if effective == before:
+                break
+        changed = False
+        for conflict in packet["conflicts"]:
+            ids = conflict["observation_ids"]
+            resolved = (all(key in packet["adjudication"]["decisions"] and
+                            effective[key] in affirmative | {"CONTRADICTED"} for key in ids)
+                        and any(effective[key] == "CONTRADICTED" for key in ids))
+            if resolved:
+                continue
+            for key in ids:
+                observed = observations[key]
+                for assessment in observed["evidence_assessments"]:
+                    if assessment.get("admission_status") == "ELIGIBLE_FOR_SUPPORT":
+                        assessment.update(adequate_for_support=False, admission_status="INADEQUATE")
+                        assessment["reasons"].append("Unresolved same-proposition packet conflict prevents scoped auditory support")
+                if any(a.get("authority") == "SCOPED_QUALIFIED_AUDITORY_WITNESS" for a in observed["evidence_assessments"]):
+                    observed["adequate_for_support"] = False
+                    if decisions.get(key, {}).get("state") in affirmative:
+                        decisions[key] = {"state": "OPEN", "reason": "A competing auditory observation remains unresolved"}
+                        changed = True
+        if not changed:
+            break
     overlay = propagate_changes(packet["observations"], packet["claims"], packet["dependencies"], decisions)
     # An affirmative dependent decision cannot silently override a changed
     # premise. Re-formulate/review it in a subsequent packet/delta instead.
