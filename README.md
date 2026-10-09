@@ -1,4 +1,4 @@
-# AV Evidence Toolkit 1.6.0-alpha2-music-identity
+# AV Evidence Toolkit 1.6.0-alpha3-auditory-qualification
 
 Canonical software source: [deep-blue-zero/av-analysis-toolkit](https://github.com/deep-blue-zero/av-analysis-toolkit).
 Git contains source, tests, schemas and generic workflows. Media, analytical
@@ -14,10 +14,18 @@ reconciliation records competence, authority and contextual dependence; claim
 deltas compare the reading against a frozen baseline. A reasoning analyst still
 performs the interpretation and records the actual review.
 
-It adds six auditory task profiles, immutable context-minimized/contextual passes,
-scoped human judgments and formal performance sections. Hosted execution remains
-opt-in, authorized, capability-gated and budgeted. Current task capabilities remain
-unqualified; historical failed probes remain failed. Planning and normal CI cost $0.
+Layered auditory admission separates source authorization, API transport, response
+validity, tested input influence, task proficiency and individual adequacy. Routine
+`QUALIFIED` observation requires an exact task/media/route benchmark qualification;
+explicit `EXPERIMENTAL` collection can proceed without a passing broad probe,
+while retaining strict source, upload, format, credential and budget guards.
+Provider submission uses a verified PCM16 derivative of the forensic witness.
+Qualified atomic observations need a separate scoped review and analyst adjudication
+to support claims. Declared roles and alternative proof routes preserve adequate
+text/image interpretations when supplementary audio remains provisional. No actual
+natural-audio task has yet earned qualification; historical probe failures remain
+failed. Planning and normal CI cost $0. See [admission and qualification](docs/AUDITORY_QUALIFICATION.md)
+and [the retained synthetic integration results](docs/AUDITORY_SYNTHETIC_INTEGRATION.json).
 Temporal inspection offers 2/8/12 fps and bounded complete-frame windows, retaining
 original source PTS. Generated frames remain OPEN until an attributed review is
 validated; sparse samples do not confirm exact contact or continuous motion.

@@ -118,3 +118,17 @@ build both passed all four distribution/source/install checks. Windows offline
 installation and generated public-scene commands were also executed. Linux
 offline ZIP construction checks do not certify the offline installer on Linux;
 GitHub Actions separately exercises native Linux online installations.
+
+## 1.6.0a3 optional extensions
+
+Legacy receipts and mock/human review behavior remain readable. Probe v1 retains
+its original scoring; v2 uses balanced reversed pairs and strict choice JSON.
+Actual new observers default to `QUALIFIED`, which requires an exact recomputed
+task qualification. A prior synthetic probe alone no longer admits routine live
+collection. Explicit `EXPERIMENTAL` retains upload, credential, budget, format
+and source guards. Injected test-double compatibility never becomes perception.
+New scene roles/routes are optional; legacy packets retain all-premise behavior.
+`ELIGIBLE_FOR_SUPPORT` additionally requires an atomic assessment and benchmark
+proof; analyst adjudication is still necessary. No historical artifact is rewritten.
+The public task catalog retains its original six `profiles` entries and exposes
+the four finer request profiles through the optional `competency_profiles` map.

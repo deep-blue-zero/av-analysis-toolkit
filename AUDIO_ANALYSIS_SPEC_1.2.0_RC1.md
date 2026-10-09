@@ -1,4 +1,6 @@
-> Current extension: **1.5.0-alpha2-method-precedence**. This file describes the
+> Current release: **1.6.0-alpha3-auditory-qualification**; see
+> `docs/AUDITORY_QUALIFICATION.md` for layered admission and scoped proof rules.
+> Inherited extension: **1.5.0-alpha2-method-precedence**. This file describes the
 > inherited Audio Instruments contract. Reuse commands and their separate
 > correspondence schema are in `docs/PERFORMANCE_REUSE.md`; local alignment and
 > listening worksheets retain their existing guides. Current reuse validation

@@ -10,6 +10,12 @@ packet. A lexical error reopens its dependents; it does not erase unrelated
 delivery observations. Stage 2 contextual audio does not independently confirm
 Stage 1. Generating frames is not a declaration that they were reviewed.
 See [the event contracts and examples](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md).
+For hosted sound, prepare a verified provider witness and explicitly choose the
+collection lane. Experimental output remains attributed and unqualified; routine
+qualified output requires a recomputed scoped benchmark. Attach an atomic review,
+declare essential versus supplementary roles/support routes, and adjudicate the
+exact proposition. Timing and emotion do not inherit delivery qualification.
+See [auditory admission](docs/AUDITORY_QUALIFICATION.md).
 
 1. Read the human's scope and method. Do an independent bounded source reading
    before consulting prior verdicts. Record available modalities and perception

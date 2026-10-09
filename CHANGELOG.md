@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.6.0a3 — Scoped auditory qualification and cross-modal reconciliation
+
+- Separate authorization, transport, contract validity, input influence, task
+  qualification and atomic observation adequacy. Add explicit experimental
+  collection and routine qualified execution with unchanged budget/privacy guards.
+- Preserve forensic witnesses and derive verified PCM16 provider inputs with
+  frame/rate/channel/clock identity, hashes, quantization receipts and strict bounds.
+- Add balanced, reversed-pair synthetic probe v2 with raw JSON, family statistics
+  and separate malformed/perceptual/transport failures; preserve historical v1.
+- Recompute task/media/route qualification from independent held-out reference
+  and output reviews, including controls, abstentions and timing tolerances.
+- Admit qualified atomic auditory witnesses only through scoped assessment and
+  explicit adjudication. Add evidence roles, alternative support routes, local
+  correction propagation, conservative dependence and integrated event deltas.
+- Keep music identity levels and legacy scene/observer consumers intact. Normal
+  CI costs $0; the authorized synthetic-only live test cost $0.02514. No natural
+  auditory task is claimed qualified. Real-media acceptance remains opt-in.
+
 ## 1.6.0a2 — Source-bound music identity
 
 - Add `music identify`, `adjudicate`, `plan`, `export` and `rebind`, with immutable
