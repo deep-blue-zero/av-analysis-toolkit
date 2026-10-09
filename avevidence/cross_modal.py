@@ -184,7 +184,7 @@ def _scoped_auditory_assessment(result, raw, ref, binding, proposition, interval
     from .inventory import text_value
     # Collection integrity is necessary, but never sufficient for support.
     try:
-        _, covered, _ = validate_model_observation(binding["path"], allow_experimental=True)
+        validated, covered, _ = validate_model_observation(binding["path"], allow_experimental=True)
     except AVError as exc:
         result["reasons"].append(str(exc)); result["competent"] = False
         return
@@ -207,24 +207,30 @@ def _scoped_auditory_assessment(result, raw, ref, binding, proposition, interval
     if ref.get("record_pointer") not in {f"/source_observations/{index}", f"/parsed/observations/{index}"}:
         raise AVError("Scoped support must select the exact atomic timed observation")
     if (review["interval_seconds"] != interval or missing_intervals([interval], [covered[index]])
-        or observation is None or review["statement"] != observation["statement"]):
+        or observation is None or review["statement"] != observation["statement"]
+        or review["statement"] != validated["source_observations"][index]["description"]):
         raise AVError("Auditory assessment cannot widen or relabel the actual observation's declared scope")
     qpath = resolve_artifact(review["qualification_artifact"], Path(binding["review_path"]).parent)
     task = competence(raw["task_profile"])
     qualification = load_qualification(qpath, identity=raw["backend_identity"], task=task,
-        media_category=raw["media_category"], configuration_revision=raw["backend_identity"]["configuration_revision"])
+        media_category=raw["media_category"], configuration_revision=raw["backend_identity"]["configuration_revision"],
+        required=False)
     # Hold nested proof bytes stable through publication, as for scene evidence.
     qfolder = qpath if qpath.is_dir() else qpath.parent
     binding["qualification_proof"] = {"path": str(qfolder), "manifest_sha256": sha256(qfolder/"run.json")}
-    if raw["backend_identity"].get("route_type") == "hosted" and qualification["returned_model"] != raw.get("provider_receipt", {}).get("returned_model"):
+    qualified = qualification["status"] == "QUALIFIED_FOR_SCOPE"
+    if qualified and raw["backend_identity"].get("route_type") == "hosted" and qualification["returned_model"] != raw.get("provider_receipt", {}).get("returned_model"):
         raise AVError("Scoped qualification belongs to another provider-reported model revision")
     competent = proposition in TASK_PROPOSITIONS[task]
     result.update(competent=competent, task_capability_status=qualification["status"],
         qualification_scope=qualification["scope_description"], observation_scope=review["scope"],
-        authority="SCOPED_QUALIFIED_AUDITORY_WITNESS", admission_status="ELIGIBLE_FOR_SUPPORT" if competent and
+        authority="SCOPED_QUALIFIED_AUDITORY_WITNESS" if qualified else "ATTRIBUTED_UNQUALIFIED_AUDITORY_WITNESS",
+        admission_status="ELIGIBLE_FOR_SUPPORT" if qualified and competent and
         review["adequacy"] == "ELIGIBLE_FOR_SUPPORT" and not review["unresolved_contradictions"] else "INADEQUATE",
-        adequate_for_support=bool(competent and review["adequacy"] == "ELIGIBLE_FOR_SUPPORT" and not review["unresolved_contradictions"]))
-    result["reasons"].append("Qualification and individual review verified; claim support still requires separate explicit adjudication")
+        adequate_for_support=bool(qualified and competent and review["adequacy"] == "ELIGIBLE_FOR_SUPPORT" and not review["unresolved_contradictions"]))
+    result["reasons"].append("Qualification record and individual review verified; claim support still requires separate explicit adjudication")
+    if not qualified:
+        result["reasons"].append("This recomputed benchmark state has not qualified the task; optional evidence stays inadequate without invalidating an independent route")
     if ref["channel"] == "AO_STAGE2" and proposition == "wording":
         result.update(adequate_for_support=False, admission_status="CONTEXT_ONLY_FOR_SUPPLIED_WORDING")
         result["reasons"].append("Contextual reinspection cannot independently prove words supplied in its prompt")
@@ -277,14 +283,16 @@ def reconcile_data(packet, evidence, nodes, bindings):
             for key in ids:
                 observed = observations[key]
                 for assessment in observed["evidence_assessments"]:
+                    assessment["adequate_for_support"] = False
                     if assessment.get("admission_status") == "ELIGIBLE_FOR_SUPPORT":
-                        assessment.update(adequate_for_support=False, admission_status="INADEQUATE")
-                        assessment["reasons"].append("Unresolved same-proposition packet conflict prevents scoped auditory support")
-                if any(a.get("authority") == "SCOPED_QUALIFIED_AUDITORY_WITNESS" for a in observed["evidence_assessments"]):
-                    observed["adequate_for_support"] = False
-                    if decisions.get(key, {}).get("state") in affirmative:
-                        decisions[key] = {"state": "OPEN", "reason": "A competing auditory observation remains unresolved"}
-                        changed = True
+                        assessment["admission_status"] = "INADEQUATE"
+                    reason = "Unresolved same-proposition packet conflict prevents support for this rival"
+                    if reason not in assessment["reasons"]:
+                        assessment["reasons"].append(reason)
+                observed["adequate_for_support"] = False
+                if decisions.get(key, {}).get("state") in affirmative:
+                    decisions[key] = {"state": "OPEN", "reason": "A competing observation remains unresolved"}
+                    changed = True
         if not changed:
             break
     overlay = propagate_changes(packet["observations"], packet["claims"], packet["dependencies"], decisions)

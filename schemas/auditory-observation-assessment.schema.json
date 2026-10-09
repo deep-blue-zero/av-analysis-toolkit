@@ -50,7 +50,8 @@
     "statement": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 2000
+      "maxLength": 2000,
+      "description": "Runtime requires exact equality with the selected immutable model description and the scene observation statement. Analyst paraphrases belong in separate claims or inferences."
     },
     "adequacy": {
       "enum": [

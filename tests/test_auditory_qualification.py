@@ -7,6 +7,7 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
@@ -14,6 +15,7 @@ from avevidence.auditory_qualification import benchmark, competence, load_qualif
 from avevidence.common import AVError, finish_run, read_json, sha256, write_json
 from avevidence.event_contracts import canonical_digest
 from avevidence.auditory_claims import validate_model_observation
+from avevidence.inventory import verify_run
 
 
 def rewrite_fixture(path, value):
@@ -186,6 +188,72 @@ class TaskQualification(unittest.TestCase):
             validate_model_observation(folder/"observation.json")
         _, covered, _ = validate_model_observation(folder/"observation.json", allow_experimental=True)
         self.assertEqual(covered, [[.1, .8]])
+
+    def run_bound_config(self, kind, *, nested=False):
+        config = qualification_config(self.root/(kind+"-inputs"))
+        outer = self.root/(kind+"-immutable-run")
+        outer.mkdir()
+        run = outer/"inner" if nested else outer
+        if nested:
+            run.mkdir()
+        if kind == "configuration":
+            shutil.copytree(config.parent, run/"inputs")
+            new_config = run/"inputs"/config.name
+        else:
+            value = read_json(config)
+            trial = value["trials"][0]
+            original = config.parent/trial[kind]["path"]
+            copied = run/"records"/original.name
+            copied.parent.mkdir()
+            shutil.copyfile(original, copied)
+            for row in value["trials"]:
+                for key in ("observation", "review"):
+                    row[key]["path"] = str(config.parent/row[key]["path"])
+            trial[kind]["path"] = str(copied)
+            new_config = self.root/(kind+"-bound-config.json")
+            write_json(new_config, value)
+        finish_run(run, "manufactured-benchmark-input-run", [])
+        if nested:
+            finish_run(outer, "manufactured-outer-input-run", [])
+        verify_run(outer)
+        return new_config, outer, run
+
+    def test_benchmark_cannot_publish_inside_any_immutable_input_run(self):
+        for kind in ("observation", "review", "configuration"):
+            with self.subTest(kind=kind):
+                config, outer, run = self.run_bound_config(kind)
+                original = (run/"run.json").read_bytes()
+                with self.assertRaisesRegex(AVError, "inside an input"):
+                    benchmark(config, run/"qualification")
+                self.assertEqual((run/"run.json").read_bytes(), original)
+                self.assertFalse((run/"qualification").exists())
+                self.assertFalse(list(run.glob('.qualification.staging-*')))
+                verify_run(outer)
+
+    def test_benchmark_protects_outer_run_even_when_input_is_in_nested_run(self):
+        config, outer, inner = self.run_bound_config("observation", nested=True)
+        with self.assertRaisesRegex(AVError, "inside an input"):
+            benchmark(config, outer/"qualification")
+        verify_run(outer)
+        verify_run(inner)
+
+    def test_benchmark_rejects_corrupted_containing_input_run(self):
+        config, outer, run = self.run_bound_config("review")
+        (run/"unlisted-file.txt").write_text("Changes membership of the generated test run", encoding="utf-8")
+        with self.assertRaises(AVError):
+            benchmark(config, self.root/"qualification")
+        self.assertFalse((self.root/"qualification").exists())
+
+    def test_benchmark_outside_input_run_preserves_and_binds_input_manifest(self):
+        config, outer, run = self.run_bound_config("observation", nested=True)
+        before = {str(p.relative_to(outer)): sha256(p) for p in outer.rglob('*') if p.is_file()}
+        output = self.root/"qualification"
+        benchmark(config, output)
+        self.assertEqual(load_qualification(output)["status"], "QUALIFIED_FOR_SCOPE")
+        self.assertEqual(before, {str(p.relative_to(outer)): sha256(p) for p in outer.rglob('*') if p.is_file()})
+        verify_run(outer)
+        sources = {r["path"] for r in read_json(output/"run.json")["sources"]}
+        self.assertTrue({str((folder/"run.json").resolve()) for folder in (outer, run)} <= sources)
 
     def timing_config(self, task, error):
         config = qualification_config(self.root/"timing-input")

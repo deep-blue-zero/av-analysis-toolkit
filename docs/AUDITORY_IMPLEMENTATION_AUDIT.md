@@ -59,3 +59,18 @@ Relocation preserves recomputation, retained-proof mutation fails verification,
 and output/input overlap is refused before a stage can pollute the proof.
 `AUDITORY_REVIEW_FIX2_RECEIPT.json` records this later regression separately from
 both earlier receipts and the preserved failed/incomplete validation history.
+
+Further review corrections apply unresolved-conflict gating to every evidence
+channel, including mixed model/human and pure text/visual rivals, while preserving
+unrelated nodes and legitimate unique-survivor support. Atomic auditory review
+statements bind the actual indexed model description; analyst reformulation
+remains in claims/inferences. Benchmarks verify and protect all containing input
+runs (including nested outer runs), bind their manifests and refuse overlap
+before staging. `AUDITORY_REVIEW_FIX3_RECEIPT.json` records the completed 54-test
+focused and 613-test full regressions separately, with zero failures, errors or
+skips and stable source/test hashes. Earlier failed attempts remain preserved.
+The completion audit also reproduced a valid provisional proof aborting an
+independent text-image route. Valid unqualified benchmark states now remain
+inadequate without aborting that route; required auditory claims stay open.
+Generated scene fixtures explicitly adjudicate real lexical rivals and retain
+same-word contextual repetition separately as dependent, unqualified evidence.

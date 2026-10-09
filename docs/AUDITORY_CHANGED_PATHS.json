@@ -37,12 +37,14 @@
     "docs/AUDITORY_REGRESSION_RECEIPT.json",
     "docs/AUDITORY_REVIEW_FIX_RECEIPT.json",
     "docs/AUDITORY_REVIEW_FIX2_RECEIPT.json",
+    "docs/AUDITORY_REVIEW_FIX3_RECEIPT.json",
     "docs/AUDITORY_SCHEMAS.md",
     "docs/AUDITORY_SYNTHETIC_INTEGRATION.json",
     "docs/AUDITORY_TASK_PROFILES.md",
     "docs/BACKWARD_COMPATIBILITY.md",
     "docs/COMMANDS.md",
     "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md",
+    "examples/build_synthetic_scene.py",
     "pyproject.toml",
     "schemas/auditory-admission.schema.json",
     "schemas/auditory-benchmark-dataset.schema.json",
@@ -62,7 +64,8 @@
     "tests/test_auditory_reconciliation.py",
     "tests/test_hosted_observer.py",
     "tests/test_provider_witness.py",
-    "tests/test_scene_cli.py"
+    "tests/test_scene_cli.py",
+    "tests/test_scene_events.py"
   ],
   "scope": "Toolkit source/tests/schemas/docs only; private runs and distributions excluded"
 }

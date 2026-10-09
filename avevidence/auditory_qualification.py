@@ -226,6 +226,26 @@ def evaluate_benchmark(dataset, trials, backend_identity, configuration_revision
         "global_qualification": False, "authorizes_submission": False}
 
 
+def _benchmark_input_runs(records):
+    """Protect every enclosing immutable AV run, including nested outer runs."""
+    checked, roots, manifests = set(), [], []
+    for record in records:
+        for folder in Path(record["path"]).parents:
+            if folder in checked:
+                continue
+            checked.add(folder)
+            marker = folder/"run.json"
+            if not marker.is_file():
+                continue
+            manifest = read_event_json(marker)
+            if not isinstance(manifest, dict) or manifest.get("schema") != "ave.run.v1":
+                continue
+            verify_run(folder)
+            roots.append(folder)
+            manifests.append(file_record(marker))
+    return roots, manifests
+
+
 def benchmark(config, output):
     """Snapshot reference and observation/review artifacts, then recompute scores."""
     from .scene_packets import resolve_artifact
@@ -251,7 +271,9 @@ def benchmark(config, output):
             "validation_error": error})
         deps.extend((file_record(obs_path), file_record(review_path)))
     record = evaluate_benchmark(dataset, snapshots, value["backend_identity"], value["configuration_revision"], value.get("scope_approval"))
-    with output_transaction(output, [r["path"] for r in deps]) as stage:
+    input_runs, manifests = _benchmark_input_runs(deps)
+    deps.extend(manifests)
+    with output_transaction(output, [r["path"] for r in deps]+input_runs) as stage:
         write_json(stage/"benchmark-snapshot.json", {"dataset": dataset, "trials": snapshots,
             "backend_identity": value["backend_identity"], "configuration_revision": value["configuration_revision"],
             "scope_approval": value.get("scope_approval")})
@@ -263,6 +285,8 @@ def benchmark(config, output):
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(source.read_bytes())
         write_json(stage/"qualification.json", record)
+        for folder in input_runs:
+            verify_run(folder)
         return finish_run(stage, "auditory-benchmark", deps, metadata={"result_file": "qualification.json", "status": record["status"]})
 
 

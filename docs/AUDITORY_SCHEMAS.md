@@ -19,6 +19,8 @@ semantics; loading a legacy record never invents qualification, review or roles.
   dataset/category, recomputed metrics/criteria, scope approval and limitations.
 - `ave.auditory-observation-assessment.v1`: explicit review of one atomic timed
   report and proposition, with a hash-bound qualification and unresolved conflicts.
+  Runtime binds its statement to the indexed raw model description and the
+  scene observation; analyst paraphrases belong in separate claims/inferences.
 - `ave.scene-qualification-bindings.v1`: sidecar mapping scene or before/after
   evidence IDs to immutable retained qualification runs and manifest hashes.
   Reconciliation/delta manifests include every original proof file as a source

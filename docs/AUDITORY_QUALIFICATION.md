@@ -191,6 +191,10 @@ Reference authenticity and independent review are attributed human declarations;
 hashes verify bytes, not the truth of those declarations.
 
 Benchmark outputs preserve original response/review bytes plus a scored snapshot.
+Every containing AV input run is verified, including outer runs around nested
+observation runs. Their manifests are publication dependencies. Output inside
+any such run is refused before staging, and membership is rechecked before
+publication; standalone input artifacts remain supported.
 Loading a qualification verifies the run and originals and recomputes the whole
 record. Editing a status field or supplying a self-declared certificate fails.
 
@@ -203,6 +207,15 @@ That review binds observation hash/index, exact proposition, source interval,
 statement, reviewer, scope, adequacy, unresolved contradictions, reason and a
 hash-bound qualification artifact. `ELIGIBLE_FOR_SUPPORT` describes the witness;
 it is distinct from an explicitly adjudicated `CLAIM_SUPPORTED` conclusion.
+The assessment and scene observation statement must equal the description in
+the selected immutable model observation. Put analyst paraphrases and further
+interpretation in a separate claim or inference, keeping the reported atomic
+statement unchanged.
+Valid recomputed proofs in NOT_TESTED, PROVISIONAL, VALIDATED_ON_BENCHMARK or
+FAILED states leave this witness inadequate; they do not abort an independently
+adequate route where audio is supplementary. Missing qualification, wrong scope,
+tampered proof bytes or an invalid atomic binding never grant support. Routine
+QUALIFIED collection still requires QUALIFIED_FOR_SCOPE before submission.
 
 An experimental response may later receive a separate qualification and scoped
 review without rewriting its original UNQUALIFIED receipt. Stage-2 supplied
@@ -225,7 +238,10 @@ This archival verification establishes recorded integrity, not perceptual truth.
 An explicit same-proposition conflict is resolved only when exactly one rival
 has adequate, affirmative effective support and every other rival is explicitly
 contradicted. Pending rivals, unresolved prerequisites and multiple affirmative
-rivals leave scoped auditory support open, irrespective of observation order.
+rivals leave every conflicting observation inadequate for support, irrespective
+of evidence channel or observation order. This includes human, text, static
+visual and qualified model-audio rivals. Only affected nodes and materially
+dependent conclusions are rechecked; unrelated observations retain their scope.
 
 Observations may declare `evidence_roles` for every reference. Roles are REQUIRED,
 SUPPORTING, CONTEXTUAL, CONTRADICTORY and NON_DISCRIMINATING. Dependencies may

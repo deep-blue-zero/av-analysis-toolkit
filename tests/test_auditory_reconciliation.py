@@ -43,6 +43,10 @@ class AuditoryReconciliation(unittest.TestCase):
 
     def auditory(self, *, source_sha256=None, test_double=False):
         raw = observation(source_sha256=source_sha256 or self.source_hash)
+        # Keep the manufactured report, review and packet wording identical.
+        raw["parsed"]["observations"][0]["description"] = "The pace slows."
+        raw["source_observations"][0]["description"] = "The pace slows."
+        raw["raw_response"] = __import__('json').dumps(raw["parsed"])
         if test_double:
             raw["backend_identity"]["execution_mode"] = "TEST_DOUBLE"
         folder = self.root/"new-auditory"; folder.mkdir()
@@ -148,6 +152,58 @@ class AuditoryReconciliation(unittest.TestCase):
         self.assertEqual(result["claims"][0]["state"], "OPEN")
         self.assertEqual(result["claims"][0]["support_routes"][0]["status"], "OPEN")
 
+    def test_valid_unqualified_optional_proof_preserves_independent_route(self):
+        import json
+        base = self.static_packet()
+        source_hash = base["source"]["sha256"]
+        textual = self.ref("txt", self.text, authority="canonical_text", interval=[.2, .8])
+        textual["locator"]["source_sha256"] = source_hash
+        base["evidence"]["TXT"] = [textual]
+        base["evidence"]["AO_STAGE1"] = [self.auditory(source_sha256=source_hash)]
+        base["observations"].extend([self.obs("o-text", "wording", "txt", status="SUPPORTED"),
+            self.obs("o-audio", "delivery", "audio-new", interval=[.2, .7], statement="The pace slows.")])
+        base["claims"] = [{"id": "interpretation", "proposition": "interpretation", "statement": "A reviewed text-image formulation.",
+            "status": "SUPPORTED", "observation_ids": ["o-static", "o-text", "o-audio"],
+            "interpretation": "Generated contract with supplementary auditory evidence",
+            "support_routes": [self.route(["o-static", "o-text"], supplementary=["o-audio"])]},
+            self.claim("required-audio", "delivery", "o-audio", status="SUPPORTED", interval=[.2, .7])]
+        base["dependencies"] = [self.edge(key, "interpretation") for key in ("o-static", "o-text")]
+        base["dependencies"].extend([{**self.edge("o-audio", "interpretation"), "role": "SUPPORTING"},
+                                     self.edge("o-audio", "required-audio")])
+        self.decide(base, {"o-static": "SUPPORTED", "o-text": "SUPPORTED", "interpretation": "SUPPORTED", "required-audio": "SUPPORTED"})
+        for state in ("PROVISIONAL", "VALIDATED_ON_BENCHMARK", "FAILED", "NOT_TESTED"):
+            config = qualification_config(self.root/(state+"-inputs"),
+                source_kind="GENERATED" if state == "PROVISIONAL" else "NATURAL_AUDIO",
+                approve=state != "VALIDATED_ON_BENCHMARK")
+            value = read_json(config)
+            if state == "FAILED":
+                for trial in value["trials"][8:16]:
+                    review_path = config.parent/trial["review"]["path"]
+                    review = read_json(review_path); review["predicted_label"] = "PRESENT"
+                    review_path.write_text(json.dumps(review), encoding="utf-8")
+                    trial["review"]["sha256"] = sha256(review_path)
+            elif state == "NOT_TESTED":
+                value["trials"] = []
+            config.write_text(json.dumps(value), encoding="utf-8")
+            proof = self.root/(state+"-proof")
+            benchmark(config, proof)
+            self.assertEqual(load_qualification(proof, required=False)["status"], state)
+            review = read_json(self.root/"scoped-review.json")
+            review["qualification_artifact"] = {"path": str(proof/"qualification.json"), "sha256": sha256(proof/"qualification.json")}
+            review_path = self.root/(state+"-scoped-review.json")
+            write_json(review_path, review)
+            packet = copy.deepcopy(base)
+            packet["evidence"]["AO_STAGE1"][0]["review_artifact"] = {"path": review_path.name, "sha256": sha256(review_path)}
+            result = self.reconciled(packet, state+"-optional-proof.json")
+            with self.subTest(state=state):
+                assessment = result["observations"]["o-audio"]["evidence_assessments"][0]
+                self.assertEqual(assessment["task_capability_status"], state)
+                self.assertEqual(assessment["admission_status"], "INADEQUATE")
+                self.assertEqual(assessment["authority"], "ATTRIBUTED_UNQUALIFIED_AUDITORY_WITNESS")
+                self.assertFalse(result["observations"]["o-audio"]["adequate_for_support"])
+                self.assertEqual(result["claims"][0]["state"], "SUPPORTED")
+                self.assertNotIn(result["claims"][1]["state"], {"SUPPORTED", "CONFIRMED"})
+
     def test_required_audio_cannot_be_optionalized_away(self):
         packet = self.delivery_packet()
         packet["claims"][0]["support_routes"] = [self.route([], supplementary=["o-delivery"])]
@@ -228,6 +284,116 @@ class AuditoryReconciliation(unittest.TestCase):
                                 "observation_ids": ["o-delivery", "o-dispute"], "question": "Is the slowing audible?"}]
         result = self.reconciled(packet)
         self.assertFalse(result["observations"]["o-delivery"]["adequate_for_support"])
+
+    def human_delivery(self):
+        path = self.root/"human-delivery.json"
+        write_json(path, {"schema": "ave.human-listening-observation.v1",
+            "actual_audio_inspection_declared": True, "reviewer": "Manufactured human-listening contract",
+            "source_sha256": self.source_hash, "stream_index": 0, "proposition": "delivery",
+            "observation": "The pace remains constant.", "inspected_intervals_seconds": [[.2, .7]]})
+        return self.ref("human", path, channel="HL", interval=[.2, .7])
+
+    def conflict_packet(self, packet):
+        original = packet["observations"][0]
+        rival = copy.deepcopy(original); rival["id"] = "o-rival"
+        rival["statement"] = "An explicitly conflicting alternative to the first observation."
+        packet["observations"].append(rival)
+        first_claim = packet["claims"][0]
+        second_claim = copy.deepcopy(first_claim); second_claim["id"] = "c-rival"
+        second_claim["observation_ids"] = ["o-rival"]
+        packet["claims"].append(second_claim)
+        packet["dependencies"].append(self.edge("o-rival", "c-rival"))
+        packet["conflicts"] = [{"id": "unresolved-rivals", "proposition": original["proposition"],
+            "observation_ids": [original["id"], "o-rival"], "question": "Which conflicting observation survives?"}]
+        for row in packet["observations"]+packet["claims"]:
+            row["status"] = "SUPPORTED"
+        self.decide(packet, {r["id"]: "SUPPORTED" for r in packet["observations"]+packet["claims"]})
+        return packet
+
+    def assert_conflict_gated_and_unique_survivor_supported(self, packet, name):
+        original_id = packet["observations"][0]["id"]
+        for reverse in (False, True):
+            candidate = copy.deepcopy(packet)
+            if reverse:
+                candidate["observations"].reverse()
+            result = self.reconciled(candidate, name+str(reverse)+".json")
+            with self.subTest(channel=name, reverse=reverse):
+                for key in (original_id, "o-rival"):
+                    self.assertFalse(result["observations"][key]["adequate_for_support"])
+                    self.assertNotIn(result["dependency_assessment"]["state_overlay"][key]["after"], {"SUPPORTED", "CONFIRMED"})
+                for claim in result["claims"]:
+                    self.assertNotIn(claim["state"], {"SUPPORTED", "CONFIRMED"})
+        resolved = copy.deepcopy(packet)
+        resolved["adjudication"]["decisions"]["o-rival"]["state"] = "CONTRADICTED"
+        result = self.reconciled(resolved, name+"-resolved.json")
+        self.assertTrue(result["observations"][original_id]["adequate_for_support"])
+        self.assertEqual(result["claims"][0]["state"], "SUPPORTED")
+        self.assertNotIn(result["claims"][1]["state"], {"SUPPORTED", "CONFIRMED"})
+
+    def test_mixed_human_and_qualified_audio_conflict_gates_both_rivals(self):
+        packet = self.conflict_packet(self.delivery_packet())
+        packet["evidence"]["HL"] = [self.human_delivery()]
+        packet["observations"][1].update(evidence_ids=["human"], statement="The pace remains constant.")
+        # The first claim deliberately relies on the human rival: model-only
+        # downgrading must not leave a human-backed claim supported.
+        packet["claims"][0]["observation_ids"] = ["o-rival"]
+        packet["claims"][1]["observation_ids"] = ["o-delivery"]
+        packet["dependencies"] = [self.edge("o-rival", "c-delivery"), self.edge("o-delivery", "c-rival")]
+        for reverse in (False, True):
+            candidate = copy.deepcopy(packet)
+            if reverse:
+                candidate["observations"].reverse()
+            result = self.reconciled(candidate, "mixed-"+str(reverse)+".json")
+            with self.subTest(reverse=reverse):
+                for key in ("o-delivery", "o-rival"):
+                    self.assertFalse(result["observations"][key]["adequate_for_support"])
+                self.assertTrue(all(r["state"] not in {"SUPPORTED", "CONFIRMED"} for r in result["claims"]))
+        packet["adjudication"]["decisions"]["o-delivery"]["state"] = "CONTRADICTED"
+        result = self.reconciled(packet, "mixed-resolved.json")
+        self.assertTrue(result["observations"]["o-rival"]["adequate_for_support"])
+        self.assertEqual(result["claims"][0]["state"], "SUPPORTED")
+
+    def test_unresolved_text_conflict_gates_claims_until_unique_survivor(self):
+        packet = self.conflict_packet(self.packet())
+        self.assert_conflict_gated_and_unique_survivor_supported(packet, "text-conflict")
+        packet["observations"].append(self.obs("o-unrelated", "wording", "txt", status="SUPPORTED"))
+        packet["claims"].append(self.claim("c-unrelated", "wording", "o-unrelated", status="SUPPORTED"))
+        packet["dependencies"].append(self.edge("o-unrelated", "c-unrelated"))
+        self.decide(packet, {r["id"]: "SUPPORTED" for r in packet["observations"]+packet["claims"]})
+        result = self.reconciled(packet, "text-conflict-unrelated.json")
+        self.assertTrue(result["observations"]["o-unrelated"]["adequate_for_support"])
+        self.assertEqual(next(r for r in result["claims"] if r["id"] == "c-unrelated")["state"], "SUPPORTED")
+
+    def test_unresolved_human_conflict_gates_claims_until_unique_survivor(self):
+        packet = self.packet()
+        packet["evidence"] = {"HL": [self.human_delivery()]}
+        packet["observations"] = [self.obs("o-human", "delivery", "human", status="SUPPORTED", interval=[.2, .7])]
+        packet["claims"] = [self.claim("c-human", "delivery", "o-human", status="SUPPORTED", interval=[.2, .7])]
+        packet["dependencies"] = [self.edge("o-human", "c-human")]
+        self.assert_conflict_gated_and_unique_survivor_supported(self.conflict_packet(packet), "human-conflict")
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "Generated static fixture requires FFmpeg/ffprobe")
+    def test_unresolved_visual_conflict_gates_claims_until_unique_survivor(self):
+        self.assert_conflict_gated_and_unique_survivor_supported(self.conflict_packet(self.static_packet()), "visual-conflict")
+
+    def test_scoped_assessment_cannot_relabel_atomic_model_statement(self):
+        base = self.delivery_packet()
+        review_path = self.root/"scoped-review.json"
+        review = read_json(review_path)
+        review["statement"] = "The delivery accelerates into an angry shout."
+        new_review = self.root/"relabelled-review.json"
+        write_json(new_review, review)
+        for pointer in ("/source_observations/0", "/parsed/observations/0"):
+            packet = copy.deepcopy(base)
+            ref = packet["evidence"]["AO_STAGE1"][0]
+            ref.update(record_pointer=pointer, review_artifact={"path": new_review.name, "sha256": sha256(new_review)})
+            packet["observations"][0]["statement"] = review["statement"]
+            with self.subTest(pointer=pointer), self.assertRaisesRegex(AVError, "relabel"):
+                self.reconciled(packet, "relabel-"+str(pointer.startswith('/parsed'))+".json")
+        # An analyst's narrower formulation remains separate from the raw
+        # atomic model statement and does not require rewriting that record.
+        base["claims"][0]["statement"] = "Within this reviewed interval, the pace decreases."
+        self.assertEqual(self.reconciled(base, "matching-statement.json")["claims"][0]["state"], "SUPPORTED")
 
     def test_multiway_conflict_rejecting_one_rival_does_not_resolve_the_rest(self):
         base = self.delivery_packet()
