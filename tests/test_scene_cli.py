@@ -108,6 +108,10 @@ class SceneCLI(unittest.TestCase):
     def test_public_profiles_and_capability_export_preserve_failure(self):
         profiles=self.command("observer","profiles")
         self.assertEqual(len(profiles["profiles"]),6)
+        self.assertEqual(set(profiles["competency_profiles"]),
+                         {"SPEECH_DELIVERY","AUDITORY_EVENT_TIMING","LEXICAL_TRANSCRIPTION","EXACT_WORD_TIMING"})
+        self.assertEqual(profiles["competency_profiles"]["SPEECH_DELIVERY"],
+                         profiles["profiles"]["SPEECH_PERFORMANCE"])
         self.assertEqual(profiles["qualification"],"NONE_IMPLIED")
         self.command("observer","capability-profile",self.example["capability_config"],self.root/"capabilities")
         record=read_json(self.root/"capabilities"/"task-capabilities.json")

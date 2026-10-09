@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.auditory-benchmark-dataset.v1"
+    },
+    "dataset_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "task": {
+      "enum": [
+        "SPEECH_DELIVERY",
+        "NONVERBAL_VOCAL",
+        "MUSIC_STRUCTURE",
+        "PERFORMANCE_MUSIC",
+        "SOUNDSCAPE",
+        "AUDITORY_EVENT_TIMING",
+        "LEXICAL_TRANSCRIPTION",
+        "EXACT_WORD_TIMING"
+      ]
+    },
+    "media_category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "source_kind": {
+      "enum": [
+        "NATURAL_AUDIO",
+        "GENERATED",
+        "MOCK"
+      ]
+    },
+    "scope_description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "reference_method": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      },
+      "maxItems": 100,
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "stream_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "interval_seconds": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Runtime requires ordered half-open source-clock bounds."
+          },
+          "split": {
+            "enum": [
+              "development",
+              "held_out"
+            ]
+          },
+          "control": {
+            "enum": [
+              "POSITIVE",
+              "NEGATIVE",
+              "AMBIGUOUS"
+            ]
+          },
+          "expected": {
+            "enum": [
+              "PRESENT",
+              "ABSENT",
+              "ABSTAIN"
+            ]
+          },
+          "reference_votes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "reviewer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "label": {
+                  "enum": [
+                    "PRESENT",
+                    "ABSENT",
+                    "ABSTAIN"
+                  ]
+                },
+                "basis": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "reviewer",
+                "label",
+                "basis"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "reference_provenance": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "id",
+          "source_sha256",
+          "stream_index",
+          "interval_seconds",
+          "split",
+          "control",
+          "expected",
+          "reference_votes",
+          "reference_provenance"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    }
+  },
+  "required": [
+    "schema",
+    "dataset_id",
+    "revision",
+    "task",
+    "media_category",
+    "source_kind",
+    "scope_description",
+    "reference_method",
+    "limitations",
+    "examples"
+  ]
+}

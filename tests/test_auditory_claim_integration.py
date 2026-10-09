@@ -11,7 +11,7 @@ import wave
 
 from avevidence.auditory_claims import claim_delta, validate_model_observation
 from avevidence.auditory_observer import observe_clip
-from avevidence.common import AVError, read_json, sha256, write_json
+from avevidence.common import AVError, finish_run, read_json, sha256, write_json
 from avevidence.deep_read import deep_read
 from avevidence.evidence_claims import validate_claims
 from avevidence.observer_execution import observe_request
@@ -66,9 +66,39 @@ class ClaimAndDeepRead(unittest.TestCase):
         self.env.stop(); self.temp.cleanup()
 
     def local_observation(self, name="observed"):
+        """Manufacture retained v1 receipts to exercise the historical reader.
+
+        This is no longer a fresh, probe-only routine collection. New execution
+        needs a task qualification; manufactured records validate compatibility
+        and must never be cited as an actual backend/perception benchmark.
+        """
+        from avevidence.observer_requests import load_request, public_clip, source_observations
         path = self.root/name
-        observe_request(self.request,path,backend=self.local,capability=self.capability)
+        path.mkdir()
+        request, clips, _, _ = load_request(self.request)
+        raw = self.local.observe(request, {"clips": clips})
+        parsed = json.loads(raw)
+        common = {"observer_type": "model_audio", "backend_identity": self.local.identity,
+                  "validation_status": "VALID", "capability_status": "PROBE_PASSED", "raw_response": raw,
+                  "task_profile": "SPEECH_PERFORMANCE", "stage": 1}
+        parent = {**common, "schema": "ave.auditory-comparison.v1", "clips": [public_clip(c) for c in clips], "parsed": parsed}
+        write_json(path/"observation.json", parent)
+        names = []
+        for clip, row in zip(clips, parsed["clips"]):
+            atom = {**common, "schema": "ave.auditory-observation.v1", "parsed": row["observation"],
+                    **{k: clip[k] for k in ("source_sha256", "stream_index", "source_interval_seconds", "clip_sha256", "duration_seconds")},
+                    "clip_to_source_mapping": clip["review_mapping"],
+                    "source_observations": source_observations(row["observation"], clip),
+                    "comparison_projection": {"label": clip["label"], "parent_file": "observation.json", "parent_sha256": sha256(path/"observation.json")}}
+            filename = "clip-"+clip["label"]+"-observation.json"
+            write_json(path/filename, atom); names.append(filename)
+        finish_run(path, "observer-observe", [], metadata={"atomic_observation_files": names,
+                    "fixture_scope": "Manufactured historical reader records, no actual observer qualification"})
         return path
+
+    def test_new_local_execution_cannot_inherit_legacy_probe_qualification(self):
+        with self.assertRaisesRegex(AVError, "TASK_NOT_QUALIFIED"):
+            observe_request(self.request, self.root/"new-local", backend=self.local, capability=self.capability)
 
     def decisions(self, disposition, status=None):
         decision = {"claim_id":"c1","disposition":disposition,"reviewer":"Synthetic coordinator fixture",

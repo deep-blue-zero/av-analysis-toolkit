@@ -18,7 +18,16 @@ TASK_PROMPTS = {
     "SOUNDSCAPE": "Describe audible ambience, impacts, mechanical sounds, effects, noise, near-silence and foreground/background relationships. Give timed observations, alternatives, interference and abstentions. Obscured speech need not prevent soundscape observations; do not infer visible causes.",
     "AV_SYNC": "Locate audible event onsets, changes, impacts, vocal effort, music changes and silence within this clip. Give timing uncertainty and interference. Audio alone does not establish a visual event, contact, movement order or audiovisual synchronization; leave those relationships for separately cited temporal evidence.",
 }
-TASK_PROFILES = tuple(TASK_PROMPTS)
+COMPETENCY_PROFILES = ("SPEECH_DELIVERY", "AUDITORY_EVENT_TIMING", "LEXICAL_TRANSCRIPTION", "EXACT_WORD_TIMING")
+
+# Finer competencies do not inherit lexical or timing qualification from acting.
+TASK_PROMPTS.update({
+    "SPEECH_DELIVERY": TASK_PROMPTS["SPEECH_PERFORMANCE"],
+    "AUDITORY_EVENT_TIMING": TASK_PROMPTS["AV_SYNC"],
+    "LEXICAL_TRANSCRIPTION": "Transcribe only words actually audible in this bounded clip. Mark unclear or obscured words and alternatives; do not supply names or words from context. Give timed observations and abstain where the audio does not discriminate.",
+    "EXACT_WORD_TIMING": "Locate audible word boundaries with explicit timing uncertainty. Do not use subtitle intervals as phonetic boundaries. Report obscured boundaries and abstain when exact timing cannot be established.",
+})
+TASK_PROFILES = tuple(name for name in TASK_PROMPTS if name not in COMPETENCY_PROFILES)
 
 
 def task_profile(value=None):
@@ -68,7 +77,7 @@ def validate_audio_bounds(durations, policy):
         raise AVError("Auditory request exceeds its explicit clip, section or comparison bounds")
 
 
-def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews=()):
+def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews=(), qualification_runs=()):
     """Summarize actual history without turning input influence into task skill.
 
     Historical records are retained verbatim by reference/hash. A scoped owner
@@ -89,9 +98,19 @@ def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews
         if not isinstance(value, dict) or value.get("schema") != "ave.scoped-human-auditory-review.v1" or value.get("global_backend_qualification") is not False:
             raise AVError("Scoped human review cannot qualify the backend globally")
         reviews.append(copy.deepcopy(value))
+    from .auditory_qualification import TASK_PROPOSITIONS, competence, load_qualification
+    qualifications = [load_qualification(path, identity=backend_identity, required=False) for path in qualification_runs]
+    tasks = {name: {"status": "UNQUALIFIED", "test_status": "NOT_TESTED"} for name in TASK_PROFILES}
+    for profile in TASK_PROFILES:
+        records = [r for r in qualifications if r["task"] == competence(profile)]
+        if records:
+            statuses = {r["status"] for r in records}
+            status = next(iter(statuses)) if len(statuses) == 1 else "UNRESOLVED"
+            tasks[profile] = {"status": status, "test_status": status, "scopes": records}
     return {"schema": "ave.auditory-task-capabilities.v1", "backend_identity": copy.deepcopy(backend_identity),
         "profile_revision": PROFILE_REVISION,
-        "tasks": {name: {"status": "UNQUALIFIED", "test_status": "NOT_TESTED"} for name in TASK_PROFILES},
+        "tasks": tasks,
+        "competencies": {name: [r for r in qualifications if r["task"] == name] for name in TASK_PROPOSITIONS},
         "lexical_transcription": "NON_AUTHORITATIVE", "exact_word_timing": "PROVISIONAL",
         "historical_probes": probes, "scoped_human_reviews": reviews,
         "scope": "Task proficiency is unqualified until actually tested; historical probe outcomes and scoped human assessments are separate",

@@ -591,24 +591,14 @@ class HostedContracts(unittest.TestCase):
         observe_request(self.request(),self.root/"idle",witness_run=self.a,backend=backend,capability=self.capability(backend))
         self.assertIsNone(backend.session); self.assertIsNone(backend.admitted_capability)
 
-    def test_valid_production_shaped_receipt_is_checked_without_live_calls(self):
-        # HTTP is patched only inside this unit test to exercise serialized live
-        # receipt fields. This fixture is not a real capability/acting benchmark.
-        from avevidence.auditory_claims import validate_model_observation
+    def test_production_shape_does_not_turn_a_probe_into_task_qualification(self):
+        # A broad synthetic receipt no longer admits a live qualified route.
         transport = Transport()
         with patch("avevidence.providers.openai_audio.http_transport",new=transport):
             backend = OpenAIAudioObserver(credential_env="AVE_TEST_OPENAI_KEY",allow_remote_media="openai")
-            observe_request(self.request(),self.root/"shaped",witness_run=self.a,backend=backend,capability=self.capability(backend))
-        path = self.root/"shaped"/"observation.json"
-        report, covered, _ = validate_model_observation(path)
-        self.assertEqual(report["observer_type"],"model_audio"); self.assertEqual(len(transport.calls),1)
-        self.assertAlmostEqual(covered[0][0],.3)
-        bad = copy.deepcopy(report); bad["provider_receipt"]["authorization"]["remote_media_authorized"] = False
-        malformed = self.root/"unauthorized-receipt.json"; write_json(malformed,bad)
-        with self.assertRaises(AVError): validate_model_observation(malformed)
-        bad = copy.deepcopy(report); bad["capability_receipt"]["returned_model"] = MODEL+"-stale"
-        malformed = self.root/"changed-model.json"; write_json(malformed,bad)
-        with self.assertRaises(AVError): validate_model_observation(malformed)
+            with self.assertRaisesRegex(HostedError, "TASK_NOT_QUALIFIED"):
+                observe_request(self.request(),self.root/"shaped",witness_run=self.a,backend=backend,capability=self.capability(backend))
+        self.assertEqual(len(transport.calls), 0)
 
 
 if __name__ == "__main__":
