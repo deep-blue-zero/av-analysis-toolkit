@@ -20,6 +20,7 @@ ROUTES = {
     "music_structure": [("AUDITORY", "MUSIC_STRUCTURE")],
     "performance_music": [("AUDITORY", "PERFORMANCE_MUSIC"), ("TEMPORAL", "TEMPORAL_HIGH"), ("TEXT_WITNESS", "LYRICS_SECTIONS")],
     "soundscape": [("AUDITORY", "SOUNDSCAPE")],
+    "auditory_event_timing": [("AUDITORY", "AV_SYNC")],
     "av_sync": [("AUDITORY", "AV_SYNC"), ("TEMPORAL", "TEMPORAL_LOW")],
     "motion": [("TEMPORAL", "TEMPORAL_LOW")],
     "contact": [("TEMPORAL", "TEMPORAL_LOW")],

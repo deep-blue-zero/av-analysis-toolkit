@@ -113,7 +113,7 @@ def validate_packet(packet):
     for channel, refs in packet["evidence"].items():
         for ref in array(refs, channel+" evidence", 1000):
             object_fields(ref, {"id", "artifact", "locator", "record_pointer", "authority", "origin_ids",
-                          "shared_assumptions", "context_evidence_ids", "stage1_evidence_id", "review_artifact"},
+                          "shared_assumptions", "context_evidence_ids", "stage1_evidence_id", "review_artifact", "independence_declaration"},
                           {"id", "artifact", "locator"}, "evidence reference")
             eid = identifier(ref["id"], "evidence ID")
             if eid in evidence:
@@ -137,6 +137,13 @@ def validate_packet(packet):
                 strings(ref.get(key, []), key, 100)
             if "review_artifact" in ref:
                 _artifact(ref["review_artifact"], "separate review")
+            if "independence_declaration" in ref:
+                declaration = ref["independence_declaration"]
+                object_fields(declaration, {"reviewer", "basis", "upstream_evidence_ids"},
+                              {"reviewer", "basis", "upstream_evidence_ids"}, "independent preparation declaration")
+                text_value(declaration["reviewer"], "independence reviewer")
+                text_value(declaration["basis"], "independence basis")
+                strings(declaration["upstream_evidence_ids"], "declared upstream evidence", 100)
             if channel == "AO_STAGE2":
                 identifier(ref.get("stage1_evidence_id"), "Stage 1 evidence ID")
                 strings(ref.get("context_evidence_ids", []), "Stage 2 context references", 100, 1)
@@ -155,7 +162,7 @@ def validate_packet(packet):
     for kind, rows in (("observation", observations), ("claim", claims)):
         for row in rows:
             keys = {"id", "proposition", "statement", "status", "interval_seconds", "shared_assumptions"}
-            keys |= {"evidence_ids", "value", "temporal_status"} if kind == "observation" else {"observation_ids", "inference", "interpretation", "alternatives", "confidence"}
+            keys |= {"evidence_ids", "value", "temporal_status", "evidence_roles"} if kind == "observation" else {"observation_ids", "inference", "interpretation", "alternatives", "confidence", "support_routes"}
             required_node = {"id", "proposition", "statement", "status", "evidence_ids" if kind == "observation" else "observation_ids"}
             object_fields(row, keys, required_node, kind)
             identifier(row["id"], kind+" ID")
@@ -169,6 +176,12 @@ def validate_packet(packet):
                 ids = strings(row["evidence_ids"], "observation evidence IDs", 100, 1)
                 if set(ids)-evidence.keys():
                     raise AVError("Observation references missing evidence")
+                if "evidence_roles" in row:
+                    from .support_routes import ROLES
+                    if not isinstance(row["evidence_roles"], dict) or set(row["evidence_roles"]) != set(ids):
+                        raise AVError("Evidence roles must explicitly classify every attached reference")
+                    for role in row["evidence_roles"].values():
+                        choice(role, ROLES, "observation evidence role")
                 if "temporal_status" in row:
                     choice(row["temporal_status"], TEMPORAL_STATES, "temporal status")
             else:
@@ -181,11 +194,16 @@ def validate_packet(packet):
                     choice(row["confidence"], {"LOW", "MEDIUM", "HIGH", "OPEN"}, "claim confidence")
     nodes, _ = validate_graph(observations, claims, packet["dependencies"])
     for claim in claims:
+        from .support_routes import validate_routes
+        validate_routes(claim, nodes, packet["dependencies"])
         for oid in claim["observation_ids"]:
             if oid not in nodes or nodes[oid]["type"] != "observation":
                 raise AVError("Claim premise must be an observation ID")
             if not any(e["from"] == oid and e["to"] == claim["id"] and e["relation"] in PROPAGATING for e in packet["dependencies"]):
                 raise AVError("Each listed claim premise requires an explicit dependency edge")
+            if "support_routes" not in claim and any(e["from"] == oid and e["to"] == claim["id"]
+                    and e.get("role", "REQUIRED") != "REQUIRED" for e in packet["dependencies"]):
+                raise AVError("Optional claim premises require declared support routes")
     conflict_ids = set()
     for row in array(packet["conflicts"], "conflicts", 100):
         object_fields(row, {"id", "proposition", "observation_ids", "question"}, {"id", "proposition", "observation_ids", "question"}, "conflict")
@@ -271,6 +289,16 @@ def load_scene_packet(path, *, relocations=None):
             raise AVError("Auditory reference has an incompatible attributed record/stage")
         from .auditory_profiles import task_profile
         task_profile(raw.get("task_profile"))
+        # Derived provenance tags come from actual immutable receipt fields,
+        # rather than silently trusting a caller's independence assertion.
+        if raw.get("backend_identity"):
+            origins = list(ref.get("origin_ids", []))
+            origins.append("auditory-model-context-"+canonical_digest({
+                "backend": raw["backend_identity"],
+                "clips": [(c.get("clip_sha256"), c.get("source_sha256"), c.get("stream_index"),
+                           c.get("source_interval_seconds")) for c in (raw.get("clips") or [raw])],
+                "context": raw.get("supplied_context")}))
+            evidence[eid]["origin_ids"] = sorted(set(origins))
         clips = raw.get("clips") or [raw]
         array(clips,"ordered auditory clips",4,1)
         if any(not isinstance(c,dict) for c in clips):
@@ -320,6 +348,12 @@ def verify_scene_snapshot(snapshot,bindings):
             raise AVError("Scene evidence changed after admission")
         if row.get("review_path") and sha256(row["review_path"]) != row["review_sha256"]:
             raise AVError("Scene review changed after admission")
+        if row.get("qualification_proof"):
+            from .inventory import verify_run
+            proof = row["qualification_proof"]
+            if sha256(Path(proof["path"])/"run.json") != proof["manifest_sha256"]:
+                raise AVError("Scoped qualification proof changed after admission")
+            verify_run(proof["path"])
 
 
 def prepare_scene_packet(input, output, *, relocations=None):

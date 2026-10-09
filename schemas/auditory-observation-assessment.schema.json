@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.auditory-observation-assessment.v1"
+    },
+    "observation_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "observation_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "proposition": {
+      "enum": [
+        "delivery",
+        "nonverbal_vocal",
+        "music_structure",
+        "performance_music",
+        "soundscape",
+        "auditory_event_timing",
+        "wording",
+        "speech_timing",
+        "emotion"
+      ]
+    },
+    "interval_seconds": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Runtime requires ordered half-open source-clock bounds."
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "adequacy": {
+      "enum": [
+        "ELIGIBLE_FOR_SUPPORT",
+        "INADEQUATE",
+        "RECHECK"
+      ]
+    },
+    "unresolved_contradictions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      },
+      "maxItems": 100,
+      "uniqueItems": true
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "qualification_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "observation_sha256",
+    "observation_index",
+    "proposition",
+    "interval_seconds",
+    "reviewer",
+    "scope",
+    "statement",
+    "adequacy",
+    "unresolved_contradictions",
+    "reason",
+    "qualification_artifact"
+  ]
+}

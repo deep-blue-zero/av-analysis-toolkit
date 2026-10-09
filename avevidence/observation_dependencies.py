@@ -13,12 +13,21 @@ RELATIONS = {"SUPPORTS", "CONSTRAINS", "CONTRADICTS", "DEPENDS_ON",
 PROPAGATING = {"SUPPORTS", "CONSTRAINS", "DEPENDS_ON", "REQUIRES_RECHECK_IF_CHANGED"}
 
 
+def material_edge(edge):
+    """Supplementary agreement is not a necessary premise by default."""
+    return edge["relation"] in PROPAGATING and edge.get("role", "REQUIRED") == "REQUIRED"
+
+
 def validate_graph(observations, claims, edges):
     nodes = node_ids(observations, claims)
     array(edges, "dependencies", maximum=10000)
     seen, adjacency, indegree = set(), {key: [] for key in nodes}, {key: 0 for key in nodes}
+    material = {key: [] for key in nodes}
     for edge in edges:
-        object_fields(edge, {"from", "to", "relation", "reason"}, {"from", "to", "relation", "reason"}, "dependency")
+        object_fields(edge, {"from", "to", "relation", "reason", "role"}, {"from", "to", "relation", "reason"}, "dependency")
+        if "role" in edge:
+            from .support_routes import ROLES
+            choice(edge["role"], ROLES, "proposition-specific evidentiary role")
         a, b, relation = edge["from"], edge["to"], edge["relation"]
         if not isinstance(a, str) or not isinstance(b, str) or a not in nodes or b not in nodes or a == b:
             raise AVError("Dependency endpoints must be distinct existing node IDs")
@@ -30,9 +39,11 @@ def validate_graph(observations, claims, edges):
         seen.add(identity)
         if nodes[a]["type"] == "claim" and nodes[b]["type"] == "observation":
             raise AVError("A claim cannot retroactively establish a raw observation")
-        if relation in PROPAGATING:
+        if edge["relation"] in PROPAGATING:
             adjacency[a].append(b)
             indegree[b] += 1
+        if material_edge(edge):
+            material[a].append(b)
     queue = deque(key for key, degree in indegree.items() if degree == 0)
     visited = 0
     while queue:
@@ -44,7 +55,7 @@ def validate_graph(observations, claims, edges):
                 queue.append(child)
     if visited != len(nodes):
         raise AVError("Circular evidentiary dependencies are not admissible")
-    return nodes, adjacency
+    return nodes, material
 
 
 def propagate_changes(observations, claims, edges, changes):
@@ -112,6 +123,7 @@ def dependence_groups(ids, nodes, edges, evidence):
             origins[key].add(ref["artifact"]["sha256"])
             origins[key].update(ref.get("origin_ids", []))
             origins[key].update(ref.get("context_evidence_ids", []))
+            origins[key].update(ref.get("independence_declaration", {}).get("upstream_evidence_ids", []))
             assumptions[key].update(ref.get("shared_assumptions", []))
             if ref.get("stage1_evidence_id"):
                 origins[key].add(ref["stage1_evidence_id"])
@@ -143,5 +155,10 @@ def dependence_groups(ids, nodes, edges, evidence):
     groups = {}
     for key in ids:
         groups.setdefault(find(key), []).append(key)
+    contextual = any(evidence[eid].get("context_evidence_ids") or evidence[eid].get("stage1_evidence_id")
+                     for key in ids for eid in nodes[key]["record"].get("evidence_ids", []))
+    independently_declared = len(ids) > 1 and not reasons and not contextual and all(
+        evidence[eid].get("independence_declaration") for key in ids for eid in nodes[key]["record"].get("evidence_ids", []))
     return {"groups": sorted(sorted(rows) for rows in groups.values()), "dependence_reasons": reasons,
-            "independence_not_proven": True, "not_a_majority_vote": True}
+            "agreement_class": "CONTEXT_INFLUENCED_OBSERVATION" if contextual else "DEPENDENT_CONSISTENCY" if reasons else "INDEPENDENT_CORROBORATION" if independently_declared else "INDEPENDENCE_NOT_ESTABLISHED",
+            "independence_not_proven": not independently_declared, "not_a_majority_vote": True}

@@ -12,7 +12,7 @@ CLOCK = "original_pts_minus_source_origin"
 CHANNELS = {"TXT", "VIS", "TVIS", "AM", "AO_STAGE1", "AO_STAGE2", "HL", "VO", "AVO", "INF", "INT", "MID"}
 PROPOSITIONS = {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music",
                 "soundscape", "av_sync", "motion", "contact", "event_order", "visual_fact",
-                "sound_level", "emotion", "speaker_identity", "speech_timing", "interpretation",
+                "sound_level", "emotion", "speaker_identity", "speech_timing", "auditory_event_timing", "interpretation",
                 "recording_identity", "performance_identity", "composition_identity", "arrangement_identity", "musical_reference"}
 STATES = {"REPORTED", "PROVISIONAL", "CONFIRMED", "SUPPORTED", "CONTRADICTED", "RECHECK", "OPEN"}
 TEMPORAL_STATES = {"STATIC_CONFIRMED", "TEMPORAL_SAMPLED", "FRAME_SEQUENCE_CONFIRMED",
