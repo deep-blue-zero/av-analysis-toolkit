@@ -50,3 +50,12 @@ Model-level origins also join repeated judgments across different clips and
 prompts; supplied independence declarations cannot override a shared configured
 or provider-returned model. `AUDITORY_REVIEW_FIX_RECEIPT.json` records the later
 source-bound regression without replacing the original 596-test receipt.
+
+The next review correction requires a unique affirmative survivor: two adequately
+supported rivals and one rejected rival do not settle a three-way conflict.
+Reconciliation and claim-delta publication also retain complete qualification
+proof runs, explicit evidence-to-proof sidecars and original-file dependencies.
+Relocation preserves recomputation, retained-proof mutation fails verification,
+and output/input overlap is refused before a stage can pollute the proof.
+`AUDITORY_REVIEW_FIX2_RECEIPT.json` records this later regression separately from
+both earlier receipts and the preserved failed/incomplete validation history.

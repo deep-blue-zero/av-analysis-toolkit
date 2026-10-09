@@ -8,7 +8,8 @@ from .common import AVError, file_record, finish_run, output_transaction, write_
 from .event_contracts import read_event_json, span
 from .mapping import missing_intervals
 from .observation_dependencies import PROPAGATING, dependence_groups, propagate_changes, material_edge
-from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
+from .scene_packets import (load_scene_packet, packet_identity,
+                            retain_scene_qualifications, verify_scene_snapshot)
 
 COMPETENCE = {
     "TXT": {"wording"}, "VIS": {"visual_fact"},
@@ -270,7 +271,7 @@ def reconcile_data(packet, evidence, nodes, bindings):
             ids = conflict["observation_ids"]
             resolved = (all(key in packet["adjudication"]["decisions"] and
                             effective[key] in affirmative | {"CONTRADICTED"} for key in ids)
-                        and any(effective[key] == "CONTRADICTED" for key in ids))
+                        and sum(effective[key] in affirmative for key in ids) == 1)
             if resolved:
                 continue
             for key in ids:
@@ -399,8 +400,10 @@ def reconcile_scene(input, output, *, relocations=None):
     result = reconcile_data(packet, evidence, nodes, bindings)
     verify_scene_snapshot(snapshot,bindings)
     inputs = [input]+[r["path"] for r in bindings.values()]+[r["review_path"] for r in bindings.values() if "review_path" in r]
-    with output_transaction(output, inputs) as stage:
+    proof_inputs = [r["qualification_proof"]["path"] for r in bindings.values() if r.get("qualification_proof")]
+    with output_transaction(output, inputs+proof_inputs) as stage:
         write_json(stage/"reconciliation.json", result)
+        proof_sources = retain_scene_qualifications(stage, {"scene": bindings})
         verify_scene_snapshot(snapshot,bindings)
-        return finish_run(stage, "scene-reconcile", [snapshot]+[file_record(p, "scene_evidence") for p in inputs[1:]],
+        return finish_run(stage, "scene-reconcile", [snapshot]+[file_record(p, "scene_evidence") for p in inputs[1:]]+proof_sources,
                           metadata={"result_file": "reconciliation.json", "packet_id": result["packet_id"], "raw_records_preserved": True})

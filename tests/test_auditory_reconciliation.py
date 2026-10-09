@@ -1,12 +1,14 @@
 """Generated graph/receipt conformance; no actual perceptual qualification."""
 import copy
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
-from avevidence.auditory_qualification import benchmark
+from avevidence.auditory_qualification import benchmark, load_qualification
 from avevidence.common import AVError, finish_run, read_json, sha256, write_json
-from avevidence.cross_modal import reconcile_data
+from avevidence.cross_modal import reconcile_data, reconcile_scene
+from avevidence.inventory import verify_run
 from avevidence.observation_dependencies import propagate_changes, validate_graph
 from avevidence.scene_packets import load_scene_packet, validate_packet, verify_scene_snapshot
 from avevidence.scene_delta import scene_claim_delta
@@ -305,6 +307,120 @@ class AuditoryReconciliation(unittest.TestCase):
         result = self.reconciled(packet)
         self.assertFalse(result["observations"]["o-delivery"]["adequate_for_support"])
         self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
+
+    def test_conflict_with_two_adequate_affirmative_rivals_stays_open(self):
+        base = self.delivery_packet()
+        raw = observation(source_sha256=self.source_hash)
+        raw["parsed"]["observations"][0]["description"] = "The pace remains constant."
+        raw["source_observations"][0]["description"] = "The pace remains constant."
+        raw["raw_response"] = __import__('json').dumps(raw["parsed"])
+        folder = self.root/"adequate-rival"; folder.mkdir()
+        path = folder/"observation.json"
+        write_json(path, raw); finish_run(folder, "manufactured-observer-record", [])
+        rival = copy.deepcopy(base["evidence"]["AO_STAGE1"][0]); rival["id"] = "rival-audio"
+        rival["artifact"] = {"path": str(path), "sha256": sha256(path)}
+        review_path = self.root/"rival-review.json"
+        review = read_json(self.root/"scoped-review.json")
+        review.update(observation_sha256=sha256(path), statement="The pace remains constant.")
+        write_json(review_path, review)
+        rival["review_artifact"] = {"path": str(review_path), "sha256": sha256(review_path)}
+        base["evidence"]["AO_STAGE1"].append(rival)
+        for left in ("SUPPORTED", "CONFIRMED"):
+            for right in ("SUPPORTED", "CONFIRMED"):
+                for reverse in (False, True):
+                    packet = copy.deepcopy(base)
+                    packet["observations"][0]["status"] = left
+                    packet["observations"].extend([
+                        self.obs("o-rival", "delivery", "rival-audio", status=right,
+                                 interval=[.2, .7], statement="The pace remains constant."),
+                        self.obs("o-rejected", "delivery", "audio-new", status="CONTRADICTED",
+                                 interval=[.2, .7], statement="The pace slows.")])
+                    if reverse:
+                        packet["observations"].reverse()
+                    packet["conflicts"] = [{"id": "two-survivors", "proposition": "delivery",
+                        "observation_ids": ["o-delivery", "o-rival", "o-rejected"],
+                        "question": "Which conflicting pace reading survives?"}]
+                    self.decide(packet, {"o-delivery": left, "o-rival": right,
+                                         "o-rejected": "CONTRADICTED", "c-delivery": "SUPPORTED"})
+                    result = self.reconciled(packet, left+right+str(reverse)+".json")
+                    with self.subTest(left=left, right=right, reverse=reverse):
+                        for key in ("o-delivery", "o-rival"):
+                            self.assertFalse(result["observations"][key]["adequate_for_support"])
+                        self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
+
+    def independent_qualification_packet(self):
+        packet = self.delivery_packet()
+        proof = self.root/"independent-qualification"
+        shutil.copytree(self.qual_root/"qualification", proof)
+        path = self.root/"independent-scoped-review.json"
+        review = read_json(self.root/"scoped-review.json")
+        review["qualification_artifact"]["path"] = str(proof/"qualification.json")
+        write_json(path, review)
+        packet["evidence"]["AO_STAGE1"][0]["review_artifact"] = {"path": path.name, "sha256": sha256(path)}
+        return packet, proof
+
+    def test_reconciliation_retains_recomputable_external_qualification(self):
+        packet, original = self.independent_qualification_packet()
+        output = self.root/"retained-reconciliation"
+        reconcile_scene(self.save(packet, "retained.json"), output)
+        retained = read_json(output/"qualification-bindings.json")
+        import jsonschema
+        jsonschema.validate(retained, read_json(Path(__file__).resolve().parents[1]/"schemas/scene-qualification-bindings.schema.json"))
+        binding = retained["bindings"]["scene"]["audio-new"]
+        proof = output/binding["path"]
+        self.assertEqual(sha256(proof/"run.json"), binding["manifest_sha256"])
+        source_paths = {r["path"] for r in read_json(output/"run.json")["sources"]}
+        self.assertTrue({str(p.resolve()) for p in original.rglob('*') if p.is_file()} <= source_paths)
+        self.assertTrue(original.resolve().is_relative_to(self.root.resolve()))
+        original.rename(self.root/"relocated-original-qualification")
+        verify_run(output)
+        self.assertEqual(load_qualification(proof)["status"], "QUALIFIED_FOR_SCOPE")
+        snapshot = proof/"benchmark-snapshot.json"
+        snapshot.write_bytes(snapshot.read_bytes()+b" ")
+        with self.assertRaises(AVError):
+            verify_run(output)
+
+    def test_claim_delta_retains_both_qualification_proofs(self):
+        packet, original = self.independent_qualification_packet()
+        before = self.save(packet, "qualification-before.json")
+        after = copy.deepcopy(packet); after["holistic_analysis"] = "The scoped pacing premise survives; emotional meaning remains open."
+        after_path = self.save(after, "qualification-after.json")
+        output = self.root/"retained-delta"
+        scene_claim_delta(before, after_path, output)
+        retained = read_json(output/"qualification-bindings.json")
+        self.assertEqual(set(retained["bindings"]), {"before", "after"})
+        self.assertEqual(retained["bindings"]["before"]["audio-new"]["path"],
+                         retained["bindings"]["after"]["audio-new"]["path"])
+        second = self.root/"second-qualification"
+        benchmark(qualification_config(self.root/"second-qualification-inputs"), second)
+        review = read_json(self.root/"independent-scoped-review.json")
+        review["qualification_artifact"] = {"path": str(second/"qualification.json"),
+                                            "sha256": sha256(second/"qualification.json")}
+        review_path = self.root/"second-scoped-review.json"
+        write_json(review_path, review)
+        after["evidence"]["AO_STAGE1"][0]["review_artifact"] = {"path": review_path.name, "sha256": sha256(review_path)}
+        distinct = self.root/"distinct-retained-delta"
+        scene_claim_delta(before, self.save(after, "distinct-qualification-after.json"), distinct)
+        distinct_bindings = read_json(distinct/"qualification-bindings.json")["bindings"]
+        self.assertNotEqual(distinct_bindings["before"]["audio-new"]["path"],
+                            distinct_bindings["after"]["audio-new"]["path"])
+        for generated in (original, second):
+            self.assertTrue(generated.resolve().is_relative_to(self.root.resolve()))
+        original.rename(self.root/"relocated-delta-qualification")
+        second.rename(self.root/"relocated-second-qualification")
+        verify_run(output)
+        verify_run(distinct)
+        for label in ("before", "after"):
+            proof = output/retained["bindings"][label]["audio-new"]["path"]
+            self.assertEqual(load_qualification(proof)["status"], "QUALIFIED_FOR_SCOPE")
+            distinct_proof = distinct/distinct_bindings[label]["audio-new"]["path"]
+            self.assertEqual(load_qualification(distinct_proof)["status"], "QUALIFIED_FOR_SCOPE")
+
+    def test_reconciliation_cannot_publish_inside_qualification_input(self):
+        packet, proof = self.independent_qualification_packet()
+        with self.assertRaisesRegex(AVError, "inside an input"):
+            reconcile_scene(self.save(packet, "inside-proof.json"), proof/"reconciliation")
+        verify_run(proof)
 
     def test_extended_scene_outputs_match_public_schemas(self):
         import jsonschema

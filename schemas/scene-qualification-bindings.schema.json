@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Retained scene qualification bindings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "bindings", "scope"],
+  "properties": {
+    "schema": {"const": "ave.scene-qualification-bindings.v1"},
+    "bindings": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "scene": {"$ref": "#/$defs/evidenceBindings"},
+        "before": {"$ref": "#/$defs/evidenceBindings"},
+        "after": {"$ref": "#/$defs/evidenceBindings"}
+      }
+    },
+    "scope": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "evidenceBindings": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/proof"}
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "manifest_sha256", "original_path"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^qualification-proofs/[a-f0-9]{64}$"},
+        "manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "original_path": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

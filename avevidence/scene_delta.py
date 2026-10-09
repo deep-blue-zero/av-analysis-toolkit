@@ -7,7 +7,8 @@ from .common import AVError, file_record, finish_run, output_transaction, sha256
 from .cross_modal import reconcile_data
 from .event_contracts import choice, object_fields, read_event_json, strings
 from .inventory import text_value
-from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
+from .scene_packets import (load_scene_packet, packet_identity,
+                            retain_scene_qualifications, verify_scene_snapshot)
 from .observation_dependencies import PROPAGATING
 from .mapping import missing_intervals, union_intervals
 
@@ -169,7 +170,9 @@ def scene_claim_delta(before, after, output, *, decisions=None, relocations=None
               "event_synthesis": br["event_synthesis"],
               "scope": "Explicit changes to accuracy/scope/mechanism/confidence; more descriptive material alone is not improvement"}
     inputs = [before, after]+([decisions] if decisions else [])+[r["path"] for data in (baseline, completed) for r in data[3].values()]
-    with output_transaction(output, inputs) as stage:
+    proof_inputs = [r["qualification_proof"]["path"] for data in (baseline, completed)
+                    for r in data[3].values() if r.get("qualification_proof")]
+    with output_transaction(output, inputs+proof_inputs) as stage:
         for name, path, data in (("before", before, baseline), ("after", after, completed)):
             payload = Path(path).read_bytes()
             import hashlib
@@ -179,7 +182,8 @@ def scene_claim_delta(before, after, output, *, decisions=None, relocations=None
         write_json(stage/"claim-delta.json", result)
         write_json(stage/"before-reconciliation.json", ar)
         write_json(stage/"after-reconciliation.json", br)
+        proof_sources = retain_scene_qualifications(stage, {"before": baseline[3], "after": completed[3]})
         verify_scene_snapshot(baseline[4],baseline[3])
         verify_scene_snapshot(completed[4],completed[3])
-        return finish_run(stage, "scene-delta", [baseline[4], completed[4]]+([file_record(decisions)] if decisions else []),
+        return finish_run(stage, "scene-delta", [baseline[4], completed[4]]+([file_record(decisions)] if decisions else [])+proof_sources,
                           metadata={"result_file": "claim-delta.json", "claim_count": len(rows), "automatic_confidence_promotion": False})

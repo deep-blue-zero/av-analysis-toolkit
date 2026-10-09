@@ -212,6 +212,21 @@ articulated inference and its actual premises. Audible timing does not establish
 visual contact. Music guesses remain candidates; use MID for recording,
 composition, arrangement, performance and phrase identity.
 
+Reconciliation and claim-delta runs freeze each separately admitted qualification
+run under `qualification-proofs/`, including its original manifest, benchmark
+snapshot, original responses/reviews and command record. The
+`qualification-bindings.json` sidecar binds scene evidence IDs (or the before/after
+delta sides) to the retained manifest hashes. Original proof files are also
+recorded as publication dependencies. A retained proof can be recomputed after
+the external original moves; changing its copied bytes fails run verification.
+Publishing inside an input qualification run is refused before staging begins.
+This archival verification establishes recorded integrity, not perceptual truth.
+
+An explicit same-proposition conflict is resolved only when exactly one rival
+has adequate, affirmative effective support and every other rival is explicitly
+contradicted. Pending rivals, unresolved prerequisites and multiple affirmative
+rivals leave scoped auditory support open, irrespective of observation order.
+
 Observations may declare `evidence_roles` for every reference. Roles are REQUIRED,
 SUPPORTING, CONTEXTUAL, CONTRADICTORY and NON_DISCRIMINATING. Dependencies may
 declare their role; omitted roles preserve legacy required-premise semantics.

@@ -19,6 +19,11 @@ semantics; loading a legacy record never invents qualification, review or roles.
   dataset/category, recomputed metrics/criteria, scope approval and limitations.
 - `ave.auditory-observation-assessment.v1`: explicit review of one atomic timed
   report and proposition, with a hash-bound qualification and unresolved conflicts.
+- `ave.scene-qualification-bindings.v1`: sidecar mapping scene or before/after
+  evidence IDs to immutable retained qualification runs and manifest hashes.
+  Reconciliation/delta manifests include every original proof file as a source
+  and every retained byte as an artifact; historical qualification remains
+  recomputable after relocation, and copied-proof tampering fails verification.
 - Optional observation `evidence_roles`, dependency `role`, and claim
   `support_routes`: validated proof obligations, not Boolean adequacy overrides.
 - Optional `independence_declaration` plus derived model/clip/context tags:

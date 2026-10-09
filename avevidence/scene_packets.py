@@ -5,8 +5,9 @@ import copy
 import hashlib
 from pathlib import Path
 import re
+import shutil
 
-from .common import AVError, file_record, finish_run, output_transaction, sha256, write_json
+from .common import AVError, file_record, finish_run, output_transaction, safe_member, sha256, write_json
 from .event_contracts import (CHANNELS, CLOCK, PROPOSITIONS, STATES, TEMPORAL_STATES, array,
                               canonical_digest, choice, object_fields, read_event_json, span, strings)
 from .inventory import digest_value, identifier, integer, number, text_value
@@ -362,6 +363,57 @@ def verify_scene_snapshot(snapshot,bindings):
             if sha256(Path(proof["path"])/"run.json") != proof["manifest_sha256"]:
                 raise AVError("Scoped qualification proof changed after admission")
             verify_run(proof["path"])
+
+
+def retain_scene_qualifications(stage, collections):
+    """Freeze complete, verified qualification runs without rewriting them."""
+    from .inventory import verify_run
+
+    retained, sources, copied = {}, {}, set()
+    for label, bindings in sorted(collections.items()):
+        rows = {}
+        for eid, binding in sorted(bindings.items()):
+            proof = binding.get("qualification_proof")
+            if not proof:
+                continue
+            original = Path(proof["path"]).resolve()
+            manifest_record = file_record(original/"run.json", "scene_qualification_proof")
+            if manifest_record["sha256"] != proof["manifest_sha256"]:
+                raise AVError("Scoped qualification proof changed before retention")
+            verification = verify_run(original)
+            if verification["manifest_sha256"] != proof["manifest_sha256"]:
+                raise AVError("Scoped qualification manifest changed during verification")
+            manifest = read_event_json(original/"run.json")
+            digest = proof["manifest_sha256"]
+            relative = "qualification-proofs/"+digest
+            destination = safe_member(stage, relative)
+            if digest not in copied:
+                destination.mkdir(parents=True)
+            artifacts = [{"path": "run.json", "sha256": digest,
+                          "size_bytes": manifest_record["size_bytes"]}]+manifest["artifacts"]
+            for artifact in artifacts:
+                source = safe_member(original, artifact["path"])
+                record = file_record(source, "scene_qualification_proof")
+                if record["sha256"] != artifact["sha256"] or record["size_bytes"] != artifact["size_bytes"]:
+                    raise AVError("Scoped qualification artifact changed before retention")
+                sources[record["path"]] = record
+                target = safe_member(destination, artifact["path"])
+                if digest not in copied:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with source.open("rb") as src, target.open("xb") as dst:
+                        shutil.copyfileobj(src, dst)
+                if target.stat().st_size != artifact["size_bytes"] or sha256(target) != artifact["sha256"]:
+                    raise AVError("Retained qualification artifact differs from its admitted proof")
+            verify_run(destination)
+            copied.add(digest)
+            rows[eid] = {"path": relative, "manifest_sha256": digest, "original_path": str(original)}
+        if rows:
+            retained[label] = rows
+    if retained:
+        write_json(Path(stage)/"qualification-bindings.json", {
+            "schema": "ave.scene-qualification-bindings.v1", "bindings": retained,
+            "scope": "Frozen qualification proofs permit historical recomputation; hashes establish integrity, not authenticity or claim truth"})
+    return [sources[path] for path in sorted(sources)]
 
 
 def prepare_scene_packet(input, output, *, relocations=None):
