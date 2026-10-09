@@ -12,7 +12,7 @@ from .common import AVError, file_record, finish_run, output_transaction, sha256
 from .event_contracts import array, canonical_digest, choice, object_fields, read_event_json, span, strings
 from .inventory import digest_value, identifier, text_value, verify_run
 
-REVISION = "auditory-qualification-v1"
+REVISION = "auditory-qualification-v2"
 TASK_PROPOSITIONS = {
     "SPEECH_DELIVERY": {"delivery"}, "NONVERBAL_VOCAL": {"nonverbal_vocal"},
     "MUSIC_STRUCTURE": {"music_structure"}, "PERFORMANCE_MUSIC": {"performance_music"},
@@ -25,7 +25,8 @@ STATES = {"NOT_TESTED", "PROVISIONAL", "VALIDATED_ON_BENCHMARK", "QUALIFIED_FOR_
 LABELS = {"PRESENT", "ABSENT", "ABSTAIN"}
 CRITERIA = {"minimum_held_out_examples": 20, "minimum_positive": 6, "minimum_negative": 6,
             "minimum_ambiguous": 2, "maximum_overall_failure_rate": .2,
-            "maximum_false_positive_rate": .1, "maximum_false_negative_rate": .2}
+            "maximum_false_positive_rate": .1, "maximum_false_negative_rate": .2,
+            "maximum_control_failure_rate": .2}
 TIMING_TOLERANCES = {"AUDITORY_EVENT_TIMING": .05, "EXACT_WORD_TIMING": .02}
 
 
@@ -187,17 +188,24 @@ def evaluate_benchmark(dataset, trials, backend_identity, configuration_revision
     n = len(held)
     errors = sum(not r["correct"] for r in held)
     fp = sum(r["valid_output"] and r["control"] == "NEGATIVE" and r["prediction"] == "PRESENT" for r in held)
-    fn = sum(r["valid_output"] and r["control"] == "POSITIVE" and r["prediction"] != "PRESENT" for r in held)
+    # A malformed or mistimed positive is still a failed detection, even when
+    # its attributed label says PRESENT. Other classes cannot dilute that error.
+    fn = sum(r["control"] == "POSITIVE" and not r["correct"] for r in held)
+    control_failures = {name: sum(r["control"] == name and not r["correct"] for r in held) for name in totals}
+    control_rates = {name: control_failures[name]/totals[name] if totals[name] else None for name in totals}
     metrics = {"trials": n, "correct": n-errors, "invalid_outputs": sum(not r["valid_output"] for r in held),
         "overall_failure_rate": errors/n if n else None, "false_positives": fp, "false_negatives": fn,
         "false_positive_rate": fp/totals["NEGATIVE"] if totals["NEGATIVE"] else None,
         "false_negative_rate": fn/totals["POSITIVE"] if totals["POSITIVE"] else None,
-        "controls": totals, "timing_failures": sum(not r["timing_correct"] for r in held),
+        "controls": totals, "control_failures": control_failures, "control_failure_rates": control_rates,
+        "timing_failures": sum(not r["timing_correct"] for r in held),
         "missing_examples": sorted(set(rows)-seen)}
     enough = (n >= CRITERIA["minimum_held_out_examples"] and totals["POSITIVE"] >= 6
               and totals["NEGATIVE"] >= 6 and totals["AMBIGUOUS"] >= 2 and not metrics["missing_examples"])
-    passed = bool(enough and metrics["overall_failure_rate"] <= .2
-                  and metrics["false_positive_rate"] <= .1 and metrics["false_negative_rate"] <= .2)
+    passed = bool(enough and metrics["overall_failure_rate"] <= CRITERIA["maximum_overall_failure_rate"]
+                  and metrics["false_positive_rate"] <= CRITERIA["maximum_false_positive_rate"]
+                  and metrics["false_negative_rate"] <= CRITERIA["maximum_false_negative_rate"]
+                  and all(rate <= CRITERIA["maximum_control_failure_rate"] for rate in control_rates.values()))
     returned_models = {(t["observation"].get("provider_receipt") or {}).get("returned_model", backend_identity.get("model_revision")) for t in trials}
     natural = (len(returned_models) == 1 and None not in returned_models and dataset["source_kind"] == "NATURAL_AUDIO" and all(r["actual_observer"] and
                r["independent_reference"] and r["blinded_input_declared"] and r["stage"] == 1 and r["context_minimized"] for r in held))
@@ -219,7 +227,7 @@ def evaluate_benchmark(dataset, trials, backend_identity, configuration_revision
         "task": dataset["task"], "media_category": dataset["media_category"],
         "dataset_id": dataset["dataset_id"], "dataset_revision": dataset["revision"],
         "dataset_sha256": canonical_digest(dataset), "scope_description": dataset["scope_description"],
-        "scoring_method": "Independent reviewed PRESENT/ABSENT/ABSTAIN; invalids and missing/out-of-tolerance positive timing included as failures",
+        "scoring_method": "Independent reviewed PRESENT/ABSENT/ABSTAIN; all failed positives count as false negatives; invalids and timing failures retained; each control family separately bounded",
         "criteria": {**copy.deepcopy(CRITERIA), "maximum_positive_timing_error_seconds": TIMING_TOLERANCES.get(dataset["task"])},
         "results": judged, "metrics": metrics, "status": status,
         "scope_approval": copy.deepcopy(scope_approval), "limitations": copy.deepcopy(dataset["limitations"]),
@@ -296,6 +304,8 @@ def load_qualification(path, *, identity=None, task=None, media_category=None, c
     verify_run(folder)
     snapshot = read_event_json(folder/"benchmark-snapshot.json")
     record = read_event_json(folder/"qualification.json")
+    if record.get("revision") != REVISION:
+        raise AVError("Qualification uses an earlier scoring revision or unsupported revision; recompute original inputs into a NEW run without rewriting the archive")
     for i, trial in enumerate(snapshot["trials"]):
         original = folder/"originals"/str(i)/"observation.json"
         if (sha256(original) != trial["observation_sha256"] or read_event_json(original) != trial["observation"]

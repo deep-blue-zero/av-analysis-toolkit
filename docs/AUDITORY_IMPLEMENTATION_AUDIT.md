@@ -74,3 +74,14 @@ independent text-image route. Valid unqualified benchmark states now remain
 inadequate without aborting that route; required auditory claims stay open.
 Generated scene fixtures explicitly adjudicate real lexical rivals and retain
 same-word contextual repetition separately as dependent, unqualified evidence.
+
+The subsequent review reproduced positive-output and timing failures being
+excluded from false negatives in a larger benchmark. Scoring revision v2 counts
+every failed positive and separately bounds positive, negative and ambiguous
+control failure rates, retaining malformed-output and literal false-positive
+diagnostics. Boundary controls preserve legitimate qualification. Earlier
+scoring proofs stay immutable and format-readable but require a NEW recomputed
+run for current admission. `AUDITORY_REVIEW_FIX4_RECEIPT.json` records the completed
+60-test focused and 619-test full regressions, with zero failures, errors or skips
+and stable runtime/test hashes. The prior 613-test receipt remains unchanged and
+does not certify the subsequent scoring correction.

@@ -22,6 +22,10 @@ retains the earlier task-by-task limits.
   the truth of model descriptions. Generated/mocked CI fixtures do not qualify a
   real model. Timing qualification scores positive localization error (50 ms for
   events; 20 ms for words); it does not guarantee every individual boundary.
+  Scoring revision v2 counts every failed positive as a false negative and
+  separately bounds positive, negative and ambiguous control failures. Earlier
+  scoring proofs remain archival records and require a new recomputed run for
+  current admission; no historical result is rewritten.
 - The authorized live synthetic integration submitted PCM16 and accounted for
   $0.02514 across 26 requests. Probe v2 failed at 18/24; the first observation
   invented a timeline beyond its clip and was rejected. One explicitly planned

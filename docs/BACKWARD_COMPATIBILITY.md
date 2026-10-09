@@ -121,6 +121,15 @@ GitHub Actions separately exercises native Linux online installations.
 
 ## 1.6.0a3 optional extensions
 
+Task qualification uses scoring revision `auditory-qualification-v2` within the
+unchanged v1 wire format. Revision-v1 qualification records remain readable as
+archival JSON, with their original status and bytes retained. They are refused
+as current admission proofs: rerun the retained original benchmark configuration
+into a NEW output run. This correction counts invalid/mistimed positive cases as
+false negatives and prevents aggregate accuracy from hiding failures of one
+control family. Existing observer schemas, raw responses, failed influence
+probes, Stage-1/Stage-2 history and mock/human declarations are unchanged.
+
 Legacy receipts and mock/human review behavior remain readable. Probe v1 retains
 its original scoring; v2 uses balanced reversed pairs and strict choice JSON.
 Actual new observers default to `QUALIFIED`, which requires an exact recomputed

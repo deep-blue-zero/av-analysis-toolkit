@@ -317,6 +317,128 @@ class TaskQualification(unittest.TestCase):
         self.assertEqual(record["status"], "PROVISIONAL")
         self.assertFalse(record["results"][0]["actual_observer"])
 
+    def diluted_control_config(self, name, control, *, invalid=True, task="SPEECH_DELIVERY", timing_error=None,
+                               failure_count=None, balanced=False):
+        config = qualification_config(self.root/name, count=40)
+        value = read_json(config)
+        value["dataset"]["task"] = task
+        selected = []
+        for index, (example, trial) in enumerate(zip(value["dataset"]["examples"], value["trials"])):
+            if balanced:
+                label = "PRESENT" if index < 10 else "ABSENT" if index < 20 else "ABSTAIN"
+            elif control == "AMBIGUOUS":
+                label = "PRESENT" if index < 8 else "ABSTAIN" if 16 <= index < 18 else "ABSENT"
+            else:
+                label = example["expected"]
+            example["expected"] = label
+            example["control"] = {"PRESENT": "POSITIVE", "ABSENT": "NEGATIVE", "ABSTAIN": "AMBIGUOUS"}[label]
+            example["reference_votes"][0]["label"] = label
+            opath = config.parent/trial["observation"]["path"]
+            rpath = config.parent/trial["review"]["path"]
+            obs, review = read_json(opath), read_json(rpath)
+            obs["task_profile"] = task
+            review["predicted_label"] = label
+            failing = example["control"] == control and (failure_count is None or len(selected) < failure_count)
+            if failing:
+                selected.append(index)
+                if invalid:
+                    obs.update(raw_response="not JSON", parsed=None, validation_status="INVALID")
+                elif task in {"AUDITORY_EVENT_TIMING", "EXACT_WORD_TIMING"}:
+                    if timing_error is not None:
+                        review["timing_error_seconds"] = timing_error
+                else:
+                    review["predicted_label"] = "PRESENT" if control == "AMBIGUOUS" else "ABSTAIN"
+            elif task in {"AUDITORY_EVENT_TIMING", "EXACT_WORD_TIMING"} and example["control"] == "POSITIVE":
+                review["timing_error_seconds"] = 0.
+            rewrite_fixture(opath, obs); trial["observation"]["sha256"] = sha256(opath)
+            review["observation_sha256"] = sha256(opath)
+            rewrite_fixture(rpath, review); trial["review"]["sha256"] = sha256(rpath)
+        value["scope_approval"].update(dataset_sha256=canonical_digest(value["dataset"]), task=task)
+        rewrite_fixture(config, value)
+        return config, selected
+
+    def scored_diluted_control(self, name, control, **options):
+        config, selected = self.diluted_control_config(name, control, **options)
+        output = self.root/(name+"-proof")
+        benchmark(config, output)
+        record = load_qualification(output, required=False)
+        self.assertTrue(all(record["results"][index]["collection_verified"] for index in selected))
+        return record, output
+
+    def test_invalid_positive_trials_count_as_false_negatives_without_dilution(self):
+        record, output = self.scored_diluted_control("invalid-positives", "POSITIVE")
+        self.assertEqual(record["metrics"]["overall_failure_rate"], .2)
+        self.assertEqual(record["metrics"]["invalid_outputs"], 8)
+        self.assertEqual(record["metrics"]["false_negatives"], 8)
+        self.assertEqual(record["metrics"]["false_negative_rate"], 1.)
+        self.assertEqual(record["status"], "FAILED")
+        with self.assertRaises(AVError):
+            load_qualification(output)
+
+    def test_failed_positive_localization_counts_as_false_negative_without_dilution(self):
+        for task, error in (("AUDITORY_EVENT_TIMING", None), ("AUDITORY_EVENT_TIMING", .06),
+                            ("EXACT_WORD_TIMING", None), ("EXACT_WORD_TIMING", .03)):
+            with self.subTest(task=task, error=error):
+                record, _ = self.scored_diluted_control(task+str(error), "POSITIVE", invalid=False,
+                    task=task, timing_error=error)
+                self.assertEqual(record["metrics"]["overall_failure_rate"], .2)
+                self.assertEqual(record["metrics"]["timing_failures"], 8)
+                self.assertEqual(record["metrics"]["invalid_outputs"], 0)
+                self.assertEqual(record["metrics"]["false_negatives"], 8)
+                self.assertEqual(record["metrics"]["false_negative_rate"], 1.)
+                self.assertEqual(record["status"], "FAILED")
+
+    def test_failed_negative_controls_cannot_be_diluted_by_other_examples(self):
+        for invalid in (True, False):
+            with self.subTest(invalid=invalid):
+                record, _ = self.scored_diluted_control("negative"+str(invalid), "NEGATIVE", invalid=invalid)
+                self.assertEqual(record["metrics"]["overall_failure_rate"], .2)
+                self.assertEqual(record["metrics"]["false_positives"], 0)
+                self.assertEqual(record["status"], "FAILED")
+                self.assertEqual(record["metrics"]["control_failure_rates"]["NEGATIVE"], 1.)
+
+    def test_failed_ambiguous_controls_cannot_be_diluted_by_other_examples(self):
+        for invalid in (True, False):
+            with self.subTest(invalid=invalid):
+                record, _ = self.scored_diluted_control("ambiguous"+str(invalid), "AMBIGUOUS", invalid=invalid)
+                self.assertEqual(record["metrics"]["overall_failure_rate"], .05)
+                self.assertEqual(record["status"], "FAILED")
+                self.assertEqual(record["metrics"]["control_failure_rates"]["AMBIGUOUS"], 1.)
+
+    def test_control_failure_threshold_preserves_passing_boundary_and_rejects_excess(self):
+        for control, total in (("POSITIVE", 10), ("NEGATIVE", 10), ("AMBIGUOUS", 20)):
+            for failures in (total//5+1, total//5):
+                with self.subTest(control=control, failures=failures):
+                    record, _ = self.scored_diluted_control(control+str(failures), control, balanced=True,
+                        failure_count=failures)
+                    expected = "QUALIFIED_FOR_SCOPE" if failures/total <= .2 else "FAILED"
+                    self.assertEqual(record["status"], expected)
+                    self.assertEqual(record["metrics"].get("control_failure_rates", {}).get(control), failures/total)
+
+    def test_earlier_scoring_revision_requires_new_proof_without_rewriting_archive(self):
+        original = self.build()
+        archive = self.root/"manufactured-v1-archive"
+        shutil.copytree(original, archive, ignore=shutil.ignore_patterns("run.json", "commands.json"))
+        legacy = read_json(archive/"qualification.json")
+        legacy["revision"] = "auditory-qualification-v1"
+        legacy["criteria"].pop("maximum_control_failure_rate", None)
+        for key in ("control_failures", "control_failure_rates"):
+            legacy["metrics"].pop(key, None)
+        legacy["scoring_method"] = "Independent reviewed PRESENT/ABSENT/ABSTAIN; invalids and missing/out-of-tolerance positive timing included as failures"
+        rewrite_fixture(archive/"qualification.json", legacy)
+        finish_run(archive, "manufactured-archived-scoring-contract", [])
+        before = {p.relative_to(archive).as_posix(): sha256(p) for p in archive.rglob('*') if p.is_file()}
+        for required in (False, True):
+            with self.subTest(required=required), self.assertRaisesRegex(AVError, "earlier scoring revision"):
+                load_qualification(archive, required=required)
+        self.assertEqual(read_json(archive/"qualification.json")["status"], "QUALIFIED_FOR_SCOPE")
+        import jsonschema
+        jsonschema.validate(legacy, read_json(Path(__file__).resolve().parents[1]/"schemas/auditory-qualification.schema.json"))
+        self.assertEqual(before, {p.relative_to(archive).as_posix(): sha256(p) for p in archive.rglob('*') if p.is_file()})
+        verify_run(archive)
+        benchmark(self.root/"input/benchmark-config.json", self.root/"recomputed-new-proof")
+        self.assertEqual(load_qualification(self.root/"recomputed-new-proof")["revision"], "auditory-qualification-v2")
+
     def test_benchmark_dataset_review_and_qualification_public_schemas(self):
         import jsonschema
         path = self.build()

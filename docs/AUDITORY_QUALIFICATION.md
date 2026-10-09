@@ -172,14 +172,20 @@ errors fail that example; a correct PRESENT label alone cannot qualify timing.
 Malformed outputs still need verified collection provenance to count as actual
 observer trials. Invalid/unverified transport cannot hide behind malformed JSON.
 Contract failures count in the overall error rate rather than disappearing
-from the denominator. False positives
-and false negatives are reported separately from invalid output. Reference and
+from the denominator. Every incorrect positive, including invalid output or
+missing/out-of-tolerance localization with a PRESENT label, also counts as a
+false negative. Literal false positives count valid PRESENT predictions on
+negative controls; invalid output remains separately reported. Each positive,
+negative and ambiguous control family reports its own failures and failure rate,
+so failures of absence detection or abstention cannot be diluted by other cases.
+Reference and
 output evaluators must differ for scoped natural qualification.
 
 Qualification requires at least 20 held-out examples, at least six positive and
 six negative controls and two ambiguous examples, no missing examples, overall
 failure rate at most 0.2, false-positive rate at most 0.1 and false-negative rate
-at most 0.2. Only actual, context-minimized observer receipts on a declared
+at most 0.2, with failure rate at most 0.2 in each control family. Only actual,
+context-minimized observer receipts on a declared
 natural-audio reference set can advance beyond provisional. An explicit scope
 approval must bind the exact dataset digest, task, category and configuration.
 
@@ -197,6 +203,11 @@ any such run is refused before staging, and membership is rechecked before
 publication; standalone input artifacts remain supported.
 Loading a qualification verifies the run and originals and recomputes the whole
 record. Editing a status field or supplying a self-declared certificate fails.
+The current scorer is `auditory-qualification-v2`; the qualification wire schema
+remains v1. Earlier scoring records remain immutable and format-readable, but
+cannot serve as current admission certificates. Recompute the retained original
+benchmark configuration into a NEW output run to earn current eligibility;
+do not modify a historical score, revision, response, approval or manifest in place.
 
 ## Scoped support and legitimate routes
 
