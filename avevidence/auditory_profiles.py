@@ -18,7 +18,16 @@ TASK_PROMPTS = {
     "SOUNDSCAPE": "Describe audible ambience, impacts, mechanical sounds, effects, noise, near-silence and foreground/background relationships. Give timed observations, alternatives, interference and abstentions. Obscured speech need not prevent soundscape observations; do not infer visible causes.",
     "AV_SYNC": "Locate audible event onsets, changes, impacts, vocal effort, music changes and silence within this clip. Give timing uncertainty and interference. Audio alone does not establish a visual event, contact, movement order or audiovisual synchronization; leave those relationships for separately cited temporal evidence.",
 }
-TASK_PROFILES = tuple(TASK_PROMPTS)
+COMPETENCY_PROFILES = ("SPEECH_DELIVERY", "AUDITORY_EVENT_TIMING", "LEXICAL_TRANSCRIPTION", "EXACT_WORD_TIMING")
+
+# Finer competencies do not inherit lexical or timing qualification from acting.
+TASK_PROMPTS.update({
+    "SPEECH_DELIVERY": TASK_PROMPTS["SPEECH_PERFORMANCE"],
+    "AUDITORY_EVENT_TIMING": TASK_PROMPTS["AV_SYNC"],
+    "LEXICAL_TRANSCRIPTION": "Transcribe only words actually audible in this bounded clip. Mark unclear or obscured words and alternatives; do not supply names or words from context. Give timed observations and abstain where the audio does not discriminate.",
+    "EXACT_WORD_TIMING": "Locate audible word boundaries with explicit timing uncertainty. Do not use subtitle intervals as phonetic boundaries. Report obscured boundaries and abstain when exact timing cannot be established.",
+})
+TASK_PROFILES = tuple(name for name in TASK_PROMPTS if name not in COMPETENCY_PROFILES)
 
 
 def task_profile(value=None):
@@ -68,7 +77,7 @@ def validate_audio_bounds(durations, policy):
         raise AVError("Auditory request exceeds its explicit clip, section or comparison bounds")
 
 
-def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews=()):
+def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews=(), qualification_runs=()):
     """Summarize actual history without turning input influence into task skill.
 
     Historical records are retained verbatim by reference/hash. A scoped owner
@@ -77,7 +86,9 @@ def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews
     if not isinstance(backend_identity, dict) or not isinstance(backend_identity.get("model_revision"), str):
         raise AVError("Task capability profile requires an attributed backend identity")
     text_value(backend_identity["model_revision"], "backend model revision")
-    if not isinstance(historical_probes, (list, tuple)) or not isinstance(scoped_reviews, (list, tuple)):
+    if (not isinstance(historical_probes, (list, tuple)) or not isinstance(scoped_reviews, (list, tuple))
+        or not isinstance(qualification_runs, (list, tuple)) or len(qualification_runs) > 1000
+        or any(not isinstance(p, (str, Path)) or not str(p).strip() for p in qualification_runs)):
         raise AVError("Capability histories must be explicit record lists")
     probes, reviews = [], []
     for value in historical_probes:
@@ -89,13 +100,55 @@ def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews
         if not isinstance(value, dict) or value.get("schema") != "ave.scoped-human-auditory-review.v1" or value.get("global_backend_qualification") is not False:
             raise AVError("Scoped human review cannot qualify the backend globally")
         reviews.append(copy.deepcopy(value))
+    from .auditory_qualification import TASK_PROPOSITIONS, competence, load_qualification
+    qualifications = [load_qualification(path, identity=backend_identity, required=False) for path in qualification_runs]
+    tasks = {name: {"status": "UNQUALIFIED", "test_status": "NOT_TESTED"} for name in TASK_PROFILES}
+    for profile in TASK_PROFILES:
+        records = [r for r in qualifications if r["task"] == competence(profile)]
+        if records:
+            statuses = {r["status"] for r in records}
+            status = next(iter(statuses)) if len(statuses) == 1 else "UNRESOLVED"
+            tasks[profile] = {"status": status, "test_status": status, "scopes": records}
     return {"schema": "ave.auditory-task-capabilities.v1", "backend_identity": copy.deepcopy(backend_identity),
         "profile_revision": PROFILE_REVISION,
-        "tasks": {name: {"status": "UNQUALIFIED", "test_status": "NOT_TESTED"} for name in TASK_PROFILES},
+        "tasks": tasks,
+        "competencies": {name: [r for r in qualifications if r["task"] == name] for name in TASK_PROPOSITIONS},
         "lexical_transcription": "NON_AUTHORITATIVE", "exact_word_timing": "PROVISIONAL",
         "historical_probes": probes, "scoped_human_reviews": reviews,
         "scope": "Task proficiency is unqualified until actually tested; historical probe outcomes and scoped human assessments are separate",
         "authorizes_hosted_submission": False}
+
+
+def write_capability_profile(config, output):
+    """Export a summary without changing or losing its qualification inputs."""
+    from .auditory_qualification import _benchmark_input_runs
+    from .event_contracts import array, object_fields, read_event_json
+    path = Path(config).resolve()
+    deps = [file_record(path)]
+    value = read_event_json(path)
+    object_fields(value, {"backend_identity", "historical_probes", "scoped_reviews", "qualification_runs"},
+                  {"backend_identity"}, "capability profile")
+    folders = []
+    for supplied in array(value.get("qualification_runs", []), "qualification runs", 1000):
+        text_value(supplied, "qualification run path")
+        selected = Path(supplied)
+        selected = selected if selected.is_absolute() else path.parent/selected
+        folder = selected.resolve() if selected.is_dir() else selected.resolve().parent
+        if folder in folders:
+            continue
+        verify_run(folder)
+        folders.append(folder)
+        deps.extend(file_record(p) for p in sorted(folder.rglob('*')) if p.is_file())
+    containing, manifests = _benchmark_input_runs(deps)
+    deps = list({r["path"]: r for r in deps+manifests}.values())
+    with output_transaction(output, [r["path"] for r in deps]+containing+folders) as stage:
+        result = capability_profile(value["backend_identity"], historical_probes=value.get("historical_probes", []),
+            scoped_reviews=value.get("scoped_reviews", []), qualification_runs=folders)
+        write_json(stage/"task-capabilities.json", result)
+        for folder in containing:
+            verify_run(folder)
+        return finish_run(stage, "observer-capability-profile", deps,
+            metadata={"result_file": "task-capabilities.json", "qualification_run_count": len(folders)})
 
 
 def scoped_human_review(observation_run, config, output):

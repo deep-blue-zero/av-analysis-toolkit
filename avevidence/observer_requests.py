@@ -13,7 +13,8 @@ from .auditory_profiles import request_policy, validate_audio_bounds
 CONTEXT_KEYS = ("text", "context", "character_names", "expected_emotion", "canonical_text", "speaker_mapping",
                 "scene_context", "stage1_discrepancies", "reinspection_question", "context_evidence_ids")
 REQUEST_KEYS = {"schema", "request_id", "question", "source_sha256", "stage", "clips", "stage1_run",
-                "task_profile", "audio_mode", "allow_long_section", "section_budget_usd", "witness_run", *CONTEXT_KEYS}
+                "task_profile", "audio_mode", "allow_long_section", "section_budget_usd", "witness_run",
+                "observation_lane", "media_category", *CONTEXT_KEYS}
 
 
 def wav_identity(path, *, max_bytes=64*1024*1024):
@@ -118,6 +119,9 @@ def load_witness(folder, label="A", *, policy=None):
         raise AVError("Witness requested interval disagrees with the native sample mapping")
     if not isinstance(clip.get("transformations"), list):
         raise AVError("Listening witness must declare its transformations")
+    if clip.get("witness_kind") == "PROVIDER_SUBMISSION_WITNESS":
+        from .audio_witness import validate_provider_witness
+        validate_provider_witness(folder, clip)
     return {**clip, "label": label, "duration_seconds": wav["duration_seconds"], "wav_format": wav,
             "source_clock_uncertainty_seconds": clock_tolerance,
             "actual_source_interval_seconds": [seg["parent_start_seconds"], seg["parent_end_seconds"]],
@@ -142,6 +146,10 @@ def load_request(request_file, witness_run=None):
     if len(request["question"]) > 2000:
         raise AVError("Observer question exceeds the neutral-question budget")
     policy = request_policy(request)
+    if "observation_lane" in request and request["observation_lane"] not in {"QUALIFIED", "EXPERIMENTAL"}:
+        raise AVError("Auditory lane must be explicitly QUALIFIED or EXPERIMENTAL")
+    if "media_category" in request:
+        text_value(request["media_category"], "source-media category")
     stage = request.get("stage", 1)
     if type(stage) is not int or stage not in {1, 2}:
         raise AVError("Observer stage must be 1 or 2")
@@ -235,7 +243,8 @@ def validate_comparison_response(raw, clips):
 def public_clip(c):
     return {k: c[k] for k in ("label", "source_sha256", "source_interval_seconds", "stream_index", "clip_sha256",
                               "duration_seconds", "review_mapping", "transformations", "identity", "wav_format",
-                              "source_clock_uncertainty_seconds", "actual_source_interval_seconds")}
+                              "source_clock_uncertainty_seconds", "actual_source_interval_seconds")} | {
+        k: c[k] for k in ("witness_kind", "provider_transformation_sha256") if k in c}
 
 
 def source_observations(parsed, clip):

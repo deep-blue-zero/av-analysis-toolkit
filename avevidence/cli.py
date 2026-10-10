@@ -266,7 +266,16 @@ def parser():
     d.add_argument("config"); d.add_argument("output")
     d = oc.add_parser("scoped-human-review", help="Record a human judgment for one immutable observation scope")
     d.add_argument("observation_run"); d.add_argument("config"); d.add_argument("output")
+    d = oc.add_parser("provider-witness", help="Derive verified PCM16 submission audio from an immutable forensic witness")
+    d.add_argument("witness_run"); d.add_argument("output")
+    d.add_argument("--max-duration-seconds", type=float, default=120.)
+    d.add_argument("--max-bytes", type=int, default=24*1024*1024)
+    d = oc.add_parser("benchmark", help="Evaluate reference observations and derive task qualification; never sends audio")
+    d.add_argument("config"); d.add_argument("output")
+    d = oc.add_parser("qualification", help="Recompute and inspect an immutable task qualification")
+    d.add_argument("input")
     d = oc.add_parser("fixtures"); d.add_argument("output"); d.add_argument("--trials", type=int, default=24); d.add_argument("--seed", type=int, default=9271)
+    d.add_argument("--protocol", choices=["v1", "v2"], default="v2")
     for name in ("observe", "estimate", "probe"):
         d = oc.add_parser(name)
         if name == "observe":
@@ -275,6 +284,9 @@ def parser():
             d.add_argument("witness_run_pos", nargs="?"); d.add_argument("request_pos", nargs="?"); d.add_argument("output_pos", nargs="?")
             d.add_argument("--backend", choices=["mock", "openai-audio"], default="mock")
             d.add_argument("--capability")
+            d.add_argument("--observation-lane", choices=["QUALIFIED", "EXPERIMENTAL"])
+            d.add_argument("--qualification", help="Recomputed task qualification run; required for qualified live observation")
+            d.add_argument("--media-category", help="Must match the qualification's actual source-media scope")
         elif name == "probe":
             d.add_argument("--fixtures", required=True)
             d.add_argument("--backend", choices=["openai-audio"], required=True)
@@ -444,22 +456,26 @@ def dispatch(a):
         from .observer_execution import estimate_observation, observe_request, probe_backend
         if a.observer_command == "providers": return providers()
         if a.observer_command == "profiles":
-            from .auditory_profiles import TASK_PROMPTS
-            return {"profiles":TASK_PROMPTS,"qualification":"NONE_IMPLIED"}
+            from .auditory_profiles import COMPETENCY_PROFILES, TASK_PROFILES, TASK_PROMPTS
+            return {"profiles":{name:TASK_PROMPTS[name] for name in TASK_PROFILES},
+                    "competency_profiles":{name:TASK_PROMPTS[name] for name in COMPETENCY_PROFILES},
+                    "qualification":"NONE_IMPLIED"}
         if a.observer_command == "scoped-human-review":
             from .auditory_profiles import scoped_human_review
             return scoped_human_review(a.observation_run,a.config,a.output)
         if a.observer_command == "capability-profile":
-            from .auditory_profiles import capability_profile
-            from .event_contracts import read_event_json, object_fields
-            from .common import file_record
-            config = read_event_json(a.config)
-            object_fields(config,{"backend_identity","historical_probes","scoped_reviews"},{"backend_identity"},"capability profile")
-            result = capability_profile(config["backend_identity"],historical_probes=config.get("historical_probes",[]),scoped_reviews=config.get("scoped_reviews",[]))
-            with output_transaction(a.output,[a.config]) as stage:
-                write_json(stage/"task-capabilities.json",result)
-                return finish_run(stage,"observer-capability-profile",[file_record(a.config)],metadata={"result_file":"task-capabilities.json"})
-        if a.observer_command == "fixtures": return make_probe(a.output,trials=a.trials,seed=a.seed)
+            from .auditory_profiles import write_capability_profile
+            return write_capability_profile(a.config, a.output)
+        if a.observer_command == "provider-witness":
+            from .audio_witness import provider_witness
+            return provider_witness(a.witness_run, a.output, max_duration_seconds=a.max_duration_seconds, max_bytes=a.max_bytes)
+        if a.observer_command == "benchmark":
+            from .auditory_qualification import benchmark
+            return benchmark(a.config, a.output)
+        if a.observer_command == "qualification":
+            from .auditory_qualification import load_qualification
+            return load_qualification(a.input, required=False)
+        if a.observer_command == "fixtures": return make_probe(a.output,trials=a.trials,seed=a.seed,protocol=a.protocol)
         if a.observer_command == "human-import": return import_human_review(a.review_import_run,a.output)
         if a.observer_command == "claim-delta":
             from .auditory_claims import claim_delta
@@ -482,7 +498,8 @@ def dispatch(a):
                 queue_ledger=a.queue_ledger,queue_budget_usd=a.queue_budget_usd)
             if a.observer_command == "probe":
                 return probe_backend(a.fixtures,a.output,backend=backend,dry_run=a.dry_run,**execution)
-            return observe_request(a.request,a.output,witness_run=a.witness_run,backend=backend,capability=a.capability,**execution)
+            return observe_request(a.request,a.output,witness_run=a.witness_run,backend=backend,capability=a.capability,
+                observation_lane=a.observation_lane, qualification=a.qualification, media_category=a.media_category, **execution)
     if c == "musical-relations":
         from .musical_relations import musical_relations
         return musical_relations(a.config,a.output)

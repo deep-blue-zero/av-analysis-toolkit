@@ -5,8 +5,9 @@ import copy
 import hashlib
 from pathlib import Path
 import re
+import shutil
 
-from .common import AVError, file_record, finish_run, output_transaction, sha256, write_json
+from .common import AVError, file_record, finish_run, output_transaction, safe_member, sha256, write_json
 from .event_contracts import (CHANNELS, CLOCK, PROPOSITIONS, STATES, TEMPORAL_STATES, array,
                               canonical_digest, choice, object_fields, read_event_json, span, strings)
 from .inventory import digest_value, identifier, integer, number, text_value
@@ -113,7 +114,7 @@ def validate_packet(packet):
     for channel, refs in packet["evidence"].items():
         for ref in array(refs, channel+" evidence", 1000):
             object_fields(ref, {"id", "artifact", "locator", "record_pointer", "authority", "origin_ids",
-                          "shared_assumptions", "context_evidence_ids", "stage1_evidence_id", "review_artifact"},
+                          "shared_assumptions", "context_evidence_ids", "stage1_evidence_id", "review_artifact", "independence_declaration"},
                           {"id", "artifact", "locator"}, "evidence reference")
             eid = identifier(ref["id"], "evidence ID")
             if eid in evidence:
@@ -137,6 +138,13 @@ def validate_packet(packet):
                 strings(ref.get(key, []), key, 100)
             if "review_artifact" in ref:
                 _artifact(ref["review_artifact"], "separate review")
+            if "independence_declaration" in ref:
+                declaration = ref["independence_declaration"]
+                object_fields(declaration, {"reviewer", "basis", "upstream_evidence_ids"},
+                              {"reviewer", "basis", "upstream_evidence_ids"}, "independent preparation declaration")
+                text_value(declaration["reviewer"], "independence reviewer")
+                text_value(declaration["basis"], "independence basis")
+                strings(declaration["upstream_evidence_ids"], "declared upstream evidence", 100)
             if channel == "AO_STAGE2":
                 identifier(ref.get("stage1_evidence_id"), "Stage 1 evidence ID")
                 strings(ref.get("context_evidence_ids", []), "Stage 2 context references", 100, 1)
@@ -155,7 +163,7 @@ def validate_packet(packet):
     for kind, rows in (("observation", observations), ("claim", claims)):
         for row in rows:
             keys = {"id", "proposition", "statement", "status", "interval_seconds", "shared_assumptions"}
-            keys |= {"evidence_ids", "value", "temporal_status"} if kind == "observation" else {"observation_ids", "inference", "interpretation", "alternatives", "confidence"}
+            keys |= {"evidence_ids", "value", "temporal_status", "evidence_roles"} if kind == "observation" else {"observation_ids", "inference", "interpretation", "alternatives", "confidence", "support_routes"}
             required_node = {"id", "proposition", "statement", "status", "evidence_ids" if kind == "observation" else "observation_ids"}
             object_fields(row, keys, required_node, kind)
             identifier(row["id"], kind+" ID")
@@ -169,6 +177,12 @@ def validate_packet(packet):
                 ids = strings(row["evidence_ids"], "observation evidence IDs", 100, 1)
                 if set(ids)-evidence.keys():
                     raise AVError("Observation references missing evidence")
+                if "evidence_roles" in row:
+                    from .support_routes import ROLES
+                    if not isinstance(row["evidence_roles"], dict) or set(row["evidence_roles"]) != set(ids):
+                        raise AVError("Evidence roles must explicitly classify every attached reference")
+                    for role in row["evidence_roles"].values():
+                        choice(role, ROLES, "observation evidence role")
                 if "temporal_status" in row:
                     choice(row["temporal_status"], TEMPORAL_STATES, "temporal status")
             else:
@@ -181,11 +195,16 @@ def validate_packet(packet):
                     choice(row["confidence"], {"LOW", "MEDIUM", "HIGH", "OPEN"}, "claim confidence")
     nodes, _ = validate_graph(observations, claims, packet["dependencies"])
     for claim in claims:
+        from .support_routes import validate_routes
+        validate_routes(claim, nodes, packet["dependencies"])
         for oid in claim["observation_ids"]:
             if oid not in nodes or nodes[oid]["type"] != "observation":
                 raise AVError("Claim premise must be an observation ID")
             if not any(e["from"] == oid and e["to"] == claim["id"] and e["relation"] in PROPAGATING for e in packet["dependencies"]):
                 raise AVError("Each listed claim premise requires an explicit dependency edge")
+            if "support_routes" not in claim and any(e["from"] == oid and e["to"] == claim["id"]
+                    and e.get("role", "REQUIRED") != "REQUIRED" for e in packet["dependencies"]):
+                raise AVError("Optional claim premises require declared support routes")
     conflict_ids = set()
     for row in array(packet["conflicts"], "conflicts", 100):
         object_fields(row, {"id", "proposition", "observation_ids", "question"}, {"id", "proposition", "observation_ids", "question"}, "conflict")
@@ -271,6 +290,24 @@ def load_scene_packet(path, *, relocations=None):
             raise AVError("Auditory reference has an incompatible attributed record/stage")
         from .auditory_profiles import task_profile
         task_profile(raw.get("task_profile"))
+        # Derived provenance tags come from actual immutable receipt fields,
+        # rather than silently trusting a caller's independence assertion.
+        if raw.get("backend_identity"):
+            origins = list(ref.get("origin_ids", []))
+            backend = raw["backend_identity"]
+            provider = backend.get("provider", backend.get("backend_id"))
+            origins.append("auditory-model-"+canonical_digest({
+                "provider": provider, "model_revision": backend.get("model_revision")}))
+            returned_model = (raw.get("provider_receipt") or {}).get("returned_model")
+            if returned_model:
+                origins.append("auditory-returned-model-"+canonical_digest({
+                    "provider": provider, "returned_model": returned_model}))
+            origins.append("auditory-model-context-"+canonical_digest({
+                "backend": raw["backend_identity"],
+                "clips": [(c.get("clip_sha256"), c.get("source_sha256"), c.get("stream_index"),
+                           c.get("source_interval_seconds")) for c in (raw.get("clips") or [raw])],
+                "context": raw.get("supplied_context")}))
+            evidence[eid]["origin_ids"] = sorted(set(origins))
         clips = raw.get("clips") or [raw]
         array(clips,"ordered auditory clips",4,1)
         if any(not isinstance(c,dict) for c in clips):
@@ -312,7 +349,8 @@ def load_scene_packet(path, *, relocations=None):
     return packet, evidence, nodes, bindings, snapshot, source_replay
 
 
-def verify_scene_snapshot(snapshot,bindings):
+def verify_scene_snapshot(snapshot,bindings, *, qualification_inputs=()):
+    from .inventory import verify_run
     if sha256(snapshot["path"]) != snapshot["sha256"]:
         raise AVError("Scene input changed after admission")
     for row in bindings.values():
@@ -320,6 +358,79 @@ def verify_scene_snapshot(snapshot,bindings):
             raise AVError("Scene evidence changed after admission")
         if row.get("review_path") and sha256(row["review_path"]) != row["review_sha256"]:
             raise AVError("Scene review changed after admission")
+        if row.get("qualification_proof"):
+            proof = row["qualification_proof"]
+            if sha256(Path(proof["path"])/"run.json") != proof["manifest_sha256"]:
+                raise AVError("Scoped qualification proof changed after admission")
+            verify_run(proof["path"])
+    for folder in qualification_inputs:
+        verify_run(folder)
+
+
+def scene_qualification_inputs(collections):
+    """Protect and source-bind every run enclosing an admitted qualification."""
+    from .auditory_qualification import _benchmark_input_runs
+    records = {}
+    for bindings in collections.values():
+        for binding in bindings.values():
+            proof = binding.get("qualification_proof")
+            if proof:
+                record = file_record(Path(proof["path"])/"run.json")
+                if record["sha256"] != proof["manifest_sha256"]:
+                    raise AVError("Scoped qualification manifest changed before publication")
+                records[record["path"]] = record
+    return _benchmark_input_runs(list(records.values()))
+
+
+def retain_scene_qualifications(stage, collections):
+    """Freeze complete, verified qualification runs without rewriting them."""
+    from .inventory import verify_run
+
+    retained, sources, copied = {}, {}, set()
+    for label, bindings in sorted(collections.items()):
+        rows = {}
+        for eid, binding in sorted(bindings.items()):
+            proof = binding.get("qualification_proof")
+            if not proof:
+                continue
+            original = Path(proof["path"]).resolve()
+            manifest_record = file_record(original/"run.json", "scene_qualification_proof")
+            if manifest_record["sha256"] != proof["manifest_sha256"]:
+                raise AVError("Scoped qualification proof changed before retention")
+            verification = verify_run(original)
+            if verification["manifest_sha256"] != proof["manifest_sha256"]:
+                raise AVError("Scoped qualification manifest changed during verification")
+            manifest = read_event_json(original/"run.json")
+            digest = proof["manifest_sha256"]
+            relative = "qualification-proofs/"+digest
+            destination = safe_member(stage, relative)
+            if digest not in copied:
+                destination.mkdir(parents=True)
+            artifacts = [{"path": "run.json", "sha256": digest,
+                          "size_bytes": manifest_record["size_bytes"]}]+manifest["artifacts"]
+            for artifact in artifacts:
+                source = safe_member(original, artifact["path"])
+                record = file_record(source, "scene_qualification_proof")
+                if record["sha256"] != artifact["sha256"] or record["size_bytes"] != artifact["size_bytes"]:
+                    raise AVError("Scoped qualification artifact changed before retention")
+                sources[record["path"]] = record
+                target = safe_member(destination, artifact["path"])
+                if digest not in copied:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with source.open("rb") as src, target.open("xb") as dst:
+                        shutil.copyfileobj(src, dst)
+                if target.stat().st_size != artifact["size_bytes"] or sha256(target) != artifact["sha256"]:
+                    raise AVError("Retained qualification artifact differs from its admitted proof")
+            verify_run(destination)
+            copied.add(digest)
+            rows[eid] = {"path": relative, "manifest_sha256": digest, "original_path": str(original)}
+        if rows:
+            retained[label] = rows
+    if retained:
+        write_json(Path(stage)/"qualification-bindings.json", {
+            "schema": "ave.scene-qualification-bindings.v1", "bindings": retained,
+            "scope": "Frozen qualification proofs permit historical recomputation; hashes establish integrity, not authenticity or claim truth"})
+    return [sources[path] for path in sorted(sources)]
 
 
 def prepare_scene_packet(input, output, *, relocations=None):

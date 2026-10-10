@@ -37,7 +37,7 @@ def _backend_request(request):
 
 
 def validate_hosted_capability(receipt, identity):
-    if receipt.get("backend_identity") != identity or receipt.get("schema") != "ave.hosted-auditory-capability.v1":
+    if receipt.get("backend_identity") != identity or receipt.get("schema") not in {"ave.hosted-auditory-capability.v1", "ave.hosted-auditory-capability.v2"}:
         raise HostedError("BACKEND_NOT_PROBED", "Hosted admission requires a matching scored hosted capability receipt")
     if receipt.get("status") != "PROBE_PASSED" or receipt.get("semantic_probe_passed") is not True:
         raise HostedError("BACKEND_PROBE_FAILED", "This auditory route has no passed semantic probe")
@@ -63,6 +63,18 @@ def validate_hosted_capability(receipt, identity):
             raise HostedError("BACKEND_PROBE_FAILED", "A blinded contrast family failed its input-influence check")
     if sum(f["trials"] for f in families.values()) != n or sum(f["correct"] for f in families.values()) != correct:
         raise HostedError("BACKEND_PROBE_FAILED", "Contrast families disagree with the overall probe counts")
+    if receipt["schema"] == "ave.hosted-auditory-capability.v2":
+        pairs = receipt.get("paired_results")
+        if not isinstance(pairs, dict) or set(pairs) != set(families):
+            raise HostedError("BACKEND_PROBE_FAILED", "Probe v2 requires independently scored reversed pairs")
+        for key, result in pairs.items():
+            count, successes = result.get("pairs"), result.get("correct_pairs")
+            if (type(count) is not int or count < 6 or type(successes) is not int or not 0 <= successes <= count
+                or count*2 != families[key]["trials"] or successes*2 > families[key]["correct"]):
+                raise HostedError("BACKEND_PROBE_FAILED", "Malformed reversed-pair counts")
+            probability = sum(math.comb(count, k) for k in range(successes, count+1))/2**count
+            if successes/count < .8 or probability > .05 or result.get("chance_one_sided_p") != probability or result.get("passed") is not True:
+                raise HostedError("BACKEND_PROBE_FAILED", "Reversed-pair influence threshold was not met")
     returned_model = receipt.get("returned_model")
     if not model_matches(identity["model_revision"], returned_model):
         raise HostedError("BACKEND_NOT_PROBED", "Probe lacks a stable provider-reported audio model identity")
@@ -136,7 +148,8 @@ def estimate_observation(request_file, *, witness_run=None, backend=None, output
 
 
 def _atomic_record(request, clip, *, backend, prompt, context, capability_status, capability_receipt, raw, parsed,
-                   started, completed, validation_error=None, execution_status=None, provider_receipt=None, parent=None):
+                   started, completed, validation_error=None, execution_status=None, provider_receipt=None, parent=None,
+                   admission=None, qualification=None):
     identity = backend.identity
     from .auditory_profiles import request_policy
     policy = request_policy(request)
@@ -150,7 +163,11 @@ def _atomic_record(request, clip, *, backend, prompt, context, capability_status
         "actual_source_interval_seconds": clip["actual_source_interval_seconds"],
         "prompt": prompt, "prompt_sha256": digest(prompt), "stage": request.get("stage", 1), "supplied_context": context,
         "evidence_class": "AO_STAGE2" if request.get("stage", 1) == 2 else "AO_STAGE1",
-        "task_profile": policy["task_profile"], "audio_policy": policy, "task_capability_status": "UNQUALIFIED",
+        "task_profile": policy["task_profile"], "audio_policy": policy,
+        "task_capability_status": qualification["status"] if qualification else "UNQUALIFIED",
+        "admission_dimensions": admission, "task_qualification": qualification,
+        "observation_lane": request.get("observation_lane", "QUALIFIED"),
+        "media_category": request.get("media_category"), "source_binding_receipt": public_clip(clip),
         "raw_response": raw, "parsed": parsed, "validation_status": "INVALID" if validation_error else "VALID",
         "validation_error": validation_error, "capability_status": capability_status, "execution_status": execution_status,
         "capability_receipt": capability_receipt,
@@ -162,20 +179,59 @@ def _atomic_record(request, clip, *, backend, prompt, context, capability_status
 
 @_serialized_hosted
 def observe_request(request_file, output, *, witness_run=None, backend=None, capability=None,
-                    budget_usd=.50, request_budget_usd=.10, queue_ledger=None, queue_budget_usd=2.):
+                    budget_usd=.50, request_budget_usd=.10, queue_ledger=None, queue_budget_usd=2.,
+                    observation_lane=None, qualification=None, media_category=None):
     from .auditory_observer import MockObserver, validate_response
     backend = backend if backend is not None else MockObserver()
     hosted = backend.identity.get("route_type") == "hosted"
     if hosted:
         authorize(backend.allow_remote_media, backend.credential_env)
     request, clips, context, deps = load_request(request_file, witness_run)
+    if observation_lane is not None:
+        if request.get("observation_lane", observation_lane) != observation_lane:
+            raise AVError("CLI and request auditory lanes disagree")
+        if observation_lane not in {"QUALIFIED", "EXPERIMENTAL"}:
+            raise AVError("Unknown auditory observation lane")
+        request["observation_lane"] = observation_lane
+    if media_category is not None:
+        from .inventory import text_value
+        text_value(media_category, "source-media category")
+        if request.get("media_category", media_category) != media_category:
+            raise AVError("CLI and request media categories disagree")
+        request["media_category"] = media_category
     inputs = [request_file] + [c["witness_run"] for c in clips]
     is_mock = backend.identity.get("type") == "mock"
     capability_status, receipt = "NOT_CONFIGURED", None
-    if not is_mock:
+    lane = request.get("observation_lane", "QUALIFIED")
+    task_record = None
+    # Preserve existing injected-transport regression behavior, never live
+    # execution authority or perceptual adequacy. Explicit lanes use new rules.
+    legacy_test = (backend.identity.get("execution_mode") == "TEST_DOUBLE"
+                   and "observation_lane" not in request and qualification is None)
+    if not is_mock and legacy_test:
         receipt = require_capability(capability, backend)
         capability_status = receipt["status"]
         deps.append(file_record(capability, "auditory_capability")); inputs.append(capability)
+    elif not is_mock:
+        if capability:
+            from .analysis_preflight import capability_receipt
+            receipt = capability_receipt(read_json(capability))
+            if receipt.get("backend_identity") != backend.identity:
+                raise AVError("Historical input-influence receipt belongs to another exact backend")
+            capability_status = receipt["status"]
+            deps.append(file_record(capability)); inputs.append(capability)
+        if lane == "QUALIFIED":
+            from .auditory_qualification import competence, load_qualification
+            if not qualification or not request.get("media_category"):
+                raise HostedError("TASK_NOT_QUALIFIED", "Qualified observation requires benchmark qualification and an explicit media category")
+            task_record = load_qualification(qualification, identity=backend.identity,
+                task=competence(request.get("task_profile", "SPEECH_PERFORMANCE")), media_category=request["media_category"],
+                configuration_revision=backend.identity.get("configuration_revision"))
+            qfolder = Path(qualification) if Path(qualification).is_dir() else Path(qualification).parent
+            deps.extend(file_record(p, "task_qualification_proof") for p in sorted(qfolder.rglob('*')) if p.is_file())
+            inputs.append(qfolder)
+        if hosted and any(c.get("witness_kind") != "PROVIDER_SUBMISSION_WITNESS" for c in clips):
+            raise AVError("Hosted lanes require a verified PCM16 provider-submission witness")
     elif capability:
         from .analysis_preflight import capability_receipt
         receipt = capability_receipt(read_json(capability))
@@ -190,12 +246,20 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
         folder, record = _stage1_parent(request, clips, Path(request_file).resolve().parent)
         deps.append(record); inputs.append(folder)
         parent = {"path": str(folder), "observation_sha256": record["sha256"], "stage": 1}
+    from .auditory_qualification import _benchmark_input_runs
+    containing_runs, manifests = _benchmark_input_runs(deps)
+    deps = list({r["path"]: r for r in deps+manifests}.values())
+    inputs += containing_runs
     prompt = _prompt(request)
     # Only the neutral prompt, opaque labels and clip bytes enter the backend;
     # request paths, claim IDs, methods and source filenames are not forwarded.
     actual = _backend_request(request)
     supplied_clip = clips[0] if len(clips) == 1 else {"clips": clips}
     with output_transaction(output, inputs) as stage:
+        if task_record:
+            import shutil
+            shutil.copytree(qfolder, stage/"qualification-proof")
+            verify_run(stage/"qualification-proof")
         session = None
         if hosted:
             policy = request_policy(request)
@@ -207,7 +271,9 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
                                     model=backend.identity["model_revision"])
             backend.session = session
             backend.admitted_capability = backend.identity.copy()
-            backend.admitted_returned_model = receipt["returned_model"]
+            backend.admitted_returned_model = receipt.get("returned_model") if legacy_test else (
+                task_record["returned_model"] if task_record else None)
+            backend.observation_lane = None if legacy_test else lane
             backend.precheck()
         started = utc_now()
         raw, provider_receipt, error = None, None, None
@@ -234,10 +300,28 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
             except AVError as exc:
                 validation_error = str(exc)
         status = error.code if error else "OBSERVATION_INVALID" if validation_error else "OBSERVATION_VALID"
+        contract_status = "NOT_EVALUATED"
+        if isinstance(raw, str):
+            try:
+                validate_response(raw, clips[0]["duration_seconds"]) if len(clips) == 1 else validate_comparison_response(raw, clips)
+                contract_status = "VALID"
+            except AVError:
+                contract_status = "INVALID"
+        admission = {"schema": "ave.auditory-admission.v1", "lane": lane,
+            "source_authorization": "VERIFIED_AUTHORIZED" if hosted else "LOCAL_SOURCE_BOUND",
+            "transport": "ACCEPTED" if provider_receipt and provider_receipt.get("status") == "REQUEST_ACCEPTED" else "NOT_ESTABLISHED",
+            "response_contract": contract_status,
+            "transport_details": {"audio_submission_attempted": bool(provider_receipt and provider_receipt.get("submission_attempted")),
+                "expected_model_returned": bool(provider_receipt and model_matches(backend.identity.get("model_revision"), provider_receipt.get("returned_model"))),
+                "usage_accounted": bool(provider_receipt and (provider_receipt.get("usage") or {}).get("actual_cost_usd") is not None)},
+            "input_influence": capability_status,
+            "task_competence": task_record["status"] if task_record else "UNQUALIFIED",
+            "individual_adequacy": "REQUIRES_PROPOSITION_SPECIFIC_ADJUDICATION",
+            "test_double": is_mock or backend.identity.get("execution_mode") == "TEST_DOUBLE"}
         shared = dict(backend=backend, prompt=prompt, context=context, capability_status=capability_status, raw=raw,
                       capability_receipt=receipt,
                       started=started, completed=completed, validation_error=validation_error, execution_status=status,
-                      provider_receipt=provider_receipt, parent=parent)
+                      provider_receipt=provider_receipt, parent=parent, admission=admission, qualification=task_record)
         atomic_files = []
         if len(clips) == 1:
             report = _atomic_record(request, clips[0], parsed=parsed, **shared)
@@ -250,7 +334,9 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
                 "prompt": prompt, "prompt_sha256": digest(prompt), "supplied_context": context, "stage1_parent": parent,
                 "evidence_class": "AO_STAGE2" if request.get("stage", 1) == 2 else "AO_STAGE1",
                 "task_profile": request.get("task_profile", "SPEECH_PERFORMANCE"), "audio_policy": request_policy(request),
-                "task_capability_status": "UNQUALIFIED",
+                "task_capability_status": task_record["status"] if task_record else "UNQUALIFIED",
+                "admission_dimensions": admission, "task_qualification": task_record,
+                "observation_lane": lane, "media_category": request.get("media_category"),
                 "raw_response": raw, "parsed": parsed, "validation_status": "INVALID" if validation_error else "VALID",
                 "validation_error": validation_error, "execution_status": status, "capability_status": capability_status,
                 "capability_receipt": receipt,
@@ -262,10 +348,13 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
                 for c in clips:
                     record = _atomic_record(request, c, parsed=by_label[c["label"]], **shared)
                     record["comparison_projection"] = {"label": c["label"], "parent_file": "observation.json", "parent_sha256": sha256(stage/"observation.json")}
+                    record["raw_comparison_clips"] = [public_clip(item) for item in clips]
                     name = "clip-" + c["label"] + "-observation.json"
                     write_json(stage/name, record); atomic_files.append(name)
         if session:
             write_json(stage/"cost-summary.json", session.summary())
+        for folder in containing_runs:
+            verify_run(folder)
         return finish_run(stage, "observer-observe", deps, metadata={"result_file": "observation.json",
             "atomic_observation_files": atomic_files, "validation_status": report["validation_status"], "execution_status": status,
             "backend_identity": backend.identity, "claim_status_changes": "NONE_WITHOUT_SEPARATE_ADJUDICATION"})
@@ -281,6 +370,7 @@ def probe_backend(fixtures, output, *, backend, budget_usd=.50, request_budget_u
     questions_path = folder/"observer-input"/"questions.json"
     answers_path = folder/"adjudication"/"answers.json"
     questions, answers = read_json(questions_path), read_json(answers_path)
+    protocol = "v2" if questions.get("schema") == "ave.blinded-audio-probe.v2" else "v1"
     trials, truth = questions.get("trials"), answers.get("trials")
     if not isinstance(trials, list) or not isinstance(truth, list) or not 12 <= len(trials) <= 200 or len(trials) != len(truth):
         raise AVError("Require the existing bounded blinded semantic fixtures")
@@ -296,6 +386,8 @@ def probe_backend(fixtures, output, *, backend, budget_usd=.50, request_budget_u
             raise AVError("Malformed or mismatched blinded probe trial")
         expected_question = ("Which clip has rising pitch? Return the zero-based index only." if answer["family"] == "pitch_direction"
             else "Which clip contains a tone rather than digital silence? Return the zero-based index only.")
+        if protocol == "v2":
+            expected_question = expected_question.replace("Return the zero-based index only.", 'Return only JSON {"choice": 0} or {"choice": 1}.')
         if trial["question"] != expected_question:
             raise AVError("Blinded probe question differs from the neutral fixture contract")
         seen.add(trial["trial_id"])
@@ -313,8 +405,27 @@ def probe_backend(fixtures, output, *, backend, budget_usd=.50, request_budget_u
             deps.append(file_record(path, "blinded_probe_audio"))
         # No answer, family, seed, original filename or adjudication path is sent.
         admitted.append({"trial_id": trial["trial_id"], "question": trial["question"], "clips": clips})
-        estimates.append(estimate_cost([1., 1.], trial["question"] + "\nReturn the zero-based clip index (0 or 1) only; no explanation.",
-                                       max_output_tokens=16, model=backend.identity["model_revision"]))
+        instruction = ('Return ONLY a JSON object with exactly one key, choice, whose value is the integer 0 or 1.'
+                       if protocol == "v2" else "Return the zero-based clip index (0 or 1) only; no explanation.")
+        labels = "\n".join(backend.clip_instruction(c) for c in clips) if hasattr(backend, "clip_instruction") else ""
+        estimates.append(estimate_cost([1., 1.], trial["question"] + "\n" + instruction + "\n" + labels,
+                                       max_output_tokens=128 if protocol == "v2" else 16, model=backend.identity["model_revision"]))
+    if protocol == "v2":
+        paired = {}
+        for index, row in enumerate(truth):
+            if not isinstance(row.get("pair_id"), str):
+                raise AVError("Probe v2 requires declared reversed-order pairs")
+            paired.setdefault((row["family"], row["pair_id"]), []).append(index)
+        for indices in paired.values():
+            if len(indices) != 2 or {truth[i]["answer"] for i in indices} != {0, 1}:
+                raise AVError("Probe v2 pair is unbalanced")
+            a, b = indices
+            if [c["clip_sha256"] for c in admitted[a]["clips"]] != [c["clip_sha256"] for c in admitted[b]["clips"]][::-1]:
+                raise AVError("Probe v2 reverse pair does not contain the same audio in opposite order")
+        for family in ("pitch_direction", "signal_presence"):
+            labels = [r["answer"] for r in truth if r["family"] == family]
+            if len(labels) < 6 or sum(labels)*2 != len(labels):
+                raise AVError("Probe v2 correct positions must balance within every family")
     plan = {"schema": "ave.observer-probe-plan.v1", "backend_identity": backend.identity,
         "trials": len(trials), "audio_seconds": len(trials)*2, "estimated_cost_usd": round(sum(e["estimated_cost_usd"] for e in estimates), 9),
         "estimate_status": "PLANNING_ESTIMATE", "estimates": estimates, "submitted": False,
@@ -335,7 +446,7 @@ def probe_backend(fixtures, output, *, backend, budget_usd=.50, request_budget_u
         records, predictions, error = [], [], None
         for fixture in admitted:
             try:
-                result = backend.probe_capability(fixture, {"prompt_revision": backend.identity["prompt_revision"]})
+                result = backend.probe_capability(fixture, {"prompt_revision": backend.identity["prompt_revision"], "protocol": protocol})
                 predictions.append(result["prediction"])
                 records.append({"trial_id": fixture["trial_id"], **result})
             except HostedError as exc:
@@ -356,11 +467,16 @@ def probe_backend(fixtures, output, *, backend, budget_usd=.50, request_budget_u
                     continue
                 error = exc
                 break
-        score = score_probe(predictions, [r["answer"] for r in truth]) if len(predictions) == len(truth) else None
+        scored_predictions = predictions + [None]*(len(truth)-len(predictions)) if protocol == "v2" else predictions
+        score = score_probe(scored_predictions, [r["answer"] for r in truth]) if len(scored_predictions) == len(truth) else None
         families = {}
         for family in ("pitch_direction", "signal_presence"):
             indices = [i for i, row in enumerate(truth) if row["family"] == family]
             families[family] = {"trials": len(indices), "correct": sum(predictions[i] == truth[i]["answer"] for i in indices if i < len(predictions))}
+            if protocol == "v2":
+                f = families[family]
+                f["chance_one_sided_p"] = sum(math.comb(f["trials"], k) for k in range(f["correct"], f["trials"]+1))/2**f["trials"]
+                f["passed"] = f["correct"]/f["trials"] >= .8 and f["chance_one_sided_p"] <= .05
         returned_models = {r.get("provider_receipt", {}).get("returned_model") for r in records if r.get("provider_receipt")}
         passed = bool(score and score["passed"] and len(returned_models) == 1 and None not in returned_models
             and all(v["trials"] >= 6 and v["correct"]/v["trials"] >= .8 for v in families.values()))
@@ -374,6 +490,34 @@ def probe_backend(fixtures, output, *, backend, budget_usd=.50, request_budget_u
             "created_at": utc_now(), "execution_mode": backend.identity.get("execution_mode"),
             "authorization": {"provider": "openai", "remote_media_authorized": True},
             "scope": "Input influence on blinded pitch and signal-presence contrasts only; not Japanese acting/emotion qualification; test transport passes do not authorize a live route"}
+        if protocol == "v2":
+            pair_results = {}
+            for family in ("pitch_direction", "signal_presence"):
+                groups = [indices for (fam, _), indices in paired.items() if fam == family]
+                correct_pairs = sum(all(i < len(predictions) and predictions[i] == truth[i]["answer"] for i in indices) for indices in groups)
+                n_pairs = len(groups)
+                p_pairs = sum(math.comb(n_pairs, k) for k in range(correct_pairs, n_pairs+1))/2**n_pairs
+                pair_results[family] = {"pairs": n_pairs, "correct_pairs": correct_pairs,
+                    "chance_one_sided_p": p_pairs, "passed": n_pairs >= 6 and correct_pairs/n_pairs >= .8 and p_pairs <= .05}
+            outcomes = []
+            for index, record in enumerate(records):
+                pred = record.get("prediction")
+                provider = record.get("provider_receipt") or {}
+                accounted = (provider.get("usage") or {}).get("actual_cost_usd") is not None
+                kind = ("TRANSPORT_FAILURE" if provider.get("status") != "REQUEST_ACCEPTED" and not accounted
+                        else "MALFORMED_RESPONSE" if pred is None else
+                        "CORRECT" if pred == truth[index]["answer"] else "INCORRECT_PERCEPTUAL_JUDGMENT")
+                outcomes.append({"trial_id": record["trial_id"], "family": truth[index]["family"], "outcome": kind})
+            passed = passed and all(f["passed"] for f in families.values()) and all(f["passed"] for f in pair_results.values()) and error is None
+            receipt.update(schema="ave.hosted-auditory-capability.v2", protocol="balanced-reversed-json-v2",
+                status="PROBE_PASSED" if passed else "PROBE_FAILED", semantic_probe_passed=passed,
+                outcomes=outcomes, overall_failure_rate=1-score["correct"]/score["trials"],
+                not_attempted_trials=len(truth)-len(records),
+                paired_results=pair_results, execution_status=error.code if error else "PROBE_PASSED" if passed else "BACKEND_PROBE_FAILED",
+                criteria={"overall_min_accuracy": .8, "overall_max_p": .01, "family_min_accuracy": .8, "family_max_p": .05,
+                    "minimum_pairs_per_family": 6, "pair_max_p": .05, "pair_null_success_probability": .5,
+                    "pair_scope": "Both orders must be correct; conservative binary null; no independent-trial claim for reversed calls"},
+                task_qualification="NONE_INPUT_INFLUENCE_ONLY")
         write_json(stage/"probe-responses.json", {"schema": "ave.observer-probe-responses.v1", "trials": records})
         write_json(stage/"capability.json", receipt)
         write_json(stage/"cost-summary.json", session.summary())

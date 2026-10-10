@@ -170,3 +170,15 @@ clean-tree reconstruction; see the [release workflow](RC2_RELEASE_VALIDATION_WOR
 See [quickstart](AUDIO_QUICKSTART.md), [methods](AUDIO_TRACKS.md) and the current
 [extension contract](../AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md). These commands do not
 establish listening and do not automatically feed the legacy cue-only timeline.
+
+## Layered auditory admission (1.6.0a3)
+
+`ave observer provider-witness FORENSIC_RUN OUTPUT` creates the bounded, verified
+PCM16 derivative. `fixtures --protocol v2 --trials 24` prepares locally generated
+influence tests. `benchmark CONFIG OUTPUT` and `qualification RUN` recompute
+task-specific benchmark evidence without sending audio. `observe` accepts
+`--observation-lane EXPERIMENTAL` or the conservative `QUALIFIED` default, with
+`--qualification RUN --media-category CATEGORY` for routine execution. Hosted
+media permission, credentials and budgets remain required. See
+[AUDITORY_QUALIFICATION.md](AUDITORY_QUALIFICATION.md) for complete commands and
+[Schemas](AUDITORY_SCHEMAS.md) for atomic review/proof contracts.

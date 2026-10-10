@@ -13,8 +13,8 @@ import threading
 from ..common import AVError, sha256
 from .openai_common import (HostedError, MODEL, authorize, estimate_cost, http_transport, model_matches, pricing_for_model)
 
-PROMPT_REVISION = "auditory-neutral-json-v1"
-ADAPTER_REVISION = "openai-audio-sync-1"
+PROMPT_REVISION = "auditory-neutral-json-v2"
+ADAPTER_REVISION = "openai-audio-sync-2"
 SINGLE_SCHEMA = ('Return ONLY JSON with exactly these keys: observations (array of objects with start_s, end_s, description), '
     'alternatives (array of strings), interference (array of strings), abstentions (array of strings), '
     'confidence (high, medium, low, or unknown). Times are seconds relative to the provided clip, starting at 0. '
@@ -52,6 +52,8 @@ class OpenAIAudioObserver:
             json.dumps(TASK_PROMPTS, sort_keys=True, ensure_ascii=False)).encode("utf-8")).hexdigest()
         self.identity["adapter_sha256"] = sha256(__file__)
         self.identity["transport_sha256"] = sha256(Path(__file__).with_name("openai_common.py"))
+        from ..event_contracts import canonical_digest
+        self.identity["configuration_revision"] = canonical_digest({"max_output_tokens": max_output_tokens, "timeout_s": timeout_s})
         self.credential_env = credential_env
         self.allow_remote_media = allow_remote_media
         self.max_output_tokens = max_output_tokens
@@ -61,6 +63,7 @@ class OpenAIAudioObserver:
         self.last_receipt = None
         self.admitted_capability = None
         self.admitted_returned_model = None
+        self.observation_lane = None
         self._operation_lock = threading.Lock()
 
     @contextmanager
@@ -73,6 +76,7 @@ class OpenAIAudioObserver:
             self.session = None
             self.admitted_capability = None
             self.admitted_returned_model = None
+            self.observation_lane = None
             self._operation_lock.release()
 
     def precheck(self):
@@ -83,11 +87,19 @@ class OpenAIAudioObserver:
     def response_instruction(self, comparison=False):
         return COMPARISON_SCHEMA if comparison else SINGLE_SCHEMA
 
+    @staticmethod
+    def clip_instruction(clip):
+        return ("Clip " + clip["label"] + "; independent time origin 0 seconds; "
+                + "duration_seconds=" + format(clip["duration_seconds"], ".9g")
+                + ". Every observation must satisfy 0 <= start_s < end_s <= this duration. "
+                + "Use empty observations and an abstention if an event cannot be located within the supplied audio.")
+
     def estimate_cost(self, request, source_bound_clip, optional_text=None):
         clips = source_bound_clip.get("clips", [source_bound_clip])
         text = request["prompt"] + "\n" + self.response_instruction(len(clips) > 1)
         if optional_text:
             text += "\nExplicit stage 2 context:\n" + json.dumps(optional_text, ensure_ascii=False, allow_nan=False)
+        text += "\n" + "\n".join(self.clip_instruction(c) for c in clips)
         return estimate_cost([c["duration_seconds"] for c in clips], text, max_output_tokens=self.max_output_tokens,
                              model=self.identity["model_revision"], request=request)
 
@@ -102,11 +114,14 @@ class OpenAIAudioObserver:
         if policy["explicit_request_budget_required"] and self.session.request_limit > policy["section_budget_usd"]:
             raise HostedError("BUDGET_GUARD", "Configured request budget exceeds the explicit musical-section ceiling")
         text = request["prompt"]
-        text += "\nReturn the zero-based clip index (0 or 1) only; no explanation." if probe else "\n" + self.response_instruction(len(clips) > 1)
+        probe_v2 = probe and request.get("probe_protocol") == "v2"
+        text += ('\nReturn ONLY a JSON object with exactly one key, choice, whose value is the integer 0 or 1.'
+                 if probe_v2 else "\nReturn the zero-based clip index (0 or 1) only; no explanation.") if probe else "\n" + self.response_instruction(len(clips) > 1)
         if optional_text:
             text += "\nExplicit stage 2 context:\n" + json.dumps(optional_text, ensure_ascii=False, allow_nan=False)
-        maximum = 16 if probe else self.max_output_tokens
-        estimate = estimate_cost([c["duration_seconds"] for c in clips], text, max_output_tokens=maximum,
+        maximum = (128 if probe_v2 else 16) if probe else self.max_output_tokens
+        estimation_text = text + "\n" + "\n".join(self.clip_instruction(c) for c in clips)
+        estimate = estimate_cost([c["duration_seconds"] for c in clips], estimation_text, max_output_tokens=maximum,
                                  model=self.identity["model_revision"], request=request)
         summaries = [{k: c[k] for k in ("label", "clip_sha256", "duration_seconds")}
                      | {k: c[k] for k in ("source_sha256", "source_interval_seconds", "stream_index", "transformations") if k in c}
@@ -115,12 +130,18 @@ class OpenAIAudioObserver:
         content = [{"type": "text", "text": text}]
         for c in clips:
             path = Path(c["execution_audio_path"])
+            if self.observation_lane is not None:
+                from ..observer_requests import wav_identity
+                framing = wav_identity(path, max_bytes=24*1024*1024)
+                if (c.get("witness_kind") != "PROVIDER_SUBMISSION_WITNESS" or framing["bits_per_sample"] != 16
+                    or framing["sample_representation"] != "PCM" or framing["duration_seconds"] != c["duration_seconds"]):
+                    raise AVError("Provider lanes accept verified PCM16 WAVs only")
             if path.stat().st_size > policy["max_audio_bytes"]:
                 raise AVError("Provider input audio bytes no longer match the source-bound witness")
             audio_bytes = path.read_bytes()
             if hashlib.sha256(audio_bytes).hexdigest() != c["clip_sha256"]:
                 raise AVError("Provider input audio bytes no longer match the source-bound witness")
-            content.append({"type": "text", "text": "Clip " + c["label"] + "; independent time origin 0 seconds."})
+            content.append({"type": "text", "text": self.clip_instruction(c)})
             content.append({"type": "input_audio", "input_audio": {"data": base64.b64encode(audio_bytes).decode("ascii"), "format": "wav"}})
         try:
             ticket = self.session.reserve(estimate, request_id=request["request_id"], identity=self.identity,
@@ -161,7 +182,7 @@ class OpenAIAudioObserver:
                 raise HostedError("PROVIDER_RESPONSE_INVALID", "Provider text echoed audio data; retained text was redacted")
             if not model_matches(self.identity["model_revision"], returned_model):
                 raise HostedError("PROVIDER_RESPONSE_INVALID", "Provider did not report the configured audio model")
-            if not probe and returned_model != self.admitted_returned_model:
+            if not probe and self.admitted_returned_model is not None and returned_model != self.admitted_returned_model:
                 raise HostedError("BACKEND_NOT_PROBED", "Provider model identity changed since the recorded probe; run a new probe")
             if choices[0].get("finish_reason") != "stop" or message.get("audio") or message.get("tool_calls") or message.get("refusal"):
                 raise HostedError("PROVIDER_RESPONSE_INVALID", "Text completion was truncated, refused or contained unexpected output")
@@ -193,6 +214,7 @@ class OpenAIAudioObserver:
             "submission_attempted": True,
             "retention_request": {"store": False, "scope": "Requests no stored completion; not a zero-retention guarantee"},
             "submitted_audio": summaries, "audio_policy": policy, "task_capability_status": "UNQUALIFIED",
+            "observation_lane": self.observation_lane,
             "execution_mode": self.identity["execution_mode"]}
         if failure:
             raise failure
@@ -204,6 +226,17 @@ class OpenAIAudioObserver:
         return self._complete(request, source_bound_clip.get("clips", [source_bound_clip]), optional_text=optional_text)
 
     def probe_capability(self, fixture, configuration):
-        raw = self._complete({"request_id": fixture["trial_id"], "prompt": fixture["question"]}, fixture["clips"], probe=True)
-        return {"raw_response": raw, "prediction": int(raw.strip()) if raw.strip() in {"0", "1"} else None,
+        protocol = configuration.get("protocol", "v1")
+        raw = self._complete({"request_id": fixture["trial_id"], "prompt": fixture["question"], "probe_protocol": protocol}, fixture["clips"], probe=True)
+        prediction = int(raw.strip()) if raw.strip() in {"0", "1"} else None
+        if protocol == "v2":
+            from .openai_common import strict_json
+            try:
+                value = strict_json(raw)
+                prediction = value["choice"] if (isinstance(value, dict) and set(value) == {"choice"}
+                    and type(value["choice"]) is int and value["choice"] in {0, 1}) else None
+            except (ValueError, TypeError, KeyError):
+                prediction = None
+        return {"raw_response": raw, "prediction": prediction,
+                "response_contract_status": "VALID" if prediction is not None else "MALFORMED",
                 "provider_receipt": self.last_receipt}

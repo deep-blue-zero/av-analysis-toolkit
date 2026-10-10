@@ -82,3 +82,13 @@ Do not qualify all Japanese acting, music or action-scene analysis from one
 successful passage. Native video-model integration is outside this iteration;
 first evaluate targeted auditory observation, adaptive temporal evidence and
 holistic reconciliation together.
+
+## Auditory admission follow-up
+
+The generated-only live integration is retained in
+`docs/AUDITORY_SYNTHETIC_INTEGRATION.json`; no natural tasks earned qualification.
+Use the [bounded real-media acceptance plan](docs/AUDITORY_ACCEPTANCE_PLAN.md)
+for Jensen, Witch from Mercury, Girls Band Cry and To Be Hero X. Start with one
+authorized Jensen microclip, preserve the blind/contextual readings, and assess
+atomic audio separately. No broad real-media run has been authorized or executed
+by this implementation task.

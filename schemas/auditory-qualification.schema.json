@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.auditory-task-qualification.v1"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "backend_identity": {
+      "type": "object"
+    },
+    "configuration_revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "returned_model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "task": {
+      "enum": [
+        "SPEECH_DELIVERY",
+        "NONVERBAL_VOCAL",
+        "MUSIC_STRUCTURE",
+        "PERFORMANCE_MUSIC",
+        "SOUNDSCAPE",
+        "AUDITORY_EVENT_TIMING",
+        "LEXICAL_TRANSCRIPTION",
+        "EXACT_WORD_TIMING"
+      ]
+    },
+    "media_category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "dataset_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "dataset_revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "dataset_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "scope_description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "scoring_method": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "criteria": {
+      "type": "object"
+    },
+    "results": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object"
+      }
+    },
+    "metrics": {
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "NOT_TESTED",
+        "PROVISIONAL",
+        "VALIDATED_ON_BENCHMARK",
+        "QUALIFIED_FOR_SCOPE",
+        "FAILED",
+        "UNRESOLVED"
+      ]
+    },
+    "scope_approval": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "global_qualification": {
+      "const": false
+    },
+    "authorizes_submission": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "revision",
+    "backend_identity",
+    "configuration_revision",
+    "returned_model",
+    "task",
+    "media_category",
+    "dataset_id",
+    "dataset_revision",
+    "dataset_sha256",
+    "scope_description",
+    "scoring_method",
+    "criteria",
+    "results",
+    "metrics",
+    "status",
+    "scope_approval",
+    "limitations",
+    "global_qualification",
+    "authorizes_submission"
+  ]
+}

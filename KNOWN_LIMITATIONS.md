@@ -1,6 +1,6 @@
 # Current limits
 
-This is the 1.6.0a2 music-identity iteration. It prepares and validates
+This is the 1.6.0a3 auditory-qualification iteration, stacked on music identity. It prepares and validates
 source-bound evidence, dependencies and review records. Its software contracts
 do not certify a literary interpretation, an acting judgment or model perception.
 The [holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md) describes the new
@@ -16,19 +16,35 @@ retains the earlier task-by-task limits.
   remain unvalidated by generated/mocked tests. [Music identity](docs/MUSIC_IDENTITY.md)
   documents separate levels, external permission and portable metadata/replay limits.
 
-- The optional hosted auditory adapter is implemented, but every new task profile
-  remains `UNQUALIFIED` / `NOT_TESTED`. Historical probe failures remain failed.
-  Model identity, a matching successful input-influence probe, authorization and
-  budgets are separate execution guards. A capability declaration, CLI mock or
-  generated-signal regression cannot qualify acting, music or emotion judgments.
+- All actual natural-audio task qualifications remain unearned. The framework can
+  recompute scope-specific qualification from held-out, independently reviewed
+  benchmark records; hashes do not authenticate human declarations or establish
+  the truth of model descriptions. Generated/mocked CI fixtures do not qualify a
+  real model. Timing qualification scores positive localization error (50 ms for
+  events; 20 ms for words); it does not guarantee every individual boundary.
+  Scoring revision v2 counts every failed positive as a false negative and
+  separately bounds positive, negative and ambiguous control failures. Earlier
+  scoring proofs remain archival records and require a new recomputed run for
+  current admission; no historical result is rewritten.
+- The authorized live synthetic integration submitted PCM16 and accounted for
+  $0.02514 across 26 requests. Probe v2 failed at 18/24; the first observation
+  invented a timeline beyond its clip and was rejected. One explicitly planned
+  duration-contract revision returned a valid abstention. This validates that
+  executed submission/contract path, without natural acting/music proficiency.
+  Historical outputs remain unchanged. See the public integration receipt.
+- `EXPERIMENTAL` requires explicit selection and all authorization, supported
+  witness, privacy and budget guards. It collects attributed hypotheses. `QUALIFIED`
+  requires recomputed exact task/route/media qualification. Neither lane grants
+  automatic claim support, and a synthetic influence pass alone cannot do so.
 - Stage 2 is a separate contextual inspection of the same audio and source
   interval. Its agreement with supplied text is dependent agreement. Neither stage
   establishes the coordinating model's own hearing. A scoped human review can
   assess one observation without qualifying the backend globally or rewriting it.
 - Ordinary audio limits remain 30 seconds per clip and 60 seconds total. One
-  coherent `PERFORMANCE_MUSIC` section can extend to 120 seconds and 128 MiB only
+  coherent `PERFORMANCE_MUSIC` forensic section can extend to 120 seconds and 128 MiB only
   with explicit opt-in and a declared budget. Preparation never authorizes remote
-  submission or automatically increases limits, spending or retry counts.
+  submission or automatically increases limits, spending or retry counts. The
+  provider PCM16 derivative has a separate 24 MiB limit and preserves rate/channels.
 - Scene reconciliation checks declared authority, competence, scope and
   dependencies. It requires attributed adjudication to close supported claims;
   it does not create that judgment or establish literary truth. A claim delta

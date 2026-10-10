@@ -133,6 +133,151 @@
               "before",
               "after"
             ]
+          },
+          "support_routes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "scope": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "selected_essential": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                },
+                "missing_essential": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                },
+                "status": {
+                  "enum": [
+                    "SURVIVES",
+                    "OPEN"
+                  ]
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                },
+                "supplementary": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                },
+                "corroborating": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                },
+                "insufficient_alone": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id",
+                "scope",
+                "selected_essential",
+                "missing_essential",
+                "status",
+                "reasons",
+                "supplementary",
+                "corroborating",
+                "insufficient_alone"
+              ]
+            }
+          },
+          "dependency_changes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "auditory_evidence_delta": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "observation_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "statement": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "assessments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/evidenceAssessment"
+                  }
+                },
+                "qualification_states": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true
+                },
+                "independence": {
+                  "$ref": "#/$defs/independence"
+                },
+                "state": {
+                  "$ref": "#/$defs/state"
+                }
+              },
+              "required": [
+                "observation_id",
+                "statement",
+                "assessments",
+                "qualification_states",
+                "independence",
+                "state"
+              ]
+            }
           }
         },
         "required": [
@@ -173,6 +318,68 @@
     },
     "scope": {
       "$ref": "#/$defs/text"
+    },
+    "event_synthesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "formulation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "established_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "requires_correction": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "open_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "alternatives": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        },
+        "authority": {
+          "const": "ATTRIBUTED_ANALYST_EVENT_INTERPRETATION"
+        }
+      },
+      "required": [
+        "formulation",
+        "established_claim_ids",
+        "requires_correction",
+        "open_claim_ids",
+        "alternatives",
+        "authority"
+      ]
     }
   },
   "required": [
@@ -236,6 +443,86 @@
             "HIGH",
             "OPEN"
           ]
+        },
+        "support_routes": {
+          "type": "array",
+          "maxItems": 100,
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "essential": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "interchangeable": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true,
+                  "minItems": 1
+                }
+              },
+              "supplementary": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "corroborating": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "insufficient_alone": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "id",
+              "scope",
+              "essential",
+              "interchangeable",
+              "supplementary",
+              "corroborating",
+              "insufficient_alone"
+            ]
+          }
         }
       },
       "required": [
@@ -291,7 +578,18 @@
           ]
         },
         "task_profile": {
-          "$ref": "#/$defs/text"
+          "enum": [
+            "SPEECH_PERFORMANCE",
+            "NONVERBAL_VOCAL",
+            "MUSIC_STRUCTURE",
+            "PERFORMANCE_MUSIC",
+            "SOUNDSCAPE",
+            "AV_SYNC",
+            "SPEECH_DELIVERY",
+            "AUDITORY_EVENT_TIMING",
+            "LEXICAL_TRANSCRIPTION",
+            "EXACT_WORD_TIMING"
+          ]
         },
         "validation_status": {
           "type": [
@@ -300,7 +598,15 @@
           ]
         },
         "task_capability_status": {
-          "$ref": "#/$defs/text"
+          "enum": [
+            "UNQUALIFIED",
+            "NOT_TESTED",
+            "PROVISIONAL",
+            "VALIDATED_ON_BENCHMARK",
+            "QUALIFIED_FOR_SCOPE",
+            "FAILED",
+            "UNRESOLVED"
+          ]
         },
         "evidence_class": {
           "enum": [
@@ -312,10 +618,49 @@
           "type": "boolean"
         },
         "identity_level": {
-          "enum": ["RECORDING", "PERFORMANCE", "ARRANGEMENT", "COMPOSITION", "PHRASE", "UNKNOWN"]
+          "enum": [
+            "RECORDING",
+            "PERFORMANCE",
+            "ARRANGEMENT",
+            "COMPOSITION",
+            "PHRASE",
+            "UNKNOWN"
+          ]
         },
         "identity_status": {
-          "enum": ["CONFIRMED", "SUPPORTED", "CANDIDATE", "AMBIGUOUS", "CONTRADICTED", "UNRESOLVED", "NOT_TESTED"]
+          "enum": [
+            "CONFIRMED",
+            "SUPPORTED",
+            "CANDIDATE",
+            "AMBIGUOUS",
+            "CONTRADICTED",
+            "UNRESOLVED",
+            "NOT_TESTED"
+          ]
+        },
+        "qualification_scope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "observation_scope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "admission_status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "role": {
+          "enum": [
+            "REQUIRED",
+            "SUPPORTING",
+            "CONTEXTUAL",
+            "CONTRADICTORY",
+            "NON_DISCRIMINATING"
+          ]
         }
       },
       "required": [
@@ -427,6 +772,14 @@
         },
         "not_a_majority_vote": {
           "const": true
+        },
+        "agreement_class": {
+          "enum": [
+            "INDEPENDENT_CORROBORATION",
+            "DEPENDENT_CONSISTENCY",
+            "CONTEXT_INFLUENCED_OBSERVATION",
+            "INDEPENDENCE_NOT_ESTABLISHED"
+          ]
         }
       },
       "required": [
@@ -479,7 +832,8 @@
         "performance_identity",
         "composition_identity",
         "arrangement_identity",
-        "musical_reference"
+        "musical_reference",
+        "auditory_event_timing"
       ]
     },
     "reconciledConflict": {

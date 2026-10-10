@@ -1,6 +1,7 @@
 # Separate provenance, integrated interpretation
 
-Version 1.6.0a2 adds the [music identity workflow](MUSIC_IDENTITY.md) and `MID`
+Version 1.6.0a3 adds [scoped auditory admission and alternative proof routes](AUDITORY_QUALIFICATION.md).
+The preceding 1.6.0a2 extension adds the [music identity workflow](MUSIC_IDENTITY.md) and `MID`
 scene channel. Scoped adjudication can support recording/composition/arrangement/
 performance identity or a phrase reference. This channel cannot establish emotion,
 delivery, creator intent or narrative meaning alone. Composition evidence and a
@@ -118,10 +119,12 @@ Lexical transcription can remain non-authoritative even when delivery observatio
 are useful. Historical failed probes remain failed; new scoped validation adds
 new records rather than rewriting their history.
 
-`ave observer profiles` lists the six profiles. `ave observer capability-profile
+`ave observer profiles` lists six legacy profiles and four finer competencies. `ave observer capability-profile
 CONFIG OUTPUT` exports task capability history. `ave observer
 scoped-human-review OBSERVATION_RUN CONFIG OUTPUT` records a separate listening
-judgment. All current task capabilities remain `UNQUALIFIED` / `NOT_TESTED`.
+judgment. Actual natural-audio capabilities remain unqualified. The new benchmark
+framework can earn exact task/media/route qualification; synthetic influence alone
+does not grant it. Supplementary evidence roles require declared support routes.
 A broad model-accuracy judgment does not establish each proposition mentioned
 by the model. A proposition-specific listening observation needs its own actual
 inspection declaration, reviewer, source/stream, interval and observation.
