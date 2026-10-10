@@ -86,7 +86,9 @@ def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews
     if not isinstance(backend_identity, dict) or not isinstance(backend_identity.get("model_revision"), str):
         raise AVError("Task capability profile requires an attributed backend identity")
     text_value(backend_identity["model_revision"], "backend model revision")
-    if not isinstance(historical_probes, (list, tuple)) or not isinstance(scoped_reviews, (list, tuple)):
+    if (not isinstance(historical_probes, (list, tuple)) or not isinstance(scoped_reviews, (list, tuple))
+        or not isinstance(qualification_runs, (list, tuple)) or len(qualification_runs) > 1000
+        or any(not isinstance(p, (str, Path)) or not str(p).strip() for p in qualification_runs)):
         raise AVError("Capability histories must be explicit record lists")
     probes, reviews = [], []
     for value in historical_probes:
@@ -115,6 +117,38 @@ def capability_profile(backend_identity, *, historical_probes=(), scoped_reviews
         "historical_probes": probes, "scoped_human_reviews": reviews,
         "scope": "Task proficiency is unqualified until actually tested; historical probe outcomes and scoped human assessments are separate",
         "authorizes_hosted_submission": False}
+
+
+def write_capability_profile(config, output):
+    """Export a summary without changing or losing its qualification inputs."""
+    from .auditory_qualification import _benchmark_input_runs
+    from .event_contracts import array, object_fields, read_event_json
+    path = Path(config).resolve()
+    deps = [file_record(path)]
+    value = read_event_json(path)
+    object_fields(value, {"backend_identity", "historical_probes", "scoped_reviews", "qualification_runs"},
+                  {"backend_identity"}, "capability profile")
+    folders = []
+    for supplied in array(value.get("qualification_runs", []), "qualification runs", 1000):
+        text_value(supplied, "qualification run path")
+        selected = Path(supplied)
+        selected = selected if selected.is_absolute() else path.parent/selected
+        folder = selected.resolve() if selected.is_dir() else selected.resolve().parent
+        if folder in folders:
+            continue
+        verify_run(folder)
+        folders.append(folder)
+        deps.extend(file_record(p) for p in sorted(folder.rglob('*')) if p.is_file())
+    containing, manifests = _benchmark_input_runs(deps)
+    deps = list({r["path"]: r for r in deps+manifests}.values())
+    with output_transaction(output, [r["path"] for r in deps]+containing+folders) as stage:
+        result = capability_profile(value["backend_identity"], historical_probes=value.get("historical_probes", []),
+            scoped_reviews=value.get("scoped_reviews", []), qualification_runs=folders)
+        write_json(stage/"task-capabilities.json", result)
+        for folder in containing:
+            verify_run(folder)
+        return finish_run(stage, "observer-capability-profile", deps,
+            metadata={"result_file": "task-capabilities.json", "qualification_run_count": len(folders)})
 
 
 def scoped_human_review(observation_run, config, output):

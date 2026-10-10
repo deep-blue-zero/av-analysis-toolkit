@@ -48,38 +48,65 @@ def validate_routes(claim, nodes, edges):
 
 
 def assess_routes(claim, observations, overlay, packet, evidence):
+    from .mapping import missing_intervals
+    direct = claim["proposition"] not in {"interpretation", "emotion"}
+    claim_interval = claim.get("interval_seconds", packet["interval_seconds"])
+    nodes = {r["id"]: r for r in packet["observations"]}
     rows = []
     for route in claim["support_routes"]:
         def adequate(key):
             return observations[key]["adequate_for_support"] and overlay[key]["after"] in AFFIRMATIVE
-        selected = list(route["essential"])
-        missing = [key for key in selected if not adequate(key)]
+        def covered(key):
+            return not direct or not missing_intervals([claim_interval],
+                [nodes[key].get("interval_seconds", packet["interval_seconds"])])
+        single = len(route["essential"])+len(route["interchangeable"]) == 1
+        def usable(key):
+            return adequate(key) and covered(key) and not (single and key in route["insufficient_alone"])
+        def flags(key):
+            if not usable(key):
+                return 0
+            value = 1 if observations[key]["proposition"] == claim["proposition"] else 0
+            if any(a["channel"] == "TVIS" and a["adequate_for_support"]
+                   for a in observations[key]["evidence_assessments"]):
+                value |= 2
+            if observations[key]["proposition"] == "auditory_event_timing":
+                value |= 4
+            return value
+        selected = tuple(sorted(route["essential"]))
+        missing = [key for key in selected if not usable(key)]
+        initial = 0
+        for key in selected:
+            initial |= flags(key)
+        # At most eight modality/proposition states are needed. Preserve a
+        # canonical viable selection for each state instead of enumerating the
+        # Cartesian product or committing to the first locally adequate item.
+        selections = {initial: selected}
         for group in route["interchangeable"]:
-            candidates = [key for key in group if adequate(key)]
-            if candidates:
-                selected.append(candidates[0])
-            else:
+            candidates = sorted(key for key in group if usable(key))
+            if not candidates:
                 missing.extend(group)
-        # Insufficient-alone evidence may participate in a combined route.
-        if len(set(selected)) == 1 and set(selected) & set(route["insufficient_alone"]):
-            missing.extend(selected)
+                continue
+            updated = {}
+            for state, previous in selections.items():
+                for key in candidates:
+                    combined = state | flags(key)
+                    choice = tuple(sorted((*previous, key)))
+                    if combined not in updated or choice < updated[combined]:
+                        updated[combined] = choice
+            selections = updated
+        required = 6 if claim["proposition"] == "av_sync" else 1 if direct else 0
+        viable = [selection for state, selection in selections.items() if state & required == required]
+        selected = min(viable or list(selections.values()))
         reasons = []
         if claim["proposition"] == "av_sync":
-            kinds = {observations[key]["proposition"] for key in selected if adequate(key)}
-            visual = any(a["channel"] == "TVIS" and a["adequate_for_support"] for key in selected
-                         for a in observations[key]["evidence_assessments"])
-            if not visual or "auditory_event_timing" not in kinds:
+            if not viable:
                 reasons.append("Exact AV synchronization requires reviewed temporal visual and qualified audible-event timing evidence")
             # Scene locators already bind both evidence channels to one source
             # clock. Every essential observation must span the claimed interval.
-        if claim["proposition"] not in {"interpretation", "emotion"}:
-            from .mapping import missing_intervals
-            claim_interval = claim.get("interval_seconds", packet["interval_seconds"])
-            nodes = {r["id"]: r for r in packet["observations"]}
-            if any(missing_intervals([claim_interval], [nodes[key].get("interval_seconds", packet["interval_seconds"])]) for key in selected):
+        if direct:
+            if any(not covered(key) for key in selected):
                 reasons.append("Essential observations do not cover the direct claim's complete interval")
-            if claim["proposition"] != "av_sync" and not any(
-                    adequate(key) and observations[key]["proposition"] == claim["proposition"] for key in selected):
+            if claim["proposition"] != "av_sync" and not viable:
                 reasons.append("No essential evidence is competent for the exact direct proposition")
         rows.append({"id": route["id"], "scope": route["scope"], "selected_essential": sorted(set(selected)),
             "missing_essential": sorted(set(missing)), "status": "SURVIVES" if not missing and not reasons else "OPEN",

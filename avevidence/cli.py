@@ -464,15 +464,8 @@ def dispatch(a):
             from .auditory_profiles import scoped_human_review
             return scoped_human_review(a.observation_run,a.config,a.output)
         if a.observer_command == "capability-profile":
-            from .auditory_profiles import capability_profile
-            from .event_contracts import read_event_json, object_fields
-            from .common import file_record
-            config = read_event_json(a.config)
-            object_fields(config,{"backend_identity","historical_probes","scoped_reviews","qualification_runs"},{"backend_identity"},"capability profile")
-            result = capability_profile(config["backend_identity"],historical_probes=config.get("historical_probes",[]),scoped_reviews=config.get("scoped_reviews",[]),qualification_runs=config.get("qualification_runs",[]))
-            with output_transaction(a.output,[a.config]) as stage:
-                write_json(stage/"task-capabilities.json",result)
-                return finish_run(stage,"observer-capability-profile",[file_record(a.config)],metadata={"result_file":"task-capabilities.json"})
+            from .auditory_profiles import write_capability_profile
+            return write_capability_profile(a.config, a.output)
         if a.observer_command == "provider-witness":
             from .audio_witness import provider_witness
             return provider_witness(a.witness_run, a.output, max_duration_seconds=a.max_duration_seconds, max_bytes=a.max_bytes)

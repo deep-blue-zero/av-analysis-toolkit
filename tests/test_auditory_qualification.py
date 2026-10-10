@@ -145,6 +145,71 @@ class TaskQualification(unittest.TestCase):
         record = load_qualification(self.build(count=4), required=False)
         self.assertEqual(record["status"], "PROVISIONAL")
 
+    def export_capabilities(self, proof, output, *, inputs=None):
+        from avevidence.cli import dispatch, parser
+        config = self.root/(output.name+"-config.json")
+        write_json(config, {"backend_identity": IDENTITY,
+            "qualification_runs": [str(proof)] if inputs is None and proof is not None else inputs})
+        return dispatch(parser().parse_args(["observer", "capability-profile", str(config), str(output)]))
+
+    def test_capability_export_refuses_outputs_inside_qualification_run(self):
+        proof = self.build()
+        before = {p.relative_to(proof).as_posix(): sha256(p) for p in proof.rglob('*') if p.is_file()}
+        for index, supplied in enumerate((proof, proof/"qualification.json")):
+            with self.subTest(input_form=str(supplied)):
+                output = proof/("nested-export-"+str(index))
+                with self.assertRaises(AVError):
+                    self.export_capabilities(proof, output, inputs=[str(supplied)])
+                self.assertFalse(output.exists())
+                self.assertEqual(before, {p.relative_to(proof).as_posix(): sha256(p) for p in proof.rglob('*') if p.is_file()})
+                verify_run(proof)
+
+    def test_capability_export_binds_complete_qualification_proof(self):
+        proof = self.build()
+        output = self.root/"safe-export"
+        manifest = self.export_capabilities(proof, output)
+        sources = {Path(r["path"]).resolve(): r["sha256"] for r in manifest["sources"]}
+        expected = {p.resolve(): sha256(p) for p in proof.rglob('*') if p.is_file()}
+        self.assertTrue(expected.items() <= sources.items())
+        self.assertEqual(read_json(output/"task-capabilities.json")["tasks"]["SPEECH_PERFORMANCE"]["status"], "QUALIFIED_FOR_SCOPE")
+        verify_run(output); verify_run(proof)
+        relative = self.root/"relative-export"
+        self.export_capabilities(proof, relative, inputs=["qualification/qualification.json"])
+        self.assertEqual(read_json(relative/"task-capabilities.json"), read_json(output/"task-capabilities.json"))
+
+    def test_capability_export_protects_containing_outer_qualification_run(self):
+        proof = self.build()
+        outer = self.root/"manufactured-outer-run"
+        nested = outer/"nested-proof"
+        shutil.copytree(proof, nested)
+        finish_run(outer, "manufactured-containing-proof", [])
+        before = {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()}
+        with self.assertRaises(AVError):
+            self.export_capabilities(nested, outer/"new-profile")
+        self.assertEqual(before, {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()})
+        verify_run(outer); verify_run(nested)
+        manifest = self.export_capabilities(nested, self.root/"outside-outer-export")
+        self.assertIn(str(outer/"run.json"), [r["path"] for r in manifest["sources"]])
+
+    def test_capability_export_rechecks_qualification_membership_before_publication(self):
+        from unittest.mock import patch
+        import avevidence.auditory_profiles as profiles
+        proof = self.build()
+        original = profiles.capability_profile
+        def changed_after_loading(*args, **kwargs):
+            result = original(*args, **kwargs)
+            (proof/"unexpected-concurrent-file.txt").write_text("Manufactured concurrent change", encoding="utf-8")
+            return result
+        output = self.root/"must-not-publish"
+        with patch.object(profiles, "capability_profile", side_effect=changed_after_loading), self.assertRaises(AVError):
+            self.export_capabilities(proof, output)
+        self.assertFalse(output.exists())
+
+    def test_capability_export_malformed_qualification_list_refused_before_staging(self):
+        for index, value in enumerate((None, "qualification", {"path": "qualification"}, [None])):
+            with self.subTest(value=value), self.assertRaises(AVError):
+                self.export_capabilities(None, self.root/("invalid-profile-"+str(index)), inputs=value)
+
     def test_generated_reference_set_cannot_qualify_real_tasks(self):
         record = load_qualification(self.build(source_kind="GENERATED"), required=False)
         self.assertEqual(record["status"], "PROVISIONAL")

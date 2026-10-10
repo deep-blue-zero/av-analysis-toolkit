@@ -152,6 +152,79 @@ class AuditoryReconciliation(unittest.TestCase):
         self.assertEqual(result["claims"][0]["state"], "OPEN")
         self.assertEqual(result["claims"][0]["support_routes"][0]["status"], "OPEN")
 
+    def test_interchangeable_direct_route_uses_full_coverage_in_either_order(self):
+        packet = self.packet()
+        packet["evidence"] = {"TXT": [self.ref("txt", self.text, authority="canonical_text", interval=[.2, .8])]}
+        packet["observations"] = [self.obs("short", "wording", "txt", status="SUPPORTED", interval=[.2, .5]),
+            self.obs("full", "wording", "txt", status="SUPPORTED", interval=[.2, .8])]
+        packet["claims"] = [self.claim("wording", "wording", "short", status="SUPPORTED", interval=[.2, .8],
+            support_routes=[self.route([], interchangeable=[["short", "full"]])])]
+        packet["claims"][0]["observation_ids"] = ["short", "full"]
+        packet["dependencies"] = [{**self.edge(key, "wording"), "role": "SUPPORTING"} for key in ("short", "full")]
+        self.decide(packet, {key: "SUPPORTED" for key in ("short", "full", "wording")})
+        for ordering in (["short", "full"], ["full", "short"]):
+            with self.subTest(order=ordering):
+                packet["claims"][0]["support_routes"][0]["interchangeable"] = [ordering]
+                result = self.reconciled(packet, name="interchangeable-"+"-".join(ordering)+".json")
+                self.assertEqual(result["claims"][0]["state"], "SUPPORTED")
+                self.assertEqual(result["claims"][0]["support_routes"][0]["selected_essential"], ["full"])
+        packet["adjudication"]["decisions"]["full"]["state"] = "OPEN"
+        self.assertEqual(self.reconciled(packet, name="interchangeable-unresolved.json")["claims"][0]["state"], "OPEN")
+
+    def route_selection(self, proposition, groups, kinds, *, temporal=(), intervals=None, insufficient=()):
+        # These are already-assessed contract fixtures, not perceptual evidence.
+        from avevidence.support_routes import assess_routes
+        route = self.route([], interchangeable=groups)
+        route["insufficient_alone"] = list(insufficient)
+        claim = {"proposition": proposition, "interval_seconds": [.2, .8], "support_routes": [route]}
+        observations = {key: {"proposition": kind, "adequate_for_support": True,
+            "evidence_assessments": [{"channel": "TVIS" if key in temporal else "TXT", "adequate_for_support": True}]}
+            for key, kind in kinds.items()}
+        overlay = {key: {"after": "SUPPORTED"} for key in kinds}
+        packet = {"interval_seconds": [0., 1.], "observations": [{"id": key,
+            "interval_seconds": (intervals or {}).get(key, [.2, .8])} for key in kinds]}
+        return assess_routes(claim, observations, overlay, packet, {})[0]
+
+    def test_interchangeable_direct_route_selects_competent_candidate_in_either_order(self):
+        for order in (["other", "word"], ["word", "other"]):
+            with self.subTest(order=order):
+                row = self.route_selection("wording", [order], {"other": "delivery", "word": "wording"})
+                self.assertEqual(row["status"], "SURVIVES")
+                self.assertEqual(row["selected_essential"], ["word"])
+        self.assertEqual(self.route_selection("wording", [["other"]], {"other": "delivery"})["status"], "OPEN")
+
+    def test_interchangeable_av_route_combines_required_modalities_across_groups(self):
+        kinds = {"v1": "timing", "a1": "auditory_event_timing", "v2": "timing", "a2": "auditory_event_timing"}
+        for groups in ([["v1", "a1"], ["v2", "a2"]], [["a2", "v2"], ["a1", "v1"]]):
+            with self.subTest(groups=groups):
+                row = self.route_selection("av_sync", groups, kinds, temporal=["v1", "v2"])
+                self.assertEqual(row["status"], "SURVIVES")
+                self.assertTrue(set(row["selected_essential"]) & {"v1", "v2"})
+                self.assertTrue(set(row["selected_essential"]) & {"a1", "a2"})
+        row = self.route_selection("av_sync", [["v1"], ["v2"]], kinds, temporal=["v1", "v2"])
+        self.assertEqual(row["status"], "OPEN")
+
+    def test_interchangeable_insufficient_alone_candidate_does_not_hide_valid_alternative(self):
+        for order in (["alone", "complete"], ["complete", "alone"]):
+            with self.subTest(order=order):
+                row = self.route_selection("wording", [order], {"alone": "wording", "complete": "wording"}, insufficient=["alone"])
+                self.assertEqual(row["status"], "SURVIVES")
+                self.assertEqual(row["selected_essential"], ["complete"])
+        self.assertEqual(self.route_selection("wording", [["alone"]], {"alone": "wording"}, insufficient=["alone"])["status"], "OPEN")
+
+    def test_interchangeable_route_with_no_complete_candidate_stays_open(self):
+        row = self.route_selection("wording", [["first", "second"]], {"first": "wording", "second": "wording"},
+            intervals={"first": [.2, .5], "second": [.5, .8]})
+        self.assertEqual(row["status"], "OPEN")
+
+    def test_many_interchangeable_groups_find_valid_support_without_cartesian_enumeration(self):
+        groups = [[f"other-{i}", f"word-{i}"] for i in range(36)]
+        kinds = {key: "wording" if key.startswith("word-") else "delivery" for group in groups for key in group}
+        row = self.route_selection("wording", groups, kinds)
+        self.assertEqual(row["status"], "SURVIVES")
+        self.assertEqual(len(row["selected_essential"]), 36)
+        self.assertTrue(any(key.startswith("word-") for key in row["selected_essential"]))
+
     def test_valid_unqualified_optional_proof_preserves_independent_route(self):
         import json
         base = self.static_packet()

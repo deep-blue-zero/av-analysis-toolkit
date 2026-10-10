@@ -209,6 +209,13 @@ cannot serve as current admission certificates. Recompute the retained original
 benchmark configuration into a NEW output run to earn current eligibility;
 do not modify a historical score, revision, response, approval or manifest in place.
 
+Capability-profile export resolves qualification paths relative to its input
+configuration. It verifies and protects each complete qualification run and all
+containing AV runs before staging, records every proof file and enclosing
+manifest as a source dependency, and rechecks run membership before publication.
+Export inside a proof or its enclosing run is refused. The resulting profile
+is a descriptive summary, never a substitute for a recomputable admission proof.
+
 ## Scoped support and legitimate routes
 
 An AO reference needs valid actual-observer collection receipts, verified
@@ -269,6 +276,13 @@ be combined with another essential witness. A text/image route may survive faile
 optional audio. AV synchronization requires temporal visual review, audible-event
 timing and their shared original-source clock; visual-only support stays OPEN.
 Claims still require separate attributed adjudication and articulated inference.
+
+Interchangeable candidates are assessed against the complete claim interval and
+exact proposition or required audiovisual modalities before selection. Candidate
+order cannot hide a viable complete route. Deterministic selection retains at
+most eight proposition/modality states rather than enumerating every combination.
+Required premises and insufficient-alone constraints still apply; partial direct
+observations cannot be stitched into an interchangeable complete witness.
 
 Corrections append state overlays. A mistaken quoted word can become CONTRADICTED
 while unrelated louder/prolonged delivery survives its own assessment; a command

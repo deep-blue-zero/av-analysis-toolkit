@@ -85,3 +85,16 @@ run for current admission. `AUDITORY_REVIEW_FIX4_RECEIPT.json` records the compl
 60-test focused and 619-test full regressions, with zero failures, errors or skips
 and stable runtime/test hashes. The prior 613-test receipt remains unchanged and
 does not certify the subsequent scoring correction.
+
+The next review reproduced capability-profile export writing inside an immutable
+qualification input, and first-candidate selection discarding valid complete
+interchangeable support. Export now verifies and protects whole qualification
+and enclosing runs, source-binds their files/manifests, resolves config-relative
+paths and rechecks membership before publication. Route selection considers
+full direct-claim coverage, exact proposition, required audiovisual modalities
+and insufficient-alone constraints through deterministic bounded states.
+Negative controls retain OPEN for incomplete or incompetent support. The new
+71-test focused and 630-test complete regressions passed with zero failures,
+errors or skips and stable runtime/test hashes. The separate
+`AUDITORY_REVIEW_FIX5_RECEIPT.json` records both results and the preserved pre-fix
+reproductions; all earlier receipts are retained.
