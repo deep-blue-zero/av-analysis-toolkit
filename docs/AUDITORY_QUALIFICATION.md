@@ -63,6 +63,10 @@ Request example (replace the digest with the actual source SHA-256):
 For qualified collection, supply `--qualification QUALIFICATION_RUN` and an
 explicit matching `--media-category`. The qualification cannot grant upload or
 spending permission. Output directories are immutable and must be new.
+Collection source-binds the complete qualifying proof and manifests of every
+containing input AV run. It protects those roots before staging or provider
+calls, verifies the retained proof copy and rechecks original run membership
+before publication. A changed proof or corrupt enclosing run prevents publication.
 
 ## Provider audio and provenance
 
@@ -174,8 +178,9 @@ observer trials. Invalid/unverified transport cannot hide behind malformed JSON.
 Contract failures count in the overall error rate rather than disappearing
 from the denominator. Every incorrect positive, including invalid output or
 missing/out-of-tolerance localization with a PRESENT label, also counts as a
-false negative. Literal false positives count valid PRESENT predictions on
-negative controls; invalid output remains separately reported. Each positive,
+false negative. Every independently reviewed PRESENT prediction on a negative
+control counts as a false positive, including malformed output; invalid output
+also remains separately reported. Each positive,
 negative and ambiguous control family reports its own failures and failure rate,
 so failures of absence detection or abstention cannot be diluted by other cases.
 Reference and
@@ -203,8 +208,8 @@ any such run is refused before staging, and membership is rechecked before
 publication; standalone input artifacts remain supported.
 Loading a qualification verifies the run and originals and recomputes the whole
 record. Editing a status field or supplying a self-declared certificate fails.
-The current scorer is `auditory-qualification-v2`; the qualification wire schema
-remains v1. Earlier scoring records remain immutable and format-readable, but
+The current scorer is `auditory-qualification-v3`; the qualification wire schema
+remains v1. Earlier v1/v2 scoring records remain immutable and format-readable, but
 cannot serve as current admission certificates. Recompute the retained original
 benchmark configuration into a NEW output run to earn current eligibility;
 do not modify a historical score, revision, response, approval or manifest in place.
@@ -252,6 +257,10 @@ recorded as publication dependencies. A retained proof can be recomputed after
 the external original moves; changing its copied bytes fails run verification.
 Publishing inside an input qualification run is refused before staging begins.
 This archival verification establishes recorded integrity, not perceptual truth.
+Reconciliation and claim-delta publication also verify and protect every
+containing AV run around a qualification proof, source-bind its manifest and
+recheck membership before publication. A valid inner proof cannot conceal a
+corrupted outer run or authorize writing elsewhere inside that outer run.
 
 An explicit same-proposition conflict is resolved only when exactly one rival
 has adequate, affirmative effective support and every other rival is explicitly

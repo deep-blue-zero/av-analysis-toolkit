@@ -228,7 +228,8 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
                 task=competence(request.get("task_profile", "SPEECH_PERFORMANCE")), media_category=request["media_category"],
                 configuration_revision=backend.identity.get("configuration_revision"))
             qfolder = Path(qualification) if Path(qualification).is_dir() else Path(qualification).parent
-            deps.append(file_record(qfolder/"qualification.json", "task_qualification")); inputs.append(qfolder)
+            deps.extend(file_record(p, "task_qualification_proof") for p in sorted(qfolder.rglob('*')) if p.is_file())
+            inputs.append(qfolder)
         if hosted and any(c.get("witness_kind") != "PROVIDER_SUBMISSION_WITNESS" for c in clips):
             raise AVError("Hosted lanes require a verified PCM16 provider-submission witness")
     elif capability:
@@ -245,6 +246,10 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
         folder, record = _stage1_parent(request, clips, Path(request_file).resolve().parent)
         deps.append(record); inputs.append(folder)
         parent = {"path": str(folder), "observation_sha256": record["sha256"], "stage": 1}
+    from .auditory_qualification import _benchmark_input_runs
+    containing_runs, manifests = _benchmark_input_runs(deps)
+    deps = list({r["path"]: r for r in deps+manifests}.values())
+    inputs += containing_runs
     prompt = _prompt(request)
     # Only the neutral prompt, opaque labels and clip bytes enter the backend;
     # request paths, claim IDs, methods and source filenames are not forwarded.
@@ -254,6 +259,7 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
         if task_record:
             import shutil
             shutil.copytree(qfolder, stage/"qualification-proof")
+            verify_run(stage/"qualification-proof")
         session = None
         if hosted:
             policy = request_policy(request)
@@ -347,6 +353,8 @@ def observe_request(request_file, output, *, witness_run=None, backend=None, cap
                     write_json(stage/name, record); atomic_files.append(name)
         if session:
             write_json(stage/"cost-summary.json", session.summary())
+        for folder in containing_runs:
+            verify_run(folder)
         return finish_run(stage, "observer-observe", deps, metadata={"result_file": "observation.json",
             "atomic_observation_files": atomic_files, "validation_status": report["validation_status"], "execution_status": status,
             "backend_identity": backend.identity, "claim_status_changes": "NONE_WITHOUT_SEPARATE_ADJUDICATION"})

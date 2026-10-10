@@ -349,7 +349,8 @@ def load_scene_packet(path, *, relocations=None):
     return packet, evidence, nodes, bindings, snapshot, source_replay
 
 
-def verify_scene_snapshot(snapshot,bindings):
+def verify_scene_snapshot(snapshot,bindings, *, qualification_inputs=()):
+    from .inventory import verify_run
     if sha256(snapshot["path"]) != snapshot["sha256"]:
         raise AVError("Scene input changed after admission")
     for row in bindings.values():
@@ -358,11 +359,27 @@ def verify_scene_snapshot(snapshot,bindings):
         if row.get("review_path") and sha256(row["review_path"]) != row["review_sha256"]:
             raise AVError("Scene review changed after admission")
         if row.get("qualification_proof"):
-            from .inventory import verify_run
             proof = row["qualification_proof"]
             if sha256(Path(proof["path"])/"run.json") != proof["manifest_sha256"]:
                 raise AVError("Scoped qualification proof changed after admission")
             verify_run(proof["path"])
+    for folder in qualification_inputs:
+        verify_run(folder)
+
+
+def scene_qualification_inputs(collections):
+    """Protect and source-bind every run enclosing an admitted qualification."""
+    from .auditory_qualification import _benchmark_input_runs
+    records = {}
+    for bindings in collections.values():
+        for binding in bindings.values():
+            proof = binding.get("qualification_proof")
+            if proof:
+                record = file_record(Path(proof["path"])/"run.json")
+                if record["sha256"] != proof["manifest_sha256"]:
+                    raise AVError("Scoped qualification manifest changed before publication")
+                records[record["path"]] = record
+    return _benchmark_input_runs(list(records.values()))
 
 
 def retain_scene_qualifications(stage, collections):

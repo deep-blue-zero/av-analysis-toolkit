@@ -430,6 +430,150 @@ class TaskQualification(unittest.TestCase):
         self.assertTrue(all(record["results"][index]["collection_verified"] for index in selected))
         return record, output
 
+    def negative_present_score(self, name, count, *, invalid=True, prediction="PRESENT"):
+        config, selected = self.diluted_control_config(name, "NEGATIVE", balanced=True,
+            failure_count=count, invalid=invalid)
+        value = read_json(config)
+        for index in selected:
+            trial = value["trials"][index]
+            path = config.parent/trial["review"]["path"]
+            review = read_json(path); review["predicted_label"] = prediction
+            rewrite_fixture(path, review); trial["review"]["sha256"] = sha256(path)
+        rewrite_fixture(config, value)
+        output = self.root/(name+"-proof")
+        benchmark(config, output)
+        return load_qualification(output, required=False), output
+
+    def test_negative_present_invalid_outputs_exceed_false_positive_ceiling(self):
+        record, output = self.negative_present_score("invalid-present-negatives", 2)
+        self.assertEqual(record["status"], "FAILED")
+        self.assertEqual(record["metrics"]["overall_failure_rate"], .05)
+        self.assertEqual(record["metrics"]["control_failure_rates"]["NEGATIVE"], .2)
+        self.assertEqual(record["metrics"]["invalid_outputs"], 2)
+        self.assertEqual(record["metrics"]["false_positives"], 2)
+        self.assertEqual(record["metrics"]["false_positive_rate"], .2)
+        with self.assertRaises(AVError):
+            load_qualification(output)
+
+    def test_negative_present_boundaries_and_nonpresent_invalid_control(self):
+        cases = [(1, True, "PRESENT", "QUALIFIED_FOR_SCOPE", .1),
+                 (2, False, "PRESENT", "FAILED", .2),
+                 (2, True, "ABSENT", "QUALIFIED_FOR_SCOPE", 0.)]
+        for index, (count, invalid, prediction, status, rate) in enumerate(cases):
+            with self.subTest(count=count, invalid=invalid, prediction=prediction):
+                record, _ = self.negative_present_score("negative-boundary-"+str(index), count,
+                    invalid=invalid, prediction=prediction)
+                self.assertEqual(record["status"], status)
+                self.assertEqual(record["metrics"]["false_positive_rate"], rate)
+                self.assertEqual(record["metrics"]["invalid_outputs"], count if invalid else 0)
+
+    def test_v2_qualification_requires_new_proof_without_changing_archive(self):
+        original = self.build()
+        archive = self.root/"manufactured-v2-archive"
+        shutil.copytree(original, archive, ignore=shutil.ignore_patterns("run.json", "commands.json"))
+        legacy = read_json(archive/"qualification.json")
+        legacy["revision"] = "auditory-qualification-v2"
+        rewrite_fixture(archive/"qualification.json", legacy)
+        finish_run(archive, "manufactured-v2-scoring-archive", [])
+        before = {p.relative_to(archive).as_posix(): sha256(p) for p in archive.rglob('*') if p.is_file()}
+        for required in (False, True):
+            with self.subTest(required=required), self.assertRaisesRegex(AVError, "earlier scoring revision"):
+                load_qualification(archive, required=required)
+        self.assertEqual(read_json(archive/"qualification.json")["status"], "QUALIFIED_FOR_SCOPE")
+        self.assertEqual(before, {p.relative_to(archive).as_posix(): sha256(p) for p in archive.rglob('*') if p.is_file()})
+        verify_run(archive)
+
+    def qualified_collection_fixture(self):
+        # This manufactured backend has no perceptual ability or network route.
+        import wave
+        from avevidence.audio_witness import audio_witness
+        from avevidence.observer_execution import observe_request
+        source = self.root/"generated-collection.wav"
+        with wave.open(str(source), "wb") as stream:
+            stream.setnchannels(1); stream.setsampwidth(2); stream.setframerate(8000)
+            stream.writeframes(bytes(16000))
+        witness = self.root/"collection-witness"
+        audio_witness(source, witness, start=0, end=1)
+        outer = self.root/"manufactured-collection-proof-container"
+        proof = outer/"qualification"
+        shutil.copytree(self.build(), proof)
+        finish_run(outer, "manufactured-containing-collection-proof", [])
+        request = self.root/"collection-request.json"
+        write_json(request, {"request_id": "manufactured-qualified-collection", "source_sha256": sha256(source),
+            "question": "Describe audible changes within this bounded clip.", "task_profile": "SPEECH_DELIVERY",
+            "media_category": "fictional-dialogue-contract", "observation_lane": "QUALIFIED"})
+        class ManufacturedLocal:
+            identity = copy.deepcopy(IDENTITY)
+            calls = 0
+            callback = None
+            def observe(self, request, clip, context):
+                self.calls += 1
+                if self.callback:
+                    self.callback()
+                return json.dumps({"observations": [], "alternatives": [], "interference": [],
+                    "abstentions": ["Manufactured fixture has no perceptual ability"], "confidence": "unknown"})
+        backend = ManufacturedLocal()
+        def collect(output):
+            return observe_request(request, output, witness_run=witness, backend=backend, qualification=proof)
+        return outer, proof, backend, collect
+
+    def test_qualified_collection_refuses_outer_overlap_and_corruption_before_call(self):
+        outer, proof, backend, collect = self.qualified_collection_fixture()
+        before = {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()}
+        for corrupt in (False, True):
+            with self.subTest(corrupt=corrupt):
+                if corrupt:
+                    (outer/"unlisted-file.txt").write_text("Manufactured corrupt outer membership", encoding="utf-8")
+                output = self.root/"corrupt-collection-output" if corrupt else outer/"overlap-collection-output"
+                calls_before = backend.calls
+                with self.assertRaises(AVError):
+                    collect(output)
+                self.assertEqual(backend.calls, calls_before)
+                self.assertFalse(output.exists())
+                if not corrupt:
+                    self.assertEqual(before, {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()})
+                    verify_run(outer)
+                verify_run(proof)
+
+    def test_qualified_collection_safe_export_binds_complete_proof_and_outer(self):
+        outer, proof, backend, collect = self.qualified_collection_fixture()
+        before = {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()}
+        output = self.root/"safe-qualified-collection"
+        manifest = collect(output)
+        sources = {r["path"]: r["sha256"] for r in manifest["sources"]}
+        self.assertEqual(sources.get(str(outer/"run.json")), sha256(outer/"run.json"))
+        self.assertTrue({str(p): sha256(p) for p in proof.rglob('*') if p.is_file()}.items() <= sources.items())
+        self.assertEqual(backend.calls, 1)
+        self.assertEqual(read_json(output/"observation.json")["validation_status"], "VALID")
+        self.assertEqual(before, {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()})
+        verify_run(output); verify_run(output/"qualification-proof"); verify_run(outer)
+
+    def test_qualified_collection_rechecks_outer_membership_and_proof_bytes(self):
+        outer, proof, backend, collect = self.qualified_collection_fixture()
+        snapshot = proof/"benchmark-snapshot.json"
+        original = snapshot.read_bytes()
+        marker = outer/"concurrent-unlisted-file.txt"
+        for mutate_proof in (False, True):
+            try:
+                with self.subTest(mutate_proof=mutate_proof):
+                    def mutate_input():
+                        if mutate_proof:
+                            snapshot.write_bytes(original+b" ")
+                        else:
+                            marker.write_text("Manufactured concurrent input change", encoding="utf-8")
+                    backend.callback = mutate_input
+                    output = self.root/("changed-proof-collection" if mutate_proof else "changed-outer-collection")
+                    with self.assertRaises(AVError):
+                        collect(output)
+                    self.assertFalse(output.exists())
+            finally:
+                snapshot.write_bytes(original)
+                if marker.exists():
+                    self.assertTrue(marker.resolve().is_relative_to(self.root.resolve()))
+                    marker.unlink()
+        self.assertEqual(backend.calls, 2)
+        verify_run(outer)
+
     def test_invalid_positive_trials_count_as_false_negatives_without_dilution(self):
         record, output = self.scored_diluted_control("invalid-positives", "POSITIVE")
         self.assertEqual(record["metrics"]["overall_failure_rate"], .2)
@@ -502,7 +646,7 @@ class TaskQualification(unittest.TestCase):
         self.assertEqual(before, {p.relative_to(archive).as_posix(): sha256(p) for p in archive.rglob('*') if p.is_file()})
         verify_run(archive)
         benchmark(self.root/"input/benchmark-config.json", self.root/"recomputed-new-proof")
-        self.assertEqual(load_qualification(self.root/"recomputed-new-proof")["revision"], "auditory-qualification-v2")
+        self.assertEqual(load_qualification(self.root/"recomputed-new-proof")["revision"], "auditory-qualification-v3")
 
     def test_benchmark_dataset_review_and_qualification_public_schemas(self):
         import jsonschema

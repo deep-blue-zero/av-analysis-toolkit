@@ -598,6 +598,85 @@ class AuditoryReconciliation(unittest.TestCase):
         packet["evidence"]["AO_STAGE1"][0]["review_artifact"] = {"path": path.name, "sha256": sha256(path)}
         return packet, proof
 
+    def enclosing_qualification_packet(self):
+        packet, original = self.independent_qualification_packet()
+        outer = self.root/"manufactured-containing-qualification-run"
+        nested = outer/"nested-proof"
+        shutil.copytree(original, nested)
+        finish_run(outer, "manufactured-outer-qualification-container", [])
+        review_path = self.root/"independent-scoped-review.json"
+        review = read_json(review_path)
+        review["qualification_artifact"]["path"] = str(nested/"qualification.json")
+        review_path.write_text(__import__('json').dumps(review), encoding="utf-8")
+        packet["evidence"]["AO_STAGE1"][0]["review_artifact"]["sha256"] = sha256(review_path)
+        return packet, outer, nested
+
+    def publish_enclosing_qualification(self, operation, packet, output):
+        before = self.save(packet, operation+"-enclosing-before.json")
+        if operation == "scene":
+            return reconcile_scene(before, output)
+        after = copy.deepcopy(packet)
+        after["holistic_analysis"] = "The bounded delivery claim survives without a change in scope."
+        return scene_claim_delta(before, self.save(after, operation+"-enclosing-after.json"), output)
+
+    def test_enclosing_qualification_publication_refuses_inside_outer_run(self):
+        packet, outer, nested = self.enclosing_qualification_packet()
+        before = {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()}
+        for operation in ("scene", "delta"):
+            with self.subTest(operation=operation):
+                output = outer/(operation+"-output")
+                with self.assertRaises(AVError):
+                    self.publish_enclosing_qualification(operation, packet, output)
+                self.assertFalse(output.exists())
+                self.assertEqual(before, {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()})
+                verify_run(outer); verify_run(nested)
+
+    def test_enclosing_qualification_safe_publication_binds_outer_manifest(self):
+        packet, outer, nested = self.enclosing_qualification_packet()
+        before = {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()}
+        for operation in ("scene", "delta"):
+            with self.subTest(operation=operation):
+                output = self.root/(operation+"-outside-output")
+                manifest = self.publish_enclosing_qualification(operation, packet, output)
+                sources = {r["path"]: r["sha256"] for r in manifest["sources"]}
+                self.assertEqual(sources.get(str(outer/"run.json")), sha256(outer/"run.json"))
+                self.assertEqual(before, {p.relative_to(outer).as_posix(): sha256(p) for p in outer.rglob('*') if p.is_file()})
+                verify_run(output); verify_run(outer); verify_run(nested)
+
+    def test_enclosing_qualification_corruption_refused_before_publication(self):
+        packet, outer, nested = self.enclosing_qualification_packet()
+        (outer/"unlisted-file.txt").write_text("Manufactured membership corruption", encoding="utf-8")
+        verify_run(nested)
+        for operation in ("scene", "delta"):
+            with self.subTest(operation=operation):
+                output = self.root/(operation+"-corrupt-outer-output")
+                with self.assertRaises(AVError):
+                    self.publish_enclosing_qualification(operation, packet, output)
+                self.assertFalse(output.exists())
+                self.assertFalse(list(self.root.glob('.'+output.name+'.staging-*')))
+
+    def test_enclosing_qualification_membership_rechecked_before_publication(self):
+        from unittest.mock import patch
+        from avevidence.scene_packets import retain_scene_qualifications
+        packet, outer, _ = self.enclosing_qualification_packet()
+        marker = outer/"concurrent-unlisted-file.txt"
+        def add_after_retention(*args, **kwargs):
+            result = retain_scene_qualifications(*args, **kwargs)
+            marker.write_text("Manufactured concurrent outer membership change", encoding="utf-8")
+            return result
+        for operation, module in (("scene", "cross_modal"), ("delta", "scene_delta")):
+            try:
+                with self.subTest(operation=operation), patch("avevidence."+module+".retain_scene_qualifications", side_effect=add_after_retention):
+                    output = self.root/(operation+"-concurrent-outer-output")
+                    with self.assertRaises(AVError):
+                        self.publish_enclosing_qualification(operation, packet, output)
+                    self.assertFalse(output.exists())
+            finally:
+                if marker.exists():
+                    self.assertTrue(marker.resolve().is_relative_to(self.root.resolve()))
+                    marker.unlink()
+        verify_run(outer)
+
     def test_reconciliation_retains_recomputable_external_qualification(self):
         packet, original = self.independent_qualification_packet()
         output = self.root/"retained-reconciliation"

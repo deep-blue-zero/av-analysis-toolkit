@@ -12,7 +12,7 @@ from .common import AVError, file_record, finish_run, output_transaction, sha256
 from .event_contracts import array, canonical_digest, choice, object_fields, read_event_json, span, strings
 from .inventory import digest_value, identifier, text_value, verify_run
 
-REVISION = "auditory-qualification-v2"
+REVISION = "auditory-qualification-v3"
 TASK_PROPOSITIONS = {
     "SPEECH_DELIVERY": {"delivery"}, "NONVERBAL_VOCAL": {"nonverbal_vocal"},
     "MUSIC_STRUCTURE": {"music_structure"}, "PERFORMANCE_MUSIC": {"performance_music"},
@@ -187,7 +187,9 @@ def evaluate_benchmark(dataset, trials, backend_identity, configuration_revision
     totals = {name: sum(r["control"] == name for r in held) for name in ("POSITIVE", "NEGATIVE", "AMBIGUOUS")}
     n = len(held)
     errors = sum(not r["correct"] for r in held)
-    fp = sum(r["valid_output"] and r["control"] == "NEGATIVE" and r["prediction"] == "PRESENT" for r in held)
+    # An independently evaluated PRESENT negative remains a false positive
+    # even when its response also failed the separate formatting contract.
+    fp = sum(r["control"] == "NEGATIVE" and r["prediction"] == "PRESENT" for r in held)
     # A malformed or mistimed positive is still a failed detection, even when
     # its attributed label says PRESENT. Other classes cannot dilute that error.
     fn = sum(r["control"] == "POSITIVE" and not r["correct"] for r in held)
@@ -227,7 +229,7 @@ def evaluate_benchmark(dataset, trials, backend_identity, configuration_revision
         "task": dataset["task"], "media_category": dataset["media_category"],
         "dataset_id": dataset["dataset_id"], "dataset_revision": dataset["revision"],
         "dataset_sha256": canonical_digest(dataset), "scope_description": dataset["scope_description"],
-        "scoring_method": "Independent reviewed PRESENT/ABSENT/ABSTAIN; all failed positives count as false negatives; invalids and timing failures retained; each control family separately bounded",
+        "scoring_method": "Independent reviewed PRESENT/ABSENT/ABSTAIN; all PRESENT negatives count as false positives and all failed positives as false negatives; invalids and timing failures retained; each control family separately bounded",
         "criteria": {**copy.deepcopy(CRITERIA), "maximum_positive_timing_error_seconds": TIMING_TOLERANCES.get(dataset["task"])},
         "results": judged, "metrics": metrics, "status": status,
         "scope_approval": copy.deepcopy(scope_approval), "limitations": copy.deepcopy(dataset["limitations"]),

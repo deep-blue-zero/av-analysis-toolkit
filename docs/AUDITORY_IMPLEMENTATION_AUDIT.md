@@ -98,3 +98,26 @@ Negative controls retain OPEN for incomplete or incompetent support. The new
 errors or skips and stable runtime/test hashes. The separate
 `AUDITORY_REVIEW_FIX5_RECEIPT.json` records both results and the preserved pre-fix
 reproductions; all earlier receipts are retained.
+
+The next review identified malformed negative outputs independently labelled
+PRESENT being omitted from false positives, and scene/delta publication protecting
+only an inner proof folder rather than its enclosing AV runs. Seven generated
+regression methods reproduced both issues before correction, with twelve
+assertion/subtest failures and no fixture errors. Scoring revision v3 includes all
+reviewed PRESENT negatives and requires a new recomputation of immutable v1/v2
+proofs. A shared scene helper now verifies and protects all containing proof runs,
+binds their manifests and rechecks membership before publication. The expanded
+81-test focused suite passed with no failures, errors or skips and stable
+runtime/test hashes; earlier results stay unchanged.
+An additional generated local-collection reproduction confirmed the same
+enclosing-run gap in qualified collection. Three regression methods recorded five
+failures with no fixture errors before correction. Collection now source-binds
+complete proof bytes and containing manifests, protects every input run before
+provider calls, verifies its retained copy and rechecks membership before
+publication. All 61 existing hosted-observer/provider-witness tests also passed
+with no failures, errors or skips and stable hashes. The complete 640-test
+generated regression passed with no failures, errors or skips and stable
+runtime/test hashes. `AUDITORY_REVIEW_FIX6_RECEIPT.json` records the final focused,
+observer-guard and full results, their scope and the separate pre-fix
+reproductions. All earlier receipts remain unchanged; these generated tests
+called no real observer.

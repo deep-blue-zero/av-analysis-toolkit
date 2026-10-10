@@ -9,7 +9,7 @@ from .event_contracts import read_event_json, span
 from .mapping import missing_intervals
 from .observation_dependencies import PROPAGATING, dependence_groups, propagate_changes, material_edge
 from .scene_packets import (load_scene_packet, packet_identity,
-                            retain_scene_qualifications, verify_scene_snapshot)
+                            retain_scene_qualifications, scene_qualification_inputs, verify_scene_snapshot)
 
 COMPETENCE = {
     "TXT": {"wording"}, "VIS": {"visual_fact"},
@@ -408,10 +408,11 @@ def reconcile_scene(input, output, *, relocations=None):
     result = reconcile_data(packet, evidence, nodes, bindings)
     verify_scene_snapshot(snapshot,bindings)
     inputs = [input]+[r["path"] for r in bindings.values()]+[r["review_path"] for r in bindings.values() if "review_path" in r]
-    proof_inputs = [r["qualification_proof"]["path"] for r in bindings.values() if r.get("qualification_proof")]
+    proof_inputs, enclosing_sources = scene_qualification_inputs({"scene": bindings})
     with output_transaction(output, inputs+proof_inputs) as stage:
         write_json(stage/"reconciliation.json", result)
         proof_sources = retain_scene_qualifications(stage, {"scene": bindings})
-        verify_scene_snapshot(snapshot,bindings)
+        proof_sources = list({r["path"]: r for r in proof_sources+enclosing_sources}.values())
+        verify_scene_snapshot(snapshot,bindings, qualification_inputs=proof_inputs)
         return finish_run(stage, "scene-reconcile", [snapshot]+[file_record(p, "scene_evidence") for p in inputs[1:]]+proof_sources,
                           metadata={"result_file": "reconciliation.json", "packet_id": result["packet_id"], "raw_records_preserved": True})
