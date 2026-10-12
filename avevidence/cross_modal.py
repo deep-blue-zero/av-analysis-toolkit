@@ -7,17 +7,18 @@ from pathlib import Path
 from .common import AVError, file_record, finish_run, output_transaction, write_json
 from .event_contracts import read_event_json, span
 from .mapping import missing_intervals
-from .observation_dependencies import PROPAGATING, dependence_groups, propagate_changes
-from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
+from .observation_dependencies import PROPAGATING, dependence_groups, propagate_changes, material_edge
+from .scene_packets import (load_scene_packet, packet_identity,
+                            retain_scene_qualifications, scene_qualification_inputs, verify_scene_snapshot)
 
 COMPETENCE = {
     "TXT": {"wording"}, "VIS": {"visual_fact"},
     "TVIS": {"visual_fact", "motion", "contact", "event_order", "av_sync"},
     "AM": {"sound_level", "speech_timing"},
     "MID": {"recording_identity", "composition_identity", "arrangement_identity", "performance_identity", "musical_reference"},
-    "AO_STAGE1": {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speech_timing"},
-    "AO_STAGE2": {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speech_timing"},
-    "HL": {"delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speaker_identity", "speech_timing"},
+    "AO_STAGE1": {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speech_timing", "auditory_event_timing"},
+    "AO_STAGE2": {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speech_timing", "auditory_event_timing"},
+    "HL": {"delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speaker_identity", "speech_timing", "auditory_event_timing"},
     "VO": {"visual_fact", "motion", "contact", "event_order"},
     "AVO": {"visual_fact", "motion", "contact", "event_order", "av_sync", "delivery", "soundscape"},
     "INF": set(), "INT": set(),
@@ -25,6 +26,8 @@ COMPETENCE = {
 TASK_KINDS = {"SPEECH_PERFORMANCE": {"delivery", "wording", "speech_timing"}, "NONVERBAL_VOCAL": {"nonverbal_vocal"},
               "MUSIC_STRUCTURE": {"music_structure"}, "PERFORMANCE_MUSIC": {"performance_music", "music_structure"},
               "SOUNDSCAPE": {"soundscape"}, "AV_SYNC": {"soundscape", "speech_timing"}}
+TASK_KINDS.update({"SPEECH_DELIVERY": {"delivery"}, "AUDITORY_EVENT_TIMING": {"auditory_event_timing"},
+                   "LEXICAL_TRANSCRIPTION": {"wording"}, "EXACT_WORD_TIMING": {"speech_timing"}})
 GUARDS = ["Text cannot establish performed pitch, strain or breathiness",
           "Still images cannot establish motion, contact order or singing identity",
           "Mixed-track RMS cannot establish emotional intensity",
@@ -32,7 +35,7 @@ GUARDS = ["Text cannot establish performed pitch, strain or breathiness",
           "Contextual Stage 2 is dependent evidence; model output is not a direct source fact"]
 
 
-def evidence_assessment(ref, binding, proposition, interval):
+def evidence_assessment(ref, binding, proposition, interval, *, observation=None):
     channel = ref["channel"]
     competent = proposition in COMPETENCE[channel]
     result = {"evidence_id": ref["id"], "channel": channel, "competent": competent,
@@ -129,6 +132,8 @@ def evidence_assessment(ref, binding, proposition, interval):
         if raw.get("validation_status") != "VALID" or raw.get("observer_type") == "mock":
             result["competent"] = False
             result["reasons"].append("Invalid output or a test double is not perceptual evidence")
+        if binding.get("review_path") and raw.get("admission_dimensions"):
+            _scoped_auditory_assessment(result, raw, ref, binding, proposition, interval, observation)
     elif channel == "HL":
         raw = read_event_json(binding["path"])
         if not isinstance(raw,dict): raise AVError("Human listening record must be an attributed object")
@@ -170,13 +175,81 @@ def evidence_assessment(ref, binding, proposition, interval):
     return result
 
 
+def _scoped_auditory_assessment(result, raw, ref, binding, proposition, interval, observation):
+    from .auditory_claims import validate_model_observation
+    from .auditory_qualification import TASK_PROPOSITIONS, competence, load_qualification
+    from .event_contracts import object_fields
+    from .common import sha256
+    from .scene_packets import resolve_artifact
+    from .inventory import text_value
+    # Collection integrity is necessary, but never sufficient for support.
+    try:
+        validated, covered, _ = validate_model_observation(binding["path"], allow_experimental=True)
+    except AVError as exc:
+        result["reasons"].append(str(exc)); result["competent"] = False
+        return
+    review = read_event_json(binding["review_path"])
+    keys = {"schema", "observation_sha256", "observation_index", "proposition", "interval_seconds",
+            "reviewer", "scope", "statement", "adequacy", "unresolved_contradictions", "reason", "qualification_artifact"}
+    object_fields(review, keys, keys, "scoped auditory observation assessment")
+    if (review["schema"] != "ave.auditory-observation-assessment.v1" or
+        review["observation_sha256"] != sha256(binding["path"]) or review["proposition"] != proposition):
+        raise AVError("Auditory assessment differs from this exact observation/proposition")
+    for key in ("reviewer", "scope", "statement", "reason"):
+        text_value(review[key], key)
+    from .event_contracts import strings, span, choice
+    strings(review["unresolved_contradictions"], "unresolved auditory contradictions", 100)
+    span(review["interval_seconds"])
+    choice(review["adequacy"], {"ELIGIBLE_FOR_SUPPORT", "INADEQUATE", "RECHECK"}, "individual auditory adequacy")
+    index = review["observation_index"]
+    if type(index) is not int or not 0 <= index < len(covered):
+        raise AVError("Auditory assessment requires an actual atomic observation index")
+    if ref.get("record_pointer") not in {f"/source_observations/{index}", f"/parsed/observations/{index}"}:
+        raise AVError("Scoped support must select the exact atomic timed observation")
+    if (review["interval_seconds"] != interval or missing_intervals([interval], [covered[index]])
+        or observation is None or review["statement"] != observation["statement"]
+        or review["statement"] != validated["source_observations"][index]["description"]):
+        raise AVError("Auditory assessment cannot widen or relabel the actual observation's declared scope")
+    qpath = resolve_artifact(review["qualification_artifact"], Path(binding["review_path"]).parent)
+    task = competence(raw["task_profile"])
+    qualification = load_qualification(qpath, identity=raw["backend_identity"], task=task,
+        media_category=raw["media_category"], configuration_revision=raw["backend_identity"]["configuration_revision"],
+        required=False)
+    # Hold nested proof bytes stable through publication, as for scene evidence.
+    qfolder = qpath if qpath.is_dir() else qpath.parent
+    binding["qualification_proof"] = {"path": str(qfolder), "manifest_sha256": sha256(qfolder/"run.json")}
+    qualified = qualification["status"] == "QUALIFIED_FOR_SCOPE"
+    if qualified and raw["backend_identity"].get("route_type") == "hosted" and qualification["returned_model"] != raw.get("provider_receipt", {}).get("returned_model"):
+        raise AVError("Scoped qualification belongs to another provider-reported model revision")
+    competent = proposition in TASK_PROPOSITIONS[task]
+    result.update(competent=competent, task_capability_status=qualification["status"],
+        qualification_scope=qualification["scope_description"], observation_scope=review["scope"],
+        authority="SCOPED_QUALIFIED_AUDITORY_WITNESS" if qualified else "ATTRIBUTED_UNQUALIFIED_AUDITORY_WITNESS",
+        admission_status="ELIGIBLE_FOR_SUPPORT" if qualified and competent and
+        review["adequacy"] == "ELIGIBLE_FOR_SUPPORT" and not review["unresolved_contradictions"] else "INADEQUATE",
+        adequate_for_support=bool(qualified and competent and review["adequacy"] == "ELIGIBLE_FOR_SUPPORT" and not review["unresolved_contradictions"]))
+    result["reasons"].append("Qualification record and individual review verified; claim support still requires separate explicit adjudication")
+    if not qualified:
+        result["reasons"].append("This recomputed benchmark state has not qualified the task; optional evidence stays inadequate without invalidating an independent route")
+    if ref["channel"] == "AO_STAGE2" and proposition == "wording":
+        result.update(adequate_for_support=False, admission_status="CONTEXT_ONLY_FOR_SUPPLIED_WORDING")
+        result["reasons"].append("Contextual reinspection cannot independently prove words supplied in its prompt")
+
+
 def reconcile_data(packet, evidence, nodes, bindings):
     observations = {}
     decisions = copy.deepcopy(packet["adjudication"]["decisions"])
     for row in packet["observations"]:
         interval = row.get("interval_seconds", packet["interval_seconds"])
-        assessments = [evidence_assessment(evidence[eid], bindings[eid], row["proposition"], interval) for eid in row["evidence_ids"]]
+        assessments = [evidence_assessment(evidence[eid], bindings[eid], row["proposition"], interval, observation=row) for eid in row["evidence_ids"]]
         adequate = any(a["adequate_for_support"] for a in assessments)
+        if "evidence_roles" in row:
+            for assessment in assessments:
+                assessment["role"] = row["evidence_roles"][assessment["evidence_id"]]
+            positive = [a for a in assessments if a["role"] in {"REQUIRED", "SUPPORTING"}]
+            adequate = (any(a["adequate_for_support"] for a in positive)
+                        and all(a["adequate_for_support"] for a in positive if a["role"] == "REQUIRED")
+                        and not any(a["adequate_for_support"] for a in assessments if a["role"] == "CONTRADICTORY"))
         observations[row["id"]] = {"proposition": row["proposition"], "evidence_assessments": assessments,
                                   "competent_evidence_available": any(a["competent"] for a in assessments),
                                   "adequate_for_support": adequate,
@@ -184,6 +257,44 @@ def reconcile_data(packet, evidence, nodes, bindings):
         proposed = decisions.get(row["id"], {}).get("state", row["status"])
         if proposed in {"SUPPORTED", "CONFIRMED"} and (not adequate or row["id"] not in decisions):
             decisions[row["id"]] = {"state": "OPEN", "reason": "Affirmative observation needs competent adequate evidence and explicit attributed adjudication"}
+    # Assess every rival before resolving conflicts. A nominal affirmative
+    # decision may have failed adequacy or a material prerequisite; neither
+    # observation order nor rejecting one rival settles the remaining rivals.
+    affirmative = {"SUPPORTED", "CONFIRMED"}
+    for _ in range(len(observations) + 1 if packet["conflicts"] else 0):
+        preliminary = propagate_changes(packet["observations"], packet["claims"], packet["dependencies"], decisions)
+        effective = {key: "RECHECK" if value["changed_premises"] and value["after"] in affirmative else value["after"]
+                     for key, value in preliminary["state_overlay"].items()}
+        for _ in range(len(nodes)):
+            before = effective.copy()
+            for edge in packet["dependencies"]:
+                if material_edge(edge) and effective[edge["to"]] in affirmative and effective[edge["from"]] not in affirmative:
+                    effective[edge["to"]] = "RECHECK"
+            if effective == before:
+                break
+        changed = False
+        for conflict in packet["conflicts"]:
+            ids = conflict["observation_ids"]
+            resolved = (all(key in packet["adjudication"]["decisions"] and
+                            effective[key] in affirmative | {"CONTRADICTED"} for key in ids)
+                        and sum(effective[key] in affirmative for key in ids) == 1)
+            if resolved:
+                continue
+            for key in ids:
+                observed = observations[key]
+                for assessment in observed["evidence_assessments"]:
+                    assessment["adequate_for_support"] = False
+                    if assessment.get("admission_status") == "ELIGIBLE_FOR_SUPPORT":
+                        assessment["admission_status"] = "INADEQUATE"
+                    reason = "Unresolved same-proposition packet conflict prevents support for this rival"
+                    if reason not in assessment["reasons"]:
+                        assessment["reasons"].append(reason)
+                observed["adequate_for_support"] = False
+                if decisions.get(key, {}).get("state") in affirmative:
+                    decisions[key] = {"state": "OPEN", "reason": "A competing observation remains unresolved"}
+                    changed = True
+        if not changed:
+            break
     overlay = propagate_changes(packet["observations"], packet["claims"], packet["dependencies"], decisions)
     # An affirmative dependent decision cannot silently override a changed
     # premise. Re-formulate/review it in a subsequent packet/delta instead.
@@ -195,7 +306,18 @@ def reconcile_data(packet, evidence, nodes, bindings):
         premise_states = {oid: overlay["state_overlay"][oid]["after"] for oid in row["observation_ids"]}
         inadequate = [oid for oid in row["observation_ids"] if not observations[oid]["adequate_for_support"]]
         state = overlay["state_overlay"][row["id"]]
-        if state["after"] in {"SUPPORTED", "CONFIRMED"}:
+        routes = None
+        if "support_routes" in row:
+            from .support_routes import assess_routes
+            routes = assess_routes(row, observations, overlay["state_overlay"], packet, evidence)
+            selected = {key for r in routes if r["status"] == "SURVIVES" for key in r["selected_essential"]}
+            inadequate = [key for key in selected if not observations[key]["adequate_for_support"]]
+            if state["after"] in {"SUPPORTED", "CONFIRMED"} and (
+                    not any(r["status"] == "SURVIVES" for r in routes) or
+                    row["id"] not in packet["adjudication"]["decisions"] or
+                    row["proposition"] in {"emotion", "interpretation", "speaker_identity"} and not (row.get("inference") or row.get("interpretation"))):
+                state.update(after="OPEN", reason="No adequate declared support route or explicit articulated adjudication")
+        elif state["after"] in {"SUPPORTED", "CONFIRMED"}:
             reasoning = row.get("inference") or row.get("interpretation")
             direct_fact = row["proposition"] not in {"interpretation", "emotion"}
             claim_interval = row.get("interval_seconds",packet["interval_seconds"])
@@ -212,7 +334,8 @@ def reconcile_data(packet, evidence, nodes, bindings):
                 state.update(after="OPEN", reason="Claim lacks explicit adjudication, adequate premises, or articulated inference")
         claim_rows.append({"id": row["id"], "statement": row["statement"], "proposition": row["proposition"],
                            "state": state["after"], "premise_states": premise_states, "inadequate_premises": inadequate,
-                           "independence": dependence_groups(row["observation_ids"], nodes, packet["dependencies"], evidence)})
+                           "independence": dependence_groups(row["observation_ids"], nodes, packet["dependencies"], evidence),
+                           **({"support_routes": routes, "surviving_scopes": [r["scope"] for r in routes if r["status"] == "SURVIVES"]} if routes is not None else {})})
     # Propagate adequacy downgrades introduced by this stage through claim ->
     # claim edges as well, rather than leaving descendants apparently supported.
     final_changes = {key: {"state": value["after"], "reason": value["reason"]}
@@ -229,7 +352,7 @@ def reconcile_data(packet, evidence, nodes, bindings):
     # changed. Observation lists are not a bypass around the explicit DAG.
     prerequisites = {key: set() for key in nodes}
     for edge in packet["dependencies"]:
-        if edge["relation"] in PROPAGATING:
+        if material_edge(edge):
             prerequisites[edge["to"]].add(edge["from"])
     affirmative = {"SUPPORTED", "CONFIRMED"}
     for _ in range(len(nodes)):
@@ -271,6 +394,12 @@ def reconcile_data(packet, evidence, nodes, bindings):
             "holistic_analysis": packet.get("holistic_analysis"), "open_questions": packet["open_questions"],
             "proposition_guards": GUARDS, "no_majority_vote": True, "raw_records_preserved": True,
             "source_fact_promotion": "NONE_TOOLKIT_DOES_NOT_ASSIGN_PROJECT_F-AUD",
+            "event_synthesis": {"formulation": packet.get("holistic_analysis"),
+                "established_claim_ids": [r["id"] for r in claim_rows if r["state"] in {"SUPPORTED", "CONFIRMED"}],
+                "requires_correction": [r["id"] for r in claim_rows if r["state"] in {"RECHECK", "CONTRADICTED"}],
+                "open_claim_ids": [r["id"] for r in claim_rows if r["state"] in {"OPEN", "PROVISIONAL", "REPORTED"}],
+                "alternatives": {r["id"]: r.get("alternatives", []) for r in packet["claims"]},
+                "authority": "ATTRIBUTED_ANALYST_EVENT_INTERPRETATION"},
             "scope": "Auditable analyst decisions and evidence adequacy; no automated literary truth or native hearing/video perception"}
 
 
@@ -279,8 +408,11 @@ def reconcile_scene(input, output, *, relocations=None):
     result = reconcile_data(packet, evidence, nodes, bindings)
     verify_scene_snapshot(snapshot,bindings)
     inputs = [input]+[r["path"] for r in bindings.values()]+[r["review_path"] for r in bindings.values() if "review_path" in r]
-    with output_transaction(output, inputs) as stage:
+    proof_inputs, enclosing_sources = scene_qualification_inputs({"scene": bindings})
+    with output_transaction(output, inputs+proof_inputs) as stage:
         write_json(stage/"reconciliation.json", result)
-        verify_scene_snapshot(snapshot,bindings)
-        return finish_run(stage, "scene-reconcile", [snapshot]+[file_record(p, "scene_evidence") for p in inputs[1:]],
+        proof_sources = retain_scene_qualifications(stage, {"scene": bindings})
+        proof_sources = list({r["path"]: r for r in proof_sources+enclosing_sources}.values())
+        verify_scene_snapshot(snapshot,bindings, qualification_inputs=proof_inputs)
+        return finish_run(stage, "scene-reconcile", [snapshot]+[file_record(p, "scene_evidence") for p in inputs[1:]]+proof_sources,
                           metadata={"result_file": "reconciliation.json", "packet_id": result["packet_id"], "raw_records_preserved": True})

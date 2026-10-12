@@ -1,3 +1,5 @@
+> **Current locations:** Begin at [README](../README.md); the retained RC2 contract is [docs/specs/HARDENING_SPEC_1.1.0_RC2.md](specs/HARDENING_SPEC_1.1.0_RC2.md). The notes below describe the historical RC2 implementation, not a fresh validation of the current source.
+
 # RC2 continuation and reviewer handoff
 
 Purpose: harden RC1 against the six contract defects described in the supplied

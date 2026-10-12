@@ -109,8 +109,19 @@
           "type": "array",
           "items": {
             "allOf": [
-              {"$ref": "#/$defs/evidenceRef"},
-              {"properties": {"locator": {"required": ["stream_index", "intervals_seconds"]}}}
+              {
+                "$ref": "#/$defs/evidenceRef"
+              },
+              {
+                "properties": {
+                  "locator": {
+                    "required": [
+                      "stream_index",
+                      "intervals_seconds"
+                    ]
+                  }
+                }
+              }
             ]
           },
           "maxItems": 1000,
@@ -435,6 +446,86 @@
             "HIGH",
             "OPEN"
           ]
+        },
+        "support_routes": {
+          "type": "array",
+          "maxItems": 100,
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "essential": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "interchangeable": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 100,
+                  "uniqueItems": true,
+                  "minItems": 1
+                }
+              },
+              "supplementary": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "corroborating": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "insufficient_alone": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 100,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "id",
+              "scope",
+              "essential",
+              "interchangeable",
+              "supplementary",
+              "corroborating",
+              "insufficient_alone"
+            ]
+          }
         }
       },
       "required": [
@@ -513,6 +604,15 @@
         },
         "reason": {
           "$ref": "#/$defs/text"
+        },
+        "role": {
+          "enum": [
+            "REQUIRED",
+            "SUPPORTING",
+            "CONTEXTUAL",
+            "CONTRADICTORY",
+            "NON_DISCRIMINATING"
+          ]
         }
       },
       "required": [
@@ -565,6 +665,36 @@
         },
         "review_artifact": {
           "$ref": "#/$defs/artifact"
+        },
+        "independence_declaration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "reviewer": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "basis": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "upstream_evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 100,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "reviewer",
+            "basis",
+            "upstream_evidence_ids"
+          ]
         }
       },
       "required": [
@@ -721,6 +851,18 @@
             "VIDEO_OBSERVER_REPORTED",
             "OPEN"
           ]
+        },
+        "evidence_roles": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "REQUIRED",
+              "SUPPORTING",
+              "CONTEXTUAL",
+              "CONTRADICTORY",
+              "NON_DISCRIMINATING"
+            ]
+          }
         }
       },
       "required": [
@@ -757,7 +899,8 @@
         "performance_identity",
         "composition_identity",
         "arrangement_identity",
-        "musical_reference"
+        "musical_reference",
+        "auditory_event_timing"
       ]
     },
     "state": {

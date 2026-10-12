@@ -279,13 +279,19 @@ class SceneEvents(unittest.TestCase):
         text = result["observations"]["o-text"]["evidence_assessments"][0]
         guess = result["observations"]["o-guess"]["evidence_assessments"][0]
         delivery = result["observations"]["o-delivery"]["evidence_assessments"][0]
-        self.assertEqual(text["authority"], "canonical_text"); self.assertTrue(text["adequate_for_support"])
+        self.assertEqual(text["authority"], "canonical_text")
+        self.assertFalse(text["adequate_for_support"])
+        self.assertNotIn(result["claims"][0]["state"], {"SUPPORTED", "CONFIRMED"})
         self.assertEqual(guess["authority"], "NON_AUTHORITATIVE_LEXICAL_GUESS")
         self.assertEqual(delivery["authority"], "PROVISIONAL_MODEL_REPORT")
         self.assertFalse(delivery["adequate_for_support"]); self.assertFalse(delivery["global_qualification"])
         self.assertEqual(result["conflicts"][0]["preferred_text_observations"], ["o-text"])
         self.assertEqual(result["dependency_assessment"]["state_overlay"]["o-delivery"]["after"], "OPEN")
         self.assertNotIn(next(c for c in result["claims"] if c["id"] == "c-delivery")["state"], {"SUPPORTED", "CONFIRMED"})
+        packet["adjudication"]["decisions"]["o-guess"] = {"state": "CONTRADICTED", "reason": "The stronger textual witness contradicts this lexical guess."}
+        resolved = self.reconciled(packet, "resolved-lexical-conflict.json")
+        self.assertTrue(resolved["observations"]["o-text"]["adequate_for_support"])
+        self.assertFalse(resolved["observations"]["o-delivery"]["adequate_for_support"])
 
     def test_affirmative_raw_text_status_needs_explicit_attributed_adjudication(self):
         packet = self.packet(); packet["observations"][0]["status"] = "CONFIRMED"

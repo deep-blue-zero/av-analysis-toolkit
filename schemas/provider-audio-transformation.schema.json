@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.provider-audio-transformation.v1"
+    },
+    "provider": {
+      "const": "openai"
+    },
+    "route": {
+      "const": "/v1/chat/completions"
+    },
+    "input_audio_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "input_witness_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "output_audio_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "input_format": {
+      "type": "object"
+    },
+    "output_format": {
+      "type": "object"
+    },
+    "operation": {
+      "const": "ROUND_TO_NEAREST_SIGNED_PCM16"
+    },
+    "normalization": {
+      "const": false
+    },
+    "resampling": {
+      "const": false
+    },
+    "channel_strategy": {
+      "const": "preserve"
+    },
+    "sample_frames_preserved": {
+      "const": true
+    },
+    "source_clock_preserved": {
+      "const": true
+    },
+    "decoded_sample_verification": {
+      "const": "PASS"
+    },
+    "max_sample_error": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 3.1617578125e-05
+    },
+    "byte_identity_claimed": {
+      "const": false
+    },
+    "max_duration_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 120
+    },
+    "max_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 25165824
+    }
+  },
+  "required": [
+    "schema",
+    "provider",
+    "route",
+    "input_audio_sha256",
+    "input_witness_sha256",
+    "output_audio_sha256",
+    "input_format",
+    "output_format",
+    "operation",
+    "normalization",
+    "resampling",
+    "channel_strategy",
+    "sample_frames_preserved",
+    "source_clock_preserved",
+    "decoded_sample_verification",
+    "max_sample_error",
+    "byte_identity_claimed",
+    "max_duration_seconds",
+    "max_bytes"
+  ]
+}

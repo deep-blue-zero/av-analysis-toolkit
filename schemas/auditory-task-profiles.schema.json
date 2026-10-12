@@ -1,92 +1,262 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/deep-blue-zero/av-analysis-toolkit/schemas/auditory-task-profiles.schema.json",
-  "title": "Current unqualified auditory task capability profile",
+  "title": "Auditory task capability history and recomputed scoped qualifications",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "backend_identity", "profile_revision", "tasks", "lexical_transcription", "exact_word_timing", "historical_probes", "scoped_human_reviews", "scope", "authorizes_hosted_submission"],
+  "required": [
+    "schema",
+    "backend_identity",
+    "profile_revision",
+    "tasks",
+    "lexical_transcription",
+    "exact_word_timing",
+    "historical_probes",
+    "scoped_human_reviews",
+    "scope",
+    "authorizes_hosted_submission"
+  ],
   "properties": {
-    "schema": {"const": "ave.auditory-task-capabilities.v1"},
+    "schema": {
+      "const": "ave.auditory-task-capabilities.v1"
+    },
     "backend_identity": {
       "type": "object",
-      "required": ["model_revision"],
-      "properties": {"model_revision": {"type": "string", "minLength": 1}}
+      "required": [
+        "model_revision"
+      ],
+      "properties": {
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
-    "profile_revision": {"const": "auditory-task-profiles-v1"},
+    "profile_revision": {
+      "const": "auditory-task-profiles-v1"
+    },
     "tasks": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["SPEECH_PERFORMANCE", "NONVERBAL_VOCAL", "MUSIC_STRUCTURE", "PERFORMANCE_MUSIC", "SOUNDSCAPE", "AV_SYNC"],
+      "required": [
+        "SPEECH_PERFORMANCE",
+        "NONVERBAL_VOCAL",
+        "MUSIC_STRUCTURE",
+        "PERFORMANCE_MUSIC",
+        "SOUNDSCAPE",
+        "AV_SYNC"
+      ],
       "properties": {
-        "SPEECH_PERFORMANCE": {"$ref": "#/$defs/qualification"},
-        "NONVERBAL_VOCAL": {"$ref": "#/$defs/qualification"},
-        "MUSIC_STRUCTURE": {"$ref": "#/$defs/qualification"},
-        "PERFORMANCE_MUSIC": {"$ref": "#/$defs/qualification"},
-        "SOUNDSCAPE": {"$ref": "#/$defs/qualification"},
-        "AV_SYNC": {"$ref": "#/$defs/qualification"}
+        "SPEECH_PERFORMANCE": {
+          "$ref": "#/$defs/qualification"
+        },
+        "NONVERBAL_VOCAL": {
+          "$ref": "#/$defs/qualification"
+        },
+        "MUSIC_STRUCTURE": {
+          "$ref": "#/$defs/qualification"
+        },
+        "PERFORMANCE_MUSIC": {
+          "$ref": "#/$defs/qualification"
+        },
+        "SOUNDSCAPE": {
+          "$ref": "#/$defs/qualification"
+        },
+        "AV_SYNC": {
+          "$ref": "#/$defs/qualification"
+        }
       }
     },
-    "lexical_transcription": {"const": "NON_AUTHORITATIVE"},
-    "exact_word_timing": {"const": "PROVISIONAL"},
+    "lexical_transcription": {
+      "const": "NON_AUTHORITATIVE"
+    },
+    "exact_word_timing": {
+      "const": "PROVISIONAL"
+    },
     "historical_probes": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["status"],
-        "properties": {"status": {"enum": ["PROBE_PASSED", "PROBE_FAILED", "NOT_TESTED", "UNRESOLVED"]}}
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "PROBE_PASSED",
+              "PROBE_FAILED",
+              "NOT_TESTED",
+              "UNRESOLVED"
+            ]
+          }
+        }
       }
     },
     "scoped_human_reviews": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["schema", "global_backend_qualification"],
+        "required": [
+          "schema",
+          "global_backend_qualification"
+        ],
         "properties": {
-          "schema": {"const": "ave.scoped-human-auditory-review.v1"},
-          "global_backend_qualification": {"const": false}
+          "schema": {
+            "const": "ave.scoped-human-auditory-review.v1"
+          },
+          "global_backend_qualification": {
+            "const": false
+          }
         }
       }
     },
-    "scope": {"type": "string", "minLength": 1},
-    "authorizes_hosted_submission": {"const": false}
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authorizes_hosted_submission": {
+      "const": false
+    },
+    "competencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      }
+    }
   },
   "$defs": {
-    "taskProfile": {"enum": ["SPEECH_PERFORMANCE", "NONVERBAL_VOCAL", "MUSIC_STRUCTURE", "PERFORMANCE_MUSIC", "SOUNDSCAPE", "AV_SYNC"]},
+    "taskProfile": {
+      "enum": [
+        "SPEECH_PERFORMANCE",
+        "NONVERBAL_VOCAL",
+        "MUSIC_STRUCTURE",
+        "PERFORMANCE_MUSIC",
+        "SOUNDSCAPE",
+        "AV_SYNC",
+        "SPEECH_DELIVERY",
+        "AUDITORY_EVENT_TIMING",
+        "LEXICAL_TRANSCRIPTION",
+        "EXACT_WORD_TIMING"
+      ]
+    },
     "qualification": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "test_status"],
-      "properties": {"status": {"const": "UNQUALIFIED"}, "test_status": {"const": "NOT_TESTED"}}
+      "required": [
+        "status",
+        "test_status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "UNQUALIFIED",
+            "NOT_TESTED",
+            "PROVISIONAL",
+            "VALIDATED_ON_BENCHMARK",
+            "QUALIFIED_FOR_SCOPE",
+            "FAILED",
+            "UNRESOLVED"
+          ]
+        },
+        "test_status": {
+          "enum": [
+            "UNQUALIFIED",
+            "NOT_TESTED",
+            "PROVISIONAL",
+            "VALIDATED_ON_BENCHMARK",
+            "QUALIFIED_FOR_SCOPE",
+            "FAILED",
+            "UNRESOLVED"
+          ]
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
     },
     "requestPolicy": {
       "oneOf": [
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["task_profile", "audio_mode", "max_clip_seconds", "max_total_seconds", "max_clips", "max_audio_bytes", "explicit_request_budget_required"],
+          "required": [
+            "task_profile",
+            "audio_mode",
+            "max_clip_seconds",
+            "max_total_seconds",
+            "max_clips",
+            "max_audio_bytes",
+            "explicit_request_budget_required"
+          ],
           "properties": {
-            "task_profile": {"$ref": "#/$defs/taskProfile"},
-            "audio_mode": {"const": "microclip"},
-            "max_clip_seconds": {"const": 30},
-            "max_total_seconds": {"const": 60},
-            "max_clips": {"const": 4},
-            "max_audio_bytes": {"const": 67108864},
-            "explicit_request_budget_required": {"const": false}
+            "task_profile": {
+              "$ref": "#/$defs/taskProfile"
+            },
+            "audio_mode": {
+              "const": "microclip"
+            },
+            "max_clip_seconds": {
+              "const": 30
+            },
+            "max_total_seconds": {
+              "const": 60
+            },
+            "max_clips": {
+              "const": 4
+            },
+            "max_audio_bytes": {
+              "const": 67108864
+            },
+            "explicit_request_budget_required": {
+              "const": false
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["task_profile", "audio_mode", "max_clip_seconds", "max_total_seconds", "max_clips", "max_audio_bytes", "explicit_request_budget_required", "section_budget_usd"],
+          "required": [
+            "task_profile",
+            "audio_mode",
+            "max_clip_seconds",
+            "max_total_seconds",
+            "max_clips",
+            "max_audio_bytes",
+            "explicit_request_budget_required",
+            "section_budget_usd"
+          ],
           "properties": {
-            "task_profile": {"const": "PERFORMANCE_MUSIC"},
-            "audio_mode": {"const": "coherent_section"},
-            "max_clip_seconds": {"const": 120},
-            "max_total_seconds": {"const": 120},
-            "max_clips": {"const": 1},
-            "max_audio_bytes": {"const": 134217728},
-            "explicit_request_budget_required": {"const": true},
-            "section_budget_usd": {"type": "number", "exclusiveMinimum": 0}
+            "task_profile": {
+              "const": "PERFORMANCE_MUSIC"
+            },
+            "audio_mode": {
+              "const": "coherent_section"
+            },
+            "max_clip_seconds": {
+              "const": 120
+            },
+            "max_total_seconds": {
+              "const": 120
+            },
+            "max_clips": {
+              "const": 1
+            },
+            "max_audio_bytes": {
+              "const": 134217728
+            },
+            "explicit_request_budget_required": {
+              "const": true
+            },
+            "section_budget_usd": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
           }
         }
       ]

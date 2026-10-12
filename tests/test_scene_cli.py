@@ -73,6 +73,11 @@ class SceneCLI(unittest.TestCase):
         self.assertEqual(states["oDelivery"]["after"],"REPORTED")
         self.assertEqual(states["cDelivery"]["after"],"PROVISIONAL")
         self.assertEqual(states["cName"]["after"],"SUPPORTED")
+        self.assertEqual(states["oContext"]["after"],"REPORTED")
+        self.assertFalse(result["observations"]["oContext"]["adequate_for_support"])
+        self.assertEqual(set(result["conflicts"][0]["observation_ids"]), {"oText", "oGuess"})
+        self.assertIn("oContext", {r["id"] for r in read_json(self.before)["observations"]})
+        self.assertIn("oContext", {r["id"] for r in read_json(self.after)["observations"]})
         self.assertTrue(result["raw_records_preserved"])
         self.assertTrue(result["no_majority_vote"])
         self.assertIn("stronger textual witness",result["conflicts"][0]["recommendation"])
@@ -108,6 +113,10 @@ class SceneCLI(unittest.TestCase):
     def test_public_profiles_and_capability_export_preserve_failure(self):
         profiles=self.command("observer","profiles")
         self.assertEqual(len(profiles["profiles"]),6)
+        self.assertEqual(set(profiles["competency_profiles"]),
+                         {"SPEECH_DELIVERY","AUDITORY_EVENT_TIMING","LEXICAL_TRANSCRIPTION","EXACT_WORD_TIMING"})
+        self.assertEqual(profiles["competency_profiles"]["SPEECH_DELIVERY"],
+                         profiles["profiles"]["SPEECH_PERFORMANCE"])
         self.assertEqual(profiles["qualification"],"NONE_IMPLIED")
         self.command("observer","capability-profile",self.example["capability_config"],self.root/"capabilities")
         record=read_json(self.root/"capabilities"/"task-capabilities.json")

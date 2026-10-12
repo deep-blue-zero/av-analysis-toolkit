@@ -1,4 +1,30 @@
-# AV Evidence Toolkit 1.6.0-alpha2-music-identity
+# AV Evidence Toolkit 1.6.0-alpha3-auditory-qualification
+
+## Start here
+
+This toolkit prepares source-bound audiovisual evidence for a reasoning analyst.
+Begin with the installation below, then choose a workflow. Commands in the guides
+run from the repository or extracted portable toolkit root.
+
+```text
+python -m pip install .
+ave doctor
+```
+
+Python 3.10+ and FFmpeg/ffprobe are separate prerequisites. Install only the optional
+extras needed for your task; development setup is `.[all,reuse-parquet,dev]`.
+Without installation, use `python avtool.py` in place of `ave`.
+
+- [Onboarding and portable setup](docs/START_HERE.md)
+- [Cloud execution](docs/CLOUD_START_HERE.md)
+- [Agent onboarding](docs/AGENT_START_HERE.md) and [handoff prompt](docs/prompts/PROMPT_FOR_OTHER_AGENTS.md)
+- [Analysis workflow](docs/ANALYSIS_WORKFLOW.md) and [holistic event analysis](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md)
+- [Current limitations](docs/KNOWN_LIMITATIONS.md) and [next validation plan](docs/NEXT_VALIDATION_PLAN.md)
+- [Packaging and CI](docs/PACKAGING_AND_CI.md), [platform dependency locks](requirements/), and [layout migration](docs/REPOSITORY_LAYOUT.md)
+
+Versioned contracts live in [docs/specs/](docs/specs/). Repository instructions,
+changelog, licensing, package metadata and the `avtool.py` CLI entry point remain
+at root. Media, evidence runs and installed dependencies remain external.
 
 Canonical software source: [deep-blue-zero/av-analysis-toolkit](https://github.com/deep-blue-zero/av-analysis-toolkit).
 Git contains source, tests, schemas and generic workflows. Media, analytical
@@ -14,10 +40,18 @@ reconciliation records competence, authority and contextual dependence; claim
 deltas compare the reading against a frozen baseline. A reasoning analyst still
 performs the interpretation and records the actual review.
 
-It adds six auditory task profiles, immutable context-minimized/contextual passes,
-scoped human judgments and formal performance sections. Hosted execution remains
-opt-in, authorized, capability-gated and budgeted. Current task capabilities remain
-unqualified; historical failed probes remain failed. Planning and normal CI cost $0.
+Layered auditory admission separates source authorization, API transport, response
+validity, tested input influence, task proficiency and individual adequacy. Routine
+`QUALIFIED` observation requires an exact task/media/route benchmark qualification;
+explicit `EXPERIMENTAL` collection can proceed without a passing broad probe,
+while retaining strict source, upload, format, credential and budget guards.
+Provider submission uses a verified PCM16 derivative of the forensic witness.
+Qualified atomic observations need a separate scoped review and analyst adjudication
+to support claims. Declared roles and alternative proof routes preserve adequate
+text/image interpretations when supplementary audio remains provisional. No actual
+natural-audio task has yet earned qualification; historical probe failures remain
+failed. Planning and normal CI cost $0. See [admission and qualification](docs/AUDITORY_QUALIFICATION.md)
+and [the retained synthetic integration results](docs/AUDITORY_SYNTHETIC_INTEGRATION.json).
 Temporal inspection offers 2/8/12 fps and bounded complete-frame windows, retaining
 original source PTS. Generated frames remain OPEN until an attributed review is
 validated; sparse samples do not confirm exact contact or continuous motion.
@@ -114,12 +148,12 @@ A portable Python command-line toolkit for preparing, measuring, locating, mappi
 
 **Computed measurements are not direct listening. Generated frames are not inspected frames. Packet identity is not perceptual equivalence.** The toolkit records those boundaries while still enabling substantial audiovisual work in execution environments that have FFmpeg, Python, and an image-review interface but no conventional media player.
 
-## Start here: Audio Instruments revision
+## Inherited audio instruments
 
 The inherited audio instruments came from **1.2.0-rc1-renderbind.1**, based on 1.2.0-rc1 and its supplied 1.1.0-rc2-retiming.1 predecessor.
 It adds deterministic audio tracks, music candidates, and acoustic evidence images.
 The canonical decoder, retiming defenses, old commands, and review gates remain.
-The current extension contract is [Audio Analysis Spec](AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md).
+The current extension contract is [Audio Analysis Spec](docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md).
 For first use, read [Audio quickstart](docs/AUDIO_QUICKSTART.md), then
 [methods and limitations](docs/AUDIO_TRACKS.md). Current-byte test scope is in
 [migration record](docs/MIGRATION_FROM_PORTABLE_1.5.0a2.md); old reports are not inherited.
@@ -272,13 +306,13 @@ ave verify-archive "episode-evidence.zip"
 
 ## Documentation
 
-- [Current audio extension contract](AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md)
-- [Inherited hardening contract](HARDENING_SPEC_1.1.0_RC2.md)
+- [Current audio extension contract](docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md)
+- [Inherited hardening contract](docs/specs/HARDENING_SPEC_1.1.0_RC2.md)
 - [Command reference](docs/COMMANDS.md)
 - [Methods and limits](docs/METHODS.md)
 - [Review records](docs/REVIEW_RECORDS.md)
 - [How agents analyze media with this toolkit](docs/HOW_AGENTS_ANALYZE_MEDIA_WITH_THIS_TOOLKIT.md)
-- [Copy-paste agent bootstrap prompt](PROMPT_FOR_OTHER_AGENTS.md)
+- [Copy-paste agent bootstrap prompt](docs/prompts/PROMPT_FOR_OTHER_AGENTS.md)
 - [Fictional performance example workflow](examples/EXAMPLE_GIRLS_BAND_CRY_WORKFLOW.md)
 - [Origins and changes](docs/ORIGINS_AND_CHANGES.md)
 - [Migration and validation record](docs/MIGRATION_FROM_PORTABLE_1.5.0a2.md)

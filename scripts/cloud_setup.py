@@ -109,7 +109,7 @@ def main():
     (runtime / 'CLOUD_SETUP_RECEIPT.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
     print(json.dumps({k: receipt[k] for k in ['passed', 'installer', 'network_used', 'root_required', 'abi', 'runtime', 'installed_files', 'ffmpeg', 'ffprobe']}, indent=2))
     if not receipt['ffmpeg'] or not receipt['ffprobe']:
-        print('Python installation succeeded. Media commands also require FFmpeg and ffprobe on PATH; see CLOUD_START_HERE.md.')
+        print('Python installation succeeded. Media commands also require FFmpeg and ffprobe on PATH; see docs/CLOUD_START_HERE.md.')
 
 
 if __name__ == '__main__':

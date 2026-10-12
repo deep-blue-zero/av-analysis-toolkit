@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.auditory-admission.v1"
+    },
+    "lane": {
+      "enum": [
+        "QUALIFIED",
+        "EXPERIMENTAL"
+      ]
+    },
+    "source_authorization": {
+      "enum": [
+        "VERIFIED_AUTHORIZED",
+        "LOCAL_SOURCE_BOUND"
+      ]
+    },
+    "transport": {
+      "enum": [
+        "ACCEPTED",
+        "NOT_ESTABLISHED"
+      ]
+    },
+    "response_contract": {
+      "enum": [
+        "VALID",
+        "INVALID",
+        "NOT_EVALUATED"
+      ]
+    },
+    "input_influence": {
+      "type": "string"
+    },
+    "task_competence": {
+      "enum": [
+        "UNQUALIFIED",
+        "NOT_TESTED",
+        "PROVISIONAL",
+        "VALIDATED_ON_BENCHMARK",
+        "QUALIFIED_FOR_SCOPE",
+        "FAILED",
+        "UNRESOLVED"
+      ]
+    },
+    "individual_adequacy": {
+      "const": "REQUIRES_PROPOSITION_SPECIFIC_ADJUDICATION"
+    },
+    "test_double": {
+      "type": "boolean"
+    },
+    "transport_details": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "audio_submission_attempted": {
+          "type": "boolean"
+        },
+        "expected_model_returned": {
+          "type": "boolean"
+        },
+        "usage_accounted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "audio_submission_attempted",
+        "expected_model_returned",
+        "usage_accounted"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "lane",
+    "source_authorization",
+    "transport",
+    "response_contract",
+    "input_influence",
+    "task_competence",
+    "individual_adequacy",
+    "test_double",
+    "transport_details"
+  ]
+}

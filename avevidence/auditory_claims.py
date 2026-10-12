@@ -12,12 +12,34 @@ from .mapping import missing_intervals
 from .observer_requests import source_observations, validate_comparison_response
 
 
-def validate_model_observation(path):
+def validate_model_observation(path, *, allow_experimental=False):
     """Validate both raw JSON and its projection; return actually observed spans."""
     from .auditory_observer import validate_response
     from .analysis_preflight import capability_receipt
     path = Path(path).resolve()
     obs = read_json(path)
+    if obs.get("admission_dimensions"):
+        covered = validate_observation_data(obs, allow_experimental=allow_experimental)
+        if not allow_experimental and not obs.get("task_qualification"):
+            raise AVError("A qualified status needs its immutable recomputed benchmark proof")
+        from .inventory import verify_run
+        verify_run(path.parent)
+        if obs.get("task_qualification"):
+            from .auditory_qualification import competence, load_qualification
+            record = load_qualification(path.parent/"qualification-proof", identity=obs["backend_identity"],
+                task=competence(obs["task_profile"]), media_category=obs["media_category"],
+                configuration_revision=obs["backend_identity"]["configuration_revision"])
+            if record != obs["task_qualification"]:
+                raise AVError("Auditory qualification differs from its immutable benchmark proof")
+        projection = obs.get("comparison_projection")
+        if projection:
+            parent_path = path.parent/"observation.json"
+            if sha256(parent_path) != projection.get("parent_sha256"):
+                raise AVError("Atomic comparison parent bytes changed")
+            parent = read_json(parent_path)
+            if parent.get("raw_response") != obs["raw_response"] or parent.get("clips") != obs.get("raw_comparison_clips"):
+                raise AVError("Atomic comparison projection differs from its immutable raw parent")
+        return obs, covered, []
     if (not isinstance(obs, dict) or obs.get("schema") != "ave.auditory-observation.v1"
         or obs.get("validation_status") != "VALID" or obs.get("capability_status") != "PROBE_PASSED"
         or obs.get("observer_type") != "model_audio" or obs.get("backend_identity", {}).get("execution_mode") == "TEST_DOUBLE"):
@@ -89,6 +111,99 @@ def validate_model_observation(path):
     else:
         mapped = [{"source_start_s": span[0]+r["start_s"], "source_end_s": span[0]+r["end_s"]} for r in parsed["observations"]]
     return obs, [[r["source_start_s"], r["source_end_s"]] for r in mapped], proof_files
+
+
+def validate_observation_data(obs, *, allow_experimental=False, require_valid_output=True):
+    """Validate collection integrity separately from task/claim adequacy.
+
+    Benchmark scoring may inspect unqualified outputs. Analytical admission
+    still requires a recomputed qualification proof and a scoped review.
+    """
+    from .auditory_observer import validate_response
+    from .providers.openai_common import model_matches, usage_cost
+    from .event_contracts import span
+    identity = obs.get("backend_identity", {})
+    if (obs.get("schema") != "ave.auditory-observation.v1" or obs.get("observer_type") != "model_audio"
+        or identity.get("type") == "mock" or identity.get("execution_mode") == "TEST_DOUBLE"
+        or identity.get("route_type") not in {"hosted", "local"}
+        or require_valid_output and obs.get("validation_status") != "VALID"):
+        raise AVError("Invalid output or a test double is not an actual auditory observer")
+    bounds = span(obs.get("source_interval_seconds"))
+    duration = obs.get("duration_seconds")
+    from .common import finite
+    finite(duration, "auditory duration", minimum=0)
+    if duration <= 0 or not isinstance(obs.get("raw_response"), str):
+        raise AVError("Auditory observation requires bounded raw text and audio duration")
+    parsed = None
+    if not require_valid_output:
+        # A malformed response still needs a verified collection receipt before
+        # it can count as an actual observer trial in a natural benchmark.
+        pass
+    elif obs.get("raw_comparison_clips"):
+        raw = validate_comparison_response(obs["raw_response"], obs["raw_comparison_clips"])
+        label = obs.get("comparison_projection", {}).get("label")
+        matching = [r["observation"] for r in raw["clips"] if r["label"] == label]
+        source_clip = [c for c in obs["raw_comparison_clips"] if c["label"] == label]
+        if (matching != [obs.get("parsed")] or len(source_clip) != 1 or any(
+                source_clip[0].get(k) != obs.get(k) for k in
+                ("source_sha256", "stream_index", "source_interval_seconds", "clip_sha256", "duration_seconds"))):
+            raise AVError("Comparison projection differs from its locally validated raw response")
+        parsed = validate_response(json.dumps(obs["parsed"], allow_nan=False), duration)
+    else:
+        parsed = validate_response(obs["raw_response"], duration)
+        if parsed != obs.get("parsed"):
+            raise AVError("Parsed auditory output differs from immutable raw text")
+    binding = obs.get("source_binding_receipt")
+    if not isinstance(binding, dict) or any(binding.get(k) != obs.get(k) for k in (
+            "source_sha256", "source_interval_seconds", "stream_index", "clip_sha256", "duration_seconds")):
+        raise AVError("Auditory output differs from its verified source-input receipt")
+    mapping = obs.get("clip_to_source_mapping")
+    if mapping != binding.get("review_mapping") or not isinstance(mapping, dict):
+        raise AVError("Auditory source clock differs from the admitted input")
+    if (mapping.get("parent_source_sha256") != obs["source_sha256"]
+        or mapping.get("parent_stream_index") != obs["stream_index"]
+        or mapping.get("artifact_sha256") != obs["clip_sha256"] or len(mapping.get("segments", [])) != 1):
+        raise AVError("Auditory observation has no continuously bound source clock")
+    seg = mapping["segments"][0]
+    rate = binding.get("wav_format", {}).get("sample_rate_hz")
+    if type(rate) is not int or rate <= 0:
+        raise AVError("Auditory observation has no validated sample rate")
+    uncertainty = obs.get("source_clock_uncertainty_seconds", 0.)
+    finite(uncertainty, "source-clock uncertainty", minimum=0)
+    tolerance = 1/rate + uncertainty + 1e-9
+    if (seg.get("derivative_start_seconds") != 0 or abs(seg["derivative_end_seconds"]-duration) > 1/rate+1e-9
+        or abs(seg["parent_end_seconds"]-seg["parent_start_seconds"]-duration) > 1/rate+1e-9
+        or max(abs(bounds[0]-seg["parent_start_seconds"]), abs(bounds[1]-seg["parent_end_seconds"])) > tolerance):
+        raise AVError("Auditory source-clock coverage differs from sample duration")
+    projected = source_observations(parsed, {"review_mapping": mapping, "source_sha256": obs["source_sha256"],
+                                            "stream_index": obs["stream_index"]}) if parsed is not None else []
+    if require_valid_output and projected != obs.get("source_observations"):
+        raise AVError("Auditory atomic source observations differ from their original clip clock")
+    if identity["route_type"] == "hosted":
+        provider = obs.get("provider_receipt")
+        if (not isinstance(provider, dict) or provider.get("execution_mode") != "HOSTED_LIVE"
+            or provider.get("status") != "REQUEST_ACCEPTED" or provider.get("submission_attempted") is not True
+            or provider.get("authorization") != {"provider": "openai", "remote_media_authorized": True}
+            or not model_matches(identity["model_revision"], provider.get("returned_model"))):
+            raise AVError("Hosted output has no valid authorized model/transport receipt")
+        usage = provider.get("usage", {})
+        expected_cost = usage_cost(usage.get("provider_reported_usage"), model=identity["model_revision"])
+        if expected_cost is None or expected_cost != usage.get("actual_cost_usd"):
+            raise AVError("Hosted output lacks accounted provider usage")
+        if not any(all(c.get(k) == obs.get(k) for k in ("source_sha256", "stream_index", "clip_sha256",
+                   "source_interval_seconds", "duration_seconds")) for c in provider.get("submitted_audio", [])):
+            raise AVError("Hosted receipt does not bind this submitted source interval")
+        frame = binding.get("wav_format", {})
+        transforms = binding.get("transformations", [])
+        if (binding.get("witness_kind") != "PROVIDER_SUBMISSION_WITNESS" or frame.get("bits_per_sample") != 16
+            or frame.get("sample_representation") != "PCM" or not transforms
+            or transforms[-1].get("output_audio_sha256") != obs["clip_sha256"]
+            or transforms[-1].get("decoded_sample_verification") != "PASS"):
+            raise AVError("Hosted output lacks verified provider-format transformation lineage")
+    if not allow_experimental and (obs.get("observation_lane") != "QUALIFIED"
+            or obs.get("task_capability_status") != "QUALIFIED_FOR_SCOPE"):
+        raise AVError("Experimental auditory output cannot alone satisfy an evidentiary proof obligation")
+    return [[r["source_start_s"], r["source_end_s"]] for r in projected]
 
 
 def _overlap(covered, locator):

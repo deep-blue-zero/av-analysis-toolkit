@@ -14,11 +14,13 @@ from avevidence import __release_label__, __version__
 from avevidence.common import AVError, sha256
 from avevidence.packaging import deterministic_zip, verify_archive
 
-TOP = {"README.md", "AGENT_START_HERE.md", "PROMPT_FOR_OTHER_AGENTS.md",
-       "HARDENING_SPEC_1.1.0_RC2.md", "AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md", "LICENSE", "pyproject.toml", "avtool.py"}
+TOP = {"README.md", "AGENTS.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+       "MANIFEST.in", "pyproject.toml", "avtool.py"}
 DIRECTORIES = {
     "avevidence": {".py"}, "tests": {".py"}, "scripts": {".py", ".sh", ".ps1"},
-    "docs": {".md"}, "examples": {".json", ".md"}, "LICENSES": {".txt"},
+    "docs": {".md", ".json", ".txt"}, "requirements": {".txt"},
+    "schemas": {".json"}, ".github/workflows": {".yml", ".yaml"},
+    "examples": {".json", ".md"}, "LICENSES": {".txt"},
     "reports": {".md", ".json", ".txt", ".log"},
 }
 REQUIRED_REPORTS = {
@@ -75,6 +77,12 @@ def select_members(root=None):
             ast.parse(path.read_text(encoding='utf-8-sig'), filename=name, feature_version=(3,10))
     required = {'docs/COMMANDS.md', 'docs/METHODS.md', 'docs/REVIEW_RECORDS.md',
         'docs/HOW_AGENTS_ANALYZE_MEDIA_WITH_THIS_TOOLKIT.md', 'docs/ORIGINS_AND_CHANGES.md',
+        'docs/START_HERE.md', 'docs/CLOUD_START_HERE.md', 'docs/AGENT_START_HERE.md',
+        'docs/ANALYSIS_WORKFLOW.md', 'docs/KNOWN_LIMITATIONS.md', 'docs/NEXT_VALIDATION_PLAN.md',
+        'docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md', 'docs/specs/HARDENING_SPEC_1.1.0_RC2.md',
+        'docs/prompts/PROMPT_FOR_OTHER_AGENTS.md',
+        'requirements/requirements-cloud-cp311.txt', 'requirements/requirements-cloud-cp312.txt',
+        'requirements/requirements-windows-offline-cp312.txt',
         'examples/EXAMPLE_GIRLS_BAND_CRY_WORKFLOW.md', 'scripts/self_test.py',
         'LICENSES/GBC_TOOLKIT_MIT.txt', 'avevidence/__init__.py'}
     if required-set(names):
@@ -83,7 +91,7 @@ def select_members(root=None):
         raise AVError('pyproject version disagrees with runtime')
     if not (root/'README.md').read_text(encoding='utf-8').startswith(f'# AV Evidence Toolkit {__release_label__}\n'):
         raise AVError('README release label disagrees with runtime')
-    if __release_label__ not in (root/'AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md').read_text(encoding='utf-8'):
+    if __release_label__ not in (root/'docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md').read_text(encoding='utf-8'):
         raise AVError('Active specification release label disagrees with runtime')
     return sorted(result)
 

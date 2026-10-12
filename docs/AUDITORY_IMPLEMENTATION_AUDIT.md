@@ -1,0 +1,123 @@
+# Auditory admission implementation audit
+
+The feature is stacked on PR #2 at `7b457a42878d104a1b6d4cb1a2c19fe38afc1987`.
+It changes toolkit contracts only. Existing title analyses, source media,
+historical probes, raw responses and the music-identity implementation are retained.
+The changed-file manifest and regression receipt accompany this audit.
+
+| Handoff obligation | Implemented path and verification |
+| --- | --- |
+| Repository preflight and stacked integration | Exact remote SHAs, clean initial tree and declared paths in `AUDITORY_QUALIFICATION_PREFLIGHT.json`; PR #2 remains the prerequisite. |
+| Independent admission dimensions | `observer_execution` emits authorization, transport/usage, contract, influence, task and individual-assessment fields. |
+| Qualified and experimental lanes | Routine actual observers require recomputed exact task/media/route qualification; explicit experimental collection retains all upload, budget, format and binding guards. Mock/test-double output is never perceptual support. |
+| Versioned input influence | Probe v2 balances positions, varies synthetic signals and reverses each pair. Raw responses and all failure kinds remain; overall, family and conservative pair statistics gate only tested influence. V1 semantics remain readable. |
+| Provider-compatible witness | Forensic source is preserved; PCM16 derivative retains frames/rate/channels and source clock, with hashes, transformation receipt, decoding verification and 120 s/24 MiB caps. |
+| Context separation | Stage 1 remains neutral; Stage 2 retains the same source audio/task and immutable parent, supplied words/discrepancies/context IDs. Supplied wording is not independent confirmation. |
+| Earned task qualification | `auditory_qualification` recomputes the dataset, retained original outputs and independent reviews. Tasks, media categories, route/configuration revisions and actual returned model do not inherit qualifications. |
+| Natural benchmark infrastructure | Held-out examples, positive/negative/ambiguous controls, reference votes, disagreement, output validity, false positives/negatives and positive timing error are scored. Small/generated/mock datasets remain provisional. No actual natural benchmark executed. |
+| Scoped evidence support | A real collection receipt, task proof, exact atomic pointer/interval and separate adequacy assessment are required. Explicit adjudication remains necessary. Delivery does not directly establish emotion; unresolved relevant conflicts block eligibility. |
+| Proposition-specific roles | Observation references classify required/supporting/contextual/contradictory/non-discriminating evidence. Optional claim premises require declared proof routes. |
+| Alternative support paths | Essential and interchangeable premises must be adequate; global requirements cannot be omitted. One surviving route reports its narrower scope. AV synchronization requires both reviewed temporal visuals and audible-event timing. |
+| Local correction and propagation | Immutable atomic reports receive state overlays; only materially required dependencies propagate change/recheck. Unrelated delivery survives lexical corrections. All evidentiary dependency cycles remain refused. |
+| Dependence and contamination | Shared raw receipts, model/clip/context tags, upstream context, assumptions and DAG paths form conservative groups. Attributed independence declarations cannot override detected dependence. No voting. |
+| Meaningful holistic deltas | Scene deltas retain the frozen claim/scope, atomic auditory assessments, qualifications, contradictory/supporting premises, dependency changes, routes and one analyst-supplied event formulation. |
+| Music-identity compatibility | Existing MID routes and recording/performance/arrangement/composition/phrase distinctions remain. A guess or recording nonmatch does not settle composition identity. Existing music regressions remain in the full suite. |
+| Remote cost/privacy | Normal tests clear credentials and disable paid/network integration. Optional live script requires explicit execution/media authorization, generated audio only and an initial cap at most $0.25. No automatic paid retry or cap increase. |
+| Regression and packaging | Generated contract tests cover current/legacy receipts, lanes, conversion, qualification, source/proof bounds, roles/routes, local correction, dependence and adjudication. Wheel/sdist source equality and separate install/CLI checks follow repository practice. |
+| Real-media readiness | Separate opt-in acceptance plan documents Jensen, E20 dialogue, Girls Band Cry E11 and effects-heavy To Be Hero X. No broad real-media analysis was executed. |
+| Version and documentation | Current prerelease is `1.6.0a3`; current docs/specs/schemas are updated without retagging or rewriting historical results. |
+| Publication | Separate intended commits, public-source scan, source-bound builds, stacked PR, remote diff and native zero-cost Actions checks are required before delivery. No automatic merge. |
+
+The actual synthetic integration cost $0.02514 for 26 requests, against the
+authorized $0.25 cumulative ceiling. Its probe failed at 18/24. The first
+observation invented out-of-bounds timing and was rejected. One explicitly planned
+duration-contract revision returned a valid abstention. See
+`AUDITORY_SYNTHETIC_INTEGRATION.json` for exact hashes, route revisions, scores
+and scope. This tests real API submission, usage accounting and local contract
+validation on generated sound, without qualifying any natural auditory task.
+
+Hashes establish byte integrity, not reference authenticity or perceptual truth.
+CI manufactures receipt contracts to test rules; it does not benchmark a real
+model. Analysts still prepare references, assess observations, adjudicate exact
+propositions and supply the event interpretation. Qualification remains limited
+to its tested task/media/route scope. Initial natural-media validation remains
+outstanding; the recommended next test is one separately authorized Jensen microclip.
+
+PR review corrections require every conflict rival to have a resolved effective
+disposition, including adequate evidence and material prerequisites. Rejecting one
+rival leaves the other pending rivals open, independently of observation order.
+Model-level origins also join repeated judgments across different clips and
+prompts; supplied independence declarations cannot override a shared configured
+or provider-returned model. `AUDITORY_REVIEW_FIX_RECEIPT.json` records the later
+source-bound regression without replacing the original 596-test receipt.
+
+The next review correction requires a unique affirmative survivor: two adequately
+supported rivals and one rejected rival do not settle a three-way conflict.
+Reconciliation and claim-delta publication also retain complete qualification
+proof runs, explicit evidence-to-proof sidecars and original-file dependencies.
+Relocation preserves recomputation, retained-proof mutation fails verification,
+and output/input overlap is refused before a stage can pollute the proof.
+`AUDITORY_REVIEW_FIX2_RECEIPT.json` records this later regression separately from
+both earlier receipts and the preserved failed/incomplete validation history.
+
+Further review corrections apply unresolved-conflict gating to every evidence
+channel, including mixed model/human and pure text/visual rivals, while preserving
+unrelated nodes and legitimate unique-survivor support. Atomic auditory review
+statements bind the actual indexed model description; analyst reformulation
+remains in claims/inferences. Benchmarks verify and protect all containing input
+runs (including nested outer runs), bind their manifests and refuse overlap
+before staging. `AUDITORY_REVIEW_FIX3_RECEIPT.json` records the completed 54-test
+focused and 613-test full regressions separately, with zero failures, errors or
+skips and stable source/test hashes. Earlier failed attempts remain preserved.
+The completion audit also reproduced a valid provisional proof aborting an
+independent text-image route. Valid unqualified benchmark states now remain
+inadequate without aborting that route; required auditory claims stay open.
+Generated scene fixtures explicitly adjudicate real lexical rivals and retain
+same-word contextual repetition separately as dependent, unqualified evidence.
+
+The subsequent review reproduced positive-output and timing failures being
+excluded from false negatives in a larger benchmark. Scoring revision v2 counts
+every failed positive and separately bounds positive, negative and ambiguous
+control failure rates, retaining malformed-output and literal false-positive
+diagnostics. Boundary controls preserve legitimate qualification. Earlier
+scoring proofs stay immutable and format-readable but require a NEW recomputed
+run for current admission. `AUDITORY_REVIEW_FIX4_RECEIPT.json` records the completed
+60-test focused and 619-test full regressions, with zero failures, errors or skips
+and stable runtime/test hashes. The prior 613-test receipt remains unchanged and
+does not certify the subsequent scoring correction.
+
+The next review reproduced capability-profile export writing inside an immutable
+qualification input, and first-candidate selection discarding valid complete
+interchangeable support. Export now verifies and protects whole qualification
+and enclosing runs, source-binds their files/manifests, resolves config-relative
+paths and rechecks membership before publication. Route selection considers
+full direct-claim coverage, exact proposition, required audiovisual modalities
+and insufficient-alone constraints through deterministic bounded states.
+Negative controls retain OPEN for incomplete or incompetent support. The new
+71-test focused and 630-test complete regressions passed with zero failures,
+errors or skips and stable runtime/test hashes. The separate
+`AUDITORY_REVIEW_FIX5_RECEIPT.json` records both results and the preserved pre-fix
+reproductions; all earlier receipts are retained.
+
+The next review identified malformed negative outputs independently labelled
+PRESENT being omitted from false positives, and scene/delta publication protecting
+only an inner proof folder rather than its enclosing AV runs. Seven generated
+regression methods reproduced both issues before correction, with twelve
+assertion/subtest failures and no fixture errors. Scoring revision v3 includes all
+reviewed PRESENT negatives and requires a new recomputation of immutable v1/v2
+proofs. A shared scene helper now verifies and protects all containing proof runs,
+binds their manifests and rechecks membership before publication. The expanded
+81-test focused suite passed with no failures, errors or skips and stable
+runtime/test hashes; earlier results stay unchanged.
+An additional generated local-collection reproduction confirmed the same
+enclosing-run gap in qualified collection. Three regression methods recorded five
+failures with no fixture errors before correction. Collection now source-binds
+complete proof bytes and containing manifests, protects every input run before
+provider calls, verifies its retained copy and rechecks membership before
+publication. All 61 existing hosted-observer/provider-witness tests also passed
+with no failures, errors or skips and stable hashes. The complete 640-test
+generated regression passed with no failures, errors or skips and stable
+runtime/test hashes. `AUDITORY_REVIEW_FIX6_RECEIPT.json` records the final focused,
+observer-guard and full results, their scope and the separate pre-fix
+reproductions. All earlier receipts remain unchanged; these generated tests
+called no real observer.

@@ -1,0 +1,31 @@
+{
+  "schema": "ave.auditory-qualification.preflight.v1",
+  "remote_main_sha": "5ef302c26f1658832b817e68b15a9a800ca6e9e9",
+  "base_sha": "7b457a42878d104a1b6d4cb1a2c19fe38afc1987",
+  "base_branch": "feature/music-identity",
+  "prerequisite_pr": 2,
+  "prerequisite_state_at_fetch": "OPEN",
+  "initial_dirty_tree": [],
+  "feature_branch": "feature/auditory-qualification-cross-modal",
+  "next_version": "1.6.0a3",
+  "declared_change_scope": [
+    "avevidence/audio_witness.py", "avevidence/observer_requests.py",
+    "avevidence/observer_execution.py", "avevidence/auditory_observer.py",
+    "avevidence/auditory_profiles.py", "avevidence/auditory_qualification.py",
+    "avevidence/support_routes.py", "avevidence/cross_modal.py",
+    "avevidence/scene_packets.py", "avevidence/scene_delta.py",
+    "avevidence/observation_dependencies.py", "avevidence/auditory_claims.py",
+    "avevidence/event_contracts.py", "avevidence/analysis_preflight.py", "avevidence/scene_planning.py",
+    "avevidence/providers/openai_audio.py", "avevidence/providers/openai_common.py",
+    "avevidence/cli.py", "avevidence/__init__.py", "schemas/*.schema.json",
+    "tests/test_auditory_qualification.py", "tests/test_auditory_reconciliation.py",
+    "tests/test_provider_witness.py", "tests/test_auditory_probe_v2.py", "tests/test_hosted_observer.py",
+    "tests/test_auditory_claim_integration.py",
+    "docs/*", "README.md", "KNOWN_LIMITATIONS.md", "ANALYSIS_WORKFLOW.md",
+    "CHANGELOG.md", "NEXT_VALIDATION_PLAN.md", "pyproject.toml",
+    "AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md", "scripts/auditory_synthetic_integration.py"
+  ],
+  "historical_receipts_policy": "Preserve historical failures and analyses unchanged",
+  "normal_test_api_spend_usd": 0,
+  "initial_opt_in_synthetic_integration_cap_usd": 0.25
+}

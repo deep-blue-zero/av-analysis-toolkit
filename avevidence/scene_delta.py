@@ -7,7 +7,8 @@ from .common import AVError, file_record, finish_run, output_transaction, sha256
 from .cross_modal import reconcile_data
 from .event_contracts import choice, object_fields, read_event_json, strings
 from .inventory import text_value
-from .scene_packets import load_scene_packet, packet_identity, verify_scene_snapshot
+from .scene_packets import (load_scene_packet, packet_identity,
+                            retain_scene_qualifications, scene_qualification_inputs, verify_scene_snapshot)
 from .observation_dependencies import PROPAGATING
 from .mapping import missing_intervals, union_intervals
 
@@ -149,14 +150,28 @@ def scene_claim_delta(before, after, output, *, decisions=None, relocations=None
             "cross_modal_conflicts": [r for r in br["conflicts"] if set(r["observation_ids"]) & set(current["observation_ids"] if current else [])],
             "disposition": disposition, **decision, "new_formulation": current["statement"] if current else None,
             "confidence_change": {"before": claim.get("confidence", "OPEN"), "after": current.get("confidence", "OPEN") if current else "OPEN"}})
+        rows[-1]["auditory_evidence_delta"] = [{"observation_id": oid, "statement": completed[2][oid]["record"]["statement"],
+            "assessments": [assessment for assessment in br["observations"][oid]["evidence_assessments"]
+                            if assessment["channel"] in {"AO_STAGE1", "AO_STAGE2", "HL"}],
+            "qualification_states": [assessment.get("task_capability_status", "SCOPED_HUMAN")
+                for assessment in br["observations"][oid]["evidence_assessments"] if assessment["channel"] in {"AO_STAGE1", "AO_STAGE2", "HL"}],
+            "independence": br["observations"][oid]["independence"],
+            "state": br["dependency_assessment"]["state_overlay"][oid]["after"]}
+            for oid in (current["observation_ids"] if current else []) if any(
+                assessment["channel"] in {"AO_STAGE1", "AO_STAGE2", "HL"} for assessment in br["observations"][oid]["evidence_assessments"])]
+        rows[-1]["support_routes"] = new_assessed.get(cid, {}).get("support_routes", [])
+        rows[-1]["dependency_changes"] = {key: value for key, value in br["dependency_assessment"]["state_overlay"].items()
+            if key in {node["id"] for node in after_premises["nodes"]} and value["after"] != value["before"]}
     result = {"schema": "ave.scene-claim-delta.v1", "scene_id": a["scene_id"], "source_sha256": a["source"]["sha256"],
               "baseline_packet_id": packet_identity(a), "completed_packet_id": packet_identity(b),
               "baseline_input_sha256": baseline[4]["sha256"], "completed_input_sha256": completed[4]["sha256"],
               "reviewer": supplied["reviewer"], "claims": rows, "new_claim_ids": sorted(new.keys()-old.keys()),
               "raw_records_preserved": True, "automatic_confidence_promotion": False,
+              "event_synthesis": br["event_synthesis"],
               "scope": "Explicit changes to accuracy/scope/mechanism/confidence; more descriptive material alone is not improvement"}
     inputs = [before, after]+([decisions] if decisions else [])+[r["path"] for data in (baseline, completed) for r in data[3].values()]
-    with output_transaction(output, inputs) as stage:
+    proof_inputs, enclosing_sources = scene_qualification_inputs({"before": baseline[3], "after": completed[3]})
+    with output_transaction(output, inputs+proof_inputs) as stage:
         for name, path, data in (("before", before, baseline), ("after", after, completed)):
             payload = Path(path).read_bytes()
             import hashlib
@@ -166,7 +181,9 @@ def scene_claim_delta(before, after, output, *, decisions=None, relocations=None
         write_json(stage/"claim-delta.json", result)
         write_json(stage/"before-reconciliation.json", ar)
         write_json(stage/"after-reconciliation.json", br)
+        proof_sources = retain_scene_qualifications(stage, {"before": baseline[3], "after": completed[3]})
+        proof_sources = list({r["path"]: r for r in proof_sources+enclosing_sources}.values())
         verify_scene_snapshot(baseline[4],baseline[3])
-        verify_scene_snapshot(completed[4],completed[3])
-        return finish_run(stage, "scene-delta", [baseline[4], completed[4]]+([file_record(decisions)] if decisions else []),
+        verify_scene_snapshot(completed[4],completed[3], qualification_inputs=proof_inputs)
+        return finish_run(stage, "scene-delta", [baseline[4], completed[4]]+([file_record(decisions)] if decisions else [])+proof_sources,
                           metadata={"result_file": "claim-delta.json", "claim_count": len(rows), "automatic_confidence_promotion": False})

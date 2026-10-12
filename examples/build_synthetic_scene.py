@@ -102,7 +102,9 @@ def build_synthetic_scene(output, *, source=None, audio_stream=0, video_stream=N
             {"from":"cReferent","to":"cUrgency","relation":"REQUIRES_RECHECK_IF_CHANGED","reason":"A changed referent limits the dramatic hypothesis."},
             {"from":"oDelivery","to":"cDelivery","relation":"DEPENDS_ON","reason":"Only the separate delivery descriptor motivates this listening question."},
             {"from":"oVisual","to":"cContact","relation":"CONSTRAINS","reason":"The stage direction cannot establish actual contact order."}],
-        "conflicts":[{"id":"name-conflict","proposition":"wording","observation_ids":["oText","oGuess","oContext"],
+        # The contextual Mira repetition is retained as dependent evidence,
+        # not a competing lexical alternative to the same canonical Mira.
+        "conflicts":[{"id":"name-conflict","proposition":"wording","observation_ids":["oText","oGuess"],
             "question":"Which wording witness has authority, and which judgments actually depend on the lexical error?"}],
         "adjudication":{"reviewer":"Fictional contract author","decisions":{
             "oText":{"state":"CONFIRMED","reason":"Only the invented canonical script's wording is declared here."},

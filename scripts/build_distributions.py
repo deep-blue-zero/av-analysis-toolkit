@@ -112,7 +112,13 @@ def verify_sdist(sdist):
                 if stream is None or hashlib.sha256(stream.read()).hexdigest() != digest(candidate):
                     raise ValueError(f'Source-distribution/source disagreement: {relative}')
         required = {'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'pyproject.toml',
-                    'MANIFEST.in', 'avtool.py', 'scripts/self_test.py',
+                    'AGENTS.md', 'CHANGELOG.md', 'MANIFEST.in', 'avtool.py',
+                    'docs/START_HERE.md', 'docs/CLOUD_START_HERE.md', 'docs/AGENT_START_HERE.md',
+                    'docs/ANALYSIS_WORKFLOW.md', 'docs/KNOWN_LIMITATIONS.md', 'docs/NEXT_VALIDATION_PLAN.md',
+                    'docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md', 'docs/specs/HARDENING_SPEC_1.1.0_RC2.md',
+                    'docs/prompts/PROMPT_FOR_OTHER_AGENTS.md',
+                    'requirements/requirements-cloud-cp311.txt', 'requirements/requirements-cloud-cp312.txt',
+                    'requirements/requirements-windows-offline-cp312.txt', 'scripts/self_test.py',
                     'scripts/cloud_setup.py', 'scripts/cloud_run.py', 'avevidence/__init__.py'}
         if required - names or not any(name.startswith('tests/test_') for name in names):
             raise ValueError(f'Source distribution misses required first-party material: {sorted(required - names)}')

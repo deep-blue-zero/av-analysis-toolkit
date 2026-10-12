@@ -86,16 +86,23 @@ def score_probe(predictions, answers):
             "scope": "Evidence of input influence on these contrasts; not validation of acting or emotional interpretation"}
 
 
-def make_probe(output, *, trials=24, seed=9271):
+def make_probe(output, *, trials=24, seed=9271, protocol="v1"):
     import numpy as np
     import wave
     if type(trials) is not int or not 12 <= trials <= 200 or trials % 2:
         raise AVError("Require an even 12..200 semantic probe trials")
     rng = random.Random(seed)
+    if protocol not in {"v1", "v2"} or protocol == "v2" and trials % 4:
+        raise AVError("Probe v2 requires 12..200 trials divisible by four for balanced reversed pairs")
     pairs = []
     truth = []
     answers = [0]*(trials//2)+[1]*(trials//2)
     rng.shuffle(answers)
+    schedule = None
+    if protocol == "v2":
+        schedule = [(family, answer, "pair-%03d-%s" % (pair, family))
+                    for pair in range(trials//4) for family in ("pitch_direction", "signal_presence") for answer in (0, 1)]
+        rng.shuffle(schedule)
     with output_transaction(output) as stage:
         private = stage / "adjudication"
         clips = stage / "observer-input"
@@ -104,12 +111,23 @@ def make_probe(output, *, trials=24, seed=9271):
         t = np.arange(rate) / rate
         for i, answer in enumerate(answers):
             family = "pitch_direction" if i % 2 == 0 else "signal_presence"
+            if schedule is not None:
+                family, answer, pair_id = schedule[i]
             if family == "pitch_direction":
                 choices = [.2*np.sin(2*np.pi*(220*t + 110*t*t)), .2*np.sin(2*np.pi*(440*t - 110*t*t))]
                 question = "Which clip has rising pitch? Return the zero-based index only."
             else:
                 choices = [.2*np.sin(2*np.pi*330*t), np.zeros_like(t)]
                 question = "Which clip contains a tone rather than digital silence? Return the zero-based index only."
+            if protocol == "v2":
+                pair_rng = random.Random(str(seed)+pair_id)
+                base = pair_rng.uniform(180., 350.)
+                change = pair_rng.uniform(65., 160.)
+                gain = pair_rng.uniform(.08, .25)
+                choices = ([gain*np.sin(2*np.pi*(base*t + change*t*t)),
+                            gain*np.sin(2*np.pi*((base+2*change)*t-change*t*t))] if family == "pitch_direction" else
+                           [gain*np.sin(2*np.pi*base*t), np.zeros_like(t)])
+                question = question.replace("Return the zero-based index only.", 'Return only JSON {"choice": 0} or {"choice": 1}.')
             ordered = choices if answer == 0 else choices[::-1]
             names = []
             for samples in ordered:
@@ -120,7 +138,10 @@ def make_probe(output, *, trials=24, seed=9271):
                 names.append(name)
             pairs.append({"trial_id": "trial-%03d" % i, "clips": names, "question": question})
             truth.append({"trial_id": pairs[-1]["trial_id"], "answer": answer, "family": family})
-        write_json(clips / "questions.json", {"trials": pairs, "policy": "Only this directory belongs in observer context"})
+            if protocol == "v2":
+                truth[-1]["pair_id"] = pair_id
+        write_json(clips / "questions.json", {"trials": pairs, "policy": "Only this directory belongs in observer context",
+                   **({"schema": "ave.blinded-audio-probe.v2"} if protocol == "v2" else {})})
         write_json(private / "answers.json", {"trials": truth, "seed": seed, "not_for_observer": True})
         return finish_run(stage, "observer-probe-fixtures", [], metadata={"result_file": "observer-input/questions.json", "trials": trials,
             "scope": "Synthetic nonlexical capability fixtures; no real auditory backend was tested"})

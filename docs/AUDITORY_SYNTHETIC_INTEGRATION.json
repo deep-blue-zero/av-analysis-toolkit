@@ -1,0 +1,149 @@
+{
+  "schema": "ave.public-synthetic-integration.v1",
+  "executed_date": "2026-10-09",
+  "source_kind": "LOCALLY_GENERATED_SYNTHETIC_ONLY",
+  "model": "gpt-audio-1.5",
+  "endpoint": "/v1/chat/completions",
+  "api_requests": 26,
+  "actual_spend_usd": 0.02514,
+  "cumulative_cap_usd": 0.25,
+  "per_request_ceiling_usd": 0.025,
+  "cost_basis": "Provider-reported tokens at retained published standard rates; calculated cost, not invoice",
+  "normal_regression_api_spend_usd": 0,
+  "natural_audio_tested": false,
+  "natural_task_qualification": "UNQUALIFIED",
+  "original_outputs_rewritten": false,
+  "automatic_retries": 0,
+  "probe": {
+    "schema": "ave.hosted-auditory-capability.v2",
+    "backend_identity": {
+      "type": "model_audio",
+      "backend_id": "openai-audio",
+      "provider": "openai",
+      "route_type": "hosted",
+      "model_revision": "gpt-audio-1.5",
+      "adapter_revision": "openai-audio-sync-2",
+      "api_route": "/v1/chat/completions",
+      "prompt_revision": "auditory-neutral-json-v1",
+      "execution_mode": "HOSTED_LIVE",
+      "task_profile_revision": "auditory-task-profiles-v1",
+      "prompt_sha256": "03bf5fa591254af64269b42d3868312700db971e5bec8293d23a52edfd4b7e48",
+      "adapter_sha256": "a54fe431c1487fe980e4832fefa3d326df307272ed92d24a2c35af51f8766a9c",
+      "transport_sha256": "d68821bb523c48256d44c77023b1fa46c0618c2be934edf7d9231e03c72b97a5",
+      "configuration_revision": "1fe0e4848d1a20956541b4279de8989f609e7e73c9b86ffbd6d665fd81d2a152"
+    },
+    "status": "PROBE_FAILED",
+    "probe_result": {
+      "trials": 24,
+      "correct": 18,
+      "accuracy": 0.75,
+      "chance_one_sided_p": 0.011327922344207764,
+      "passed": false,
+      "scope": "Evidence of input influence on these contrasts; not validation of acting or emotional interpretation"
+    },
+    "family_results": {
+      "pitch_direction": {
+        "trials": 12,
+        "correct": 7,
+        "chance_one_sided_p": 0.38720703125,
+        "passed": false
+      },
+      "signal_presence": {
+        "trials": 12,
+        "correct": 11,
+        "chance_one_sided_p": 0.003173828125,
+        "passed": true
+      }
+    },
+    "paired_results": {
+      "pitch_direction": {
+        "pairs": 6,
+        "correct_pairs": 1,
+        "chance_one_sided_p": 0.984375,
+        "passed": false
+      },
+      "signal_presence": {
+        "pairs": 6,
+        "correct_pairs": 5,
+        "chance_one_sided_p": 0.109375,
+        "passed": false
+      }
+    }
+  },
+  "probe_sha256": "3df16530ae2d1c6a065b4e815dfd6dc6bb9903897edce985edeaf094493a193d",
+  "initial_observation": {
+    "sha256": "d7a943ed9a085c6805d7d68cb706d0574970bee38434dc09608f6bc6584a6130",
+    "backend_identity": {
+      "type": "model_audio",
+      "backend_id": "openai-audio",
+      "provider": "openai",
+      "route_type": "hosted",
+      "model_revision": "gpt-audio-1.5",
+      "adapter_revision": "openai-audio-sync-2",
+      "api_route": "/v1/chat/completions",
+      "prompt_revision": "auditory-neutral-json-v1",
+      "execution_mode": "HOSTED_LIVE",
+      "task_profile_revision": "auditory-task-profiles-v1",
+      "prompt_sha256": "03bf5fa591254af64269b42d3868312700db971e5bec8293d23a52edfd4b7e48",
+      "adapter_sha256": "a54fe431c1487fe980e4832fefa3d326df307272ed92d24a2c35af51f8766a9c",
+      "transport_sha256": "d68821bb523c48256d44c77023b1fa46c0618c2be934edf7d9231e03c72b97a5",
+      "configuration_revision": "1fe0e4848d1a20956541b4279de8989f609e7e73c9b86ffbd6d665fd81d2a152"
+    },
+    "validation_status": "INVALID",
+    "validation_error": "Auditory observation exceeds its clip",
+    "raw_response": "{\"observations\":[{\"start_s\":0,\"end_s\":5,\"description\":\"quiet mechanical hum with faint periodic clicking\"},{\"start_s\":5,\"end_s\":10,\"description\":\"brief louder impact followed by return to steady hum\"},{\"start_s\":10,\"end_s\":15,\"description\":\"near-silence with occasional distant muffled sounds\"}],\"alternatives\":[\"steady drone present instead of hum\",\"soft thudding rather than clicking\"],\"interference\":[\"possible background static\",\"occasional muffled speaking\"],\"abstentions\":[\"cannot identify exact source of impact\",\"cannot discern content of muffled sounds\"],\"confidence\":\"medium\"}"
+  },
+  "explicit_contract_revision": {
+    "sha256": "906501863098d60d4a7537237f84dd155458f36ea80ec127c26372d76f04345d",
+    "backend_identity": {
+      "type": "model_audio",
+      "backend_id": "openai-audio",
+      "provider": "openai",
+      "route_type": "hosted",
+      "model_revision": "gpt-audio-1.5",
+      "adapter_revision": "openai-audio-sync-2",
+      "api_route": "/v1/chat/completions",
+      "prompt_revision": "auditory-neutral-json-v2",
+      "execution_mode": "HOSTED_LIVE",
+      "task_profile_revision": "auditory-task-profiles-v1",
+      "prompt_sha256": "03bf5fa591254af64269b42d3868312700db971e5bec8293d23a52edfd4b7e48",
+      "adapter_sha256": "109e8dc90666229b759b93badc922c69302c001c041fbe7842e2d7359d1f20cc",
+      "transport_sha256": "d68821bb523c48256d44c77023b1fa46c0618c2be934edf7d9231e03c72b97a5",
+      "configuration_revision": "1fe0e4848d1a20956541b4279de8989f609e7e73c9b86ffbd6d665fd81d2a152"
+    },
+    "validation_status": "VALID",
+    "raw_response": "{\"observations\":[],\"alternatives\":[],\"interference\":[],\"abstentions\":[\"No discernible changes within the clip\"],\"confidence\":\"low\"}",
+    "admission_dimensions": {
+      "schema": "ave.auditory-admission.v1",
+      "lane": "EXPERIMENTAL",
+      "source_authorization": "VERIFIED_AUTHORIZED",
+      "transport": "ACCEPTED",
+      "response_contract": "VALID",
+      "transport_details": {
+        "audio_submission_attempted": true,
+        "expected_model_returned": true,
+        "usage_accounted": true
+      },
+      "input_influence": "NOT_CONFIGURED",
+      "task_competence": "UNQUALIFIED",
+      "individual_adequacy": "REQUIRES_PROPOSITION_SPECIFIC_ADJUDICATION",
+      "test_double": false
+    },
+    "scope": "One separately planned request after adding known per-clip duration; old probe not reinterpreted for the revised prompt"
+  },
+  "provider_witness": {
+    "duration_seconds": 1.0,
+    "wav_format": {
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "sample_representation": "PCM",
+      "block_align": 2,
+      "sample_frames": 16000,
+      "duration_seconds": 1.0
+    },
+    "clip_sha256": "f10941ba9a3d20c0401be74fd75b8489e077c514c384dc0e190ae8fde6a6ff33",
+    "transformation_sha256": "a0ada7a21488c0eb6243ca69e07ffae5a4b23bcabd2752f7409ae2d6e6463d52"
+  },
+  "limitation": "Real API submission and bounded response validation executed on synthetic audio only; no natural perceptual competence or analytical claim support established."
+}

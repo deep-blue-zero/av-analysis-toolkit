@@ -20,11 +20,21 @@ response format. Existing requests that omit `task_profile` use
 
 ## Qualification remains separate
 
-`capability_profile(backend_identity, historical_probes=..., scoped_reviews=...)`
-creates `ave.auditory-task-capabilities.v1`. The current implementation emits
-`UNQUALIFIED` / `NOT_TESTED` for every task. It retains historical probe outcomes
-and human assessments separately. Lexical transcription remains
-`NON_AUTHORITATIVE` and exact word timing `PROVISIONAL`.
+`capability_profile(backend_identity, historical_probes=..., scoped_reviews=...,
+qualification_runs=...)` creates `ave.auditory-task-capabilities.v1`. Without
+benchmark records it emits `UNQUALIFIED` / `NOT_TESTED`. Supplied qualification
+runs are recomputed and listed by task and media scope; mixed scope outcomes are
+reported as `UNRESOLVED`, never chosen by input order. Legacy transcription/timing
+summary labels remain conservative; the new `competencies` field lists exact
+earned scopes. Actual natural-audio qualifications remain unearned.
+
+Version 1.6.0a3 adds `SPEECH_DELIVERY`, `AUDITORY_EVENT_TIMING`,
+`LEXICAL_TRANSCRIPTION` and `EXACT_WORD_TIMING` request profiles. The original
+`SPEECH_PERFORMANCE` qualifies delivery only; `AV_SYNC` tests audible event timing
+only. Neither inherits lexical, visual or synchronization competence.
+The public `observer profiles` command preserves the six-entry `profiles` map;
+the four additional request profiles appear in the additive `competency_profiles`
+map. Neither catalog declares qualification.
 
 The JSON schema is [auditory-task-profiles.schema.json](../schemas/auditory-task-profiles.schema.json).
 This profile is a description of current qualification, not a hosted admission
@@ -32,10 +42,13 @@ receipt. Altering its task status cannot qualify a backend. A passed synthetic
 input-influence probe does not validate acting, music, emotion, lexical accuracy
 or synchronization proficiency.
 
-Hosted execution still requires explicit remote-media authorization, an
-environment-variable credential reference, a matching scored probe receipt,
-matching provider/model/adapter/prompt/transport identities, a stable returned
-model, and available request/run/queue budgets. Actual historical failed probes
+Hosted execution requires explicit remote-media authorization, an environment
+credential reference, verified provider-compatible witness, matching returned
+model and available request/run/queue budgets. Routine `QUALIFIED` execution also
+requires a recomputed task/media/route qualification. Explicit `EXPERIMENTAL`
+execution can collect an unqualified response despite a broad probe failure;
+transport, contract, input influence and task status remain separate. See
+[the qualification contract](AUDITORY_QUALIFICATION.md) for CLI and benchmark fields. Actual historical failed probes
 remain failed. There are no automatic retries, model fallbacks, spending
 increases or live calls in the standard test suite.
 

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.auditory-benchmark-review.v1"
+    },
+    "example_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "observation_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "reference_independent": {
+      "type": "boolean"
+    },
+    "blinded_input_declared": {
+      "type": "boolean"
+    },
+    "predicted_label": {
+      "enum": [
+        "PRESENT",
+        "ABSENT",
+        "ABSTAIN"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "timing_error_seconds": {
+      "type": "number",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "schema",
+    "example_id",
+    "observation_sha256",
+    "reviewer",
+    "reference_independent",
+    "blinded_input_declared",
+    "predicted_label",
+    "reason"
+  ]
+}
