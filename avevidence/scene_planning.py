@@ -75,6 +75,11 @@ def plan_scene_queries(input, output, *, relocations=None, max_requests=60, max_
             seconds = bounds[1]-bounds[0]
             # Full coherent objects survive; formal boundaries must be supplied
             # before issuing long music requests. Do not carve by arbitrary time.
+            if route == "MUSIC_IDENTITY" and seconds > 120:
+                unresolved.append({"claim_id": cid, "route": route, "status": "OPEN_REFINE_INTERVAL",
+                    "reason": "Supply an explicit music query interval of at most 120 seconds; retain the full object as context",
+                    "source_object_interval_seconds": bounds})
+                continue
             if route == "AUDITORY" and seconds > (120 if profile == "PERFORMANCE_MUSIC" else 30):
                 unresolved.append({"claim_id": cid, "route": route, "status": "OPEN_REFINE_INTERVAL",
                     "reason": "Supply a consequential microinterval or explicit formal performance-section boundary",

@@ -149,6 +149,61 @@ class LookupTests(unittest.TestCase):
         self.assertEqual(len(candidates), 2)
         self.assertTrue(all(c["status"] == "CANDIDATE" and not c["score_is_probability"] for c in candidates))
 
+    def acoustid_response(self, count):
+        return {"status": "ok", "results": [{"id": "lookup-hit", "score": .95,
+            "recordings": [{"id": f"10000000-0000-4000-8000-{i:012d}",
+                            "title": f"Generated song {i}"} for i in range(count)]}]}
+
+    def test_acoustid_default_candidate_ceiling(self):
+        for count in (19, 20, 21, 50):
+            with self.subTest(count=count), patch.dict(os.environ, {"ACOUSTID_API_KEY": "generated-test-client-key"}):
+                receipt, candidates = AcoustIDBackend(["acoustid"],
+                    transport=self.transport(self.acoustid_response(count))).query(self.context)
+            self.assertEqual(len(candidates), count if count <= 20 else 0)
+            self.assertEqual(receipt["status"], "CANDIDATE" if count <= 20 else "UNRESOLVED")
+            self.assertEqual(receipt["candidate_ids"], [c["candidate_id"] for c in candidates])
+            self.assertIn("response_sha256", receipt)
+
+    def test_acoustid_custom_candidate_ceiling(self):
+        self.context["max_candidates"] = 3
+        for count in (2, 3, 4):
+            with self.subTest(count=count), patch.dict(os.environ, {"ACOUSTID_API_KEY": "generated-test-client-key"}):
+                receipt, candidates = AcoustIDBackend(["acoustid"],
+                    transport=self.transport(self.acoustid_response(count))).query(self.context)
+            self.assertEqual(len(candidates), count if count <= 3 else 0)
+            self.assertEqual(receipt["status"], "CANDIDATE" if count <= 3 else "UNRESOLVED")
+
+    def test_acoustid_duplicate_candidates_do_not_consume_distinct_ceiling(self):
+        self.context["max_candidates"] = 2
+        response = self.acoustid_response(2)
+        response["results"][0]["recordings"] *= 3
+        with patch.dict(os.environ, {"ACOUSTID_API_KEY": "generated-test-client-key"}):
+            receipt, candidates = AcoustIDBackend(["acoustid"], transport=self.transport(response)).query(self.context)
+        self.assertEqual(receipt["status"], "CANDIDATE")
+        self.assertEqual(len(candidates), 2)
+        self.assertEqual([c["title"] for c in candidates], ["Generated song 0", "Generated song 1"])
+        response["results"][0]["recordings"].extend(self.acoustid_response(3)["results"][0]["recordings"])
+        with patch.dict(os.environ, {"ACOUSTID_API_KEY": "generated-test-client-key"}):
+            receipt, candidates = AcoustIDBackend(["acoustid"], transport=self.transport(response)).query(self.context)
+        self.assertEqual((receipt["status"], candidates, receipt["candidate_ids"]), ("UNRESOLVED", [], []))
+
+    def test_acoustid_candidate_ceiling_does_not_hide_malformed_tail(self):
+        self.context["max_candidates"] = 2
+        response = self.acoustid_response(2)
+        response["results"][0]["recordings"].append({"title": ["malformed"]})
+        with patch.dict(os.environ, {"ACOUSTID_API_KEY": "generated-test-client-key"}):
+            receipt, candidates = AcoustIDBackend(["acoustid"], transport=self.transport(response)).query(self.context)
+        self.assertEqual((receipt["status"], candidates), ("UNRESOLVED", []))
+        self.assertIn("response_sha256", receipt)
+
+    def test_acoustid_invalid_candidate_ceiling_rejected_before_transport(self):
+        for ceiling in (0, -1, 101, True, 3.0, "3"):
+            context = {**self.context, "max_candidates": ceiling}
+            with self.subTest(ceiling=ceiling), patch.dict(os.environ, {"ACOUSTID_API_KEY": "generated-test-client-key"}):
+                with self.assertRaises(AVError):
+                    AcoustIDBackend(["acoustid"], transport=self.transport(self.acoustid_response(1))).query(context)
+        self.assertFalse(self.calls)
+
     def test_echoed_credential_rejected_without_persistence(self):
         with self.assertRaises(AVError):
             strict_response(b'{"echo":"generated-test-client-key"}', "generated-test-client-key")

@@ -11,7 +11,7 @@ import re
 import threading
 
 from ..common import AVError, sha256
-from .openai_common import (HostedError, MODEL, authorize, estimate_cost, http_transport, model_matches, pricing_for_model)
+from .openai_common import (HostedError, MODEL, _money, authorize, estimate_cost, http_transport, model_matches, pricing_for_model)
 
 PROMPT_REVISION = "auditory-neutral-json-v2"
 ADAPTER_REVISION = "openai-audio-sync-2"
@@ -111,8 +111,12 @@ class OpenAIAudioObserver:
         from ..auditory_profiles import request_policy, validate_audio_bounds
         policy = request_policy(request)
         validate_audio_bounds([c["duration_seconds"] for c in clips], policy)
-        if policy["explicit_request_budget_required"] and self.session.request_limit > policy["section_budget_usd"]:
-            raise HostedError("BUDGET_GUARD", "Configured request budget exceeds the explicit musical-section ceiling")
+        if policy["explicit_request_budget_required"]:
+            # Use the ledger's decimal USD representation for both sides;
+            # a binary float can otherwise reject an equal explicit ceiling.
+            section_limit = _money(policy["section_budget_usd"], "Musical-section budget")
+            if self.session.request_limit > section_limit:
+                raise HostedError("BUDGET_GUARD", "Configured request budget exceeds the explicit musical-section ceiling")
         text = request["prompt"]
         probe_v2 = probe and request.get("probe_protocol") == "v2"
         text += ('\nReturn ONLY a JSON object with exactly one key, choice, whose value is the integer 0 or 1.'

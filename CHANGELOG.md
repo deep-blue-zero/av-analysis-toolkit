@@ -34,6 +34,14 @@
 - Add generated/mocked regressions, schemas, privacy/qualification guards,
   implementation preflight and an explicitly unexecuted real-media validation plan.
 
+- Enforce the requested AcoustID candidate ceiling after bounded response
+  validation and deduplication; overflow stays unresolved without follow-up IDs.
+- Leave music-identity scene intervals over 120 seconds open for explicit
+  refinement, and admit selected music audio streams in the scene-plan schema.
+- Compare musical-section monetary ceilings using the ledger's decimal
+  representation, avoiding false rejection of equal limits such as $0.30.
+  See [merge hardening](docs/MERGE_HARDENING.md) for regression scope.
+
 ## 1.6.0a1 — Holistic cross-modal analysis
 
 Feature work follows the separately verified `1.5.0a2` Git baseline. This entry
