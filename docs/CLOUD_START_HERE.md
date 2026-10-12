@@ -1,6 +1,9 @@
 # Run in a ChatGPT-style execution environment
 
-The current source is 1.6.0a1. The receiving environment needs actual code
+Begin at [README](../README.md). Commands and code paths in this guide are
+relative to the repository or extracted portable toolkit root.
+
+The current source is 1.6.0a3. The receiving environment needs actual code
 execution, file access and a writable working directory. A ZIP cannot grant
 these capabilities or auditory/video perception. The standard core workflow
 makes no paid API calls and uploads no media.
@@ -78,10 +81,10 @@ original media. Model-free contours, queries, frames, reuse and review work
 without alignment weights. Optional Qwen alignment needs its separate runtime
 and model; canonical text remains distinct from phonetic timing.
 
-The new [holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md) combines
+The new [holistic workflow](HOLISTIC_CROSS_MODAL_ANALYSIS.md) combines
 separately attributed evidence in a bounded scene packet. `scene validate`,
 `prepare`, `reconcile`, `plan` and `delta` run locally without providers.
-[Temporal inspection](docs/TEMPORAL_INSPECTION.md) prepares source-clocked
+[Temporal inspection](TEMPORAL_INSPECTION.md) prepares source-clocked
 sequences and scoped review records. Generated frames remain unreviewed until
 actual inspection is separately declared; extraction cannot establish motion
 perception, contact order or acting quality by itself.
@@ -92,7 +95,7 @@ heard it. An optional hosted auditory adapter exists, with strict qualification,
 authorization, credential, identity and budget guards. It never activates through
 ordinary preparation or tests. All six new auditory task profiles remain
 `UNQUALIFIED` / `NOT_TESTED`, and historical failed probes remain failed.
-[A separate contextual second pass and scoped human review](docs/AUDITORY_TASK_PROFILES.md)
+[A separate contextual second pass and scoped human review](AUDITORY_TASK_PROFILES.md)
 retain their provenance; neither globally qualifies a backend. No native
 continuous-video observer is introduced by this release.
 
@@ -102,11 +105,11 @@ Temporary widgets or browser storage are not durable feedback. Save compact
 evidence, source receipts and reports before an ephemeral execution session ends.
 Keep large PCM caches out of the handoff unless specifically required.
 
-Read [START_HERE.md](START_HERE.md), [packaging and CI](docs/PACKAGING_AND_CI.md),
+Read [START_HERE.md](START_HERE.md), [packaging and CI](PACKAGING_AND_CI.md),
 and [current limits](KNOWN_LIMITATIONS.md). Validation claims must name the exact
 source, platform and receipt. Old portable-release reports do not certify the
 current Git checkout or a newly generated artifact.
 
 Explicit `--method` always takes precedence, including in isolated/blind mode.
 Episode isolation constrains semantic evidence independently. The embedded method
-is a fallback only; see [method precedence](docs/METHOD_PRECEDENCE_PATCH.md).
+is a fallback only; see [method precedence](METHOD_PRECEDENCE_PATCH.md).

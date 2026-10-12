@@ -63,7 +63,7 @@ def metadata(wheel):
 
 def locked_dependencies(source, abi, operating_system):
     profile = 'cloud' if operating_system == 'linux' else 'windows-offline'
-    path = source / f'requirements-{profile}-{abi}.txt'
+    path = source / 'requirements' / f'requirements-{profile}-{abi}.txt'
     expected = {}
     for line in path.read_text(encoding='utf-8').splitlines():
         line = line.strip()

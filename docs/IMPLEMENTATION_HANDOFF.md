@@ -1,3 +1,5 @@
+> **Current locations:** Begin at [README](../README.md); the retained instrument contract is [docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md](specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md). The handoff below describes its historical patch; current source/layout and validation are separate.
+
 > **Local patch notice:** This delivery is 1.2.0-rc1-renderbind.1. The inherited workflow below describes the 1.2.0-rc1 base. Use the current README, docs/RENDER_BINDING_FIX.md and reports/PATCH_VALIDATION.md for patch identity and validation; predecessor results are historical.
 
 # Audio Instruments 1.2.0-rc1 - implementation handoff

@@ -168,7 +168,7 @@ clean-tree reconstruction; see the [release workflow](RC2_RELEASE_VALIDATION_WOR
 `render-audio TRACK_RUN OUTPUT` validates input hashes before rendering.
 
 See [quickstart](AUDIO_QUICKSTART.md), [methods](AUDIO_TRACKS.md) and the current
-[extension contract](../AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md). These commands do not
+[extension contract](specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md). These commands do not
 establish listening and do not automatically feed the legacy cue-only timeline.
 
 ## Layered auditory admission (1.6.0a3)

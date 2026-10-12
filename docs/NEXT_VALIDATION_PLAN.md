@@ -87,7 +87,7 @@ holistic reconciliation together.
 
 The generated-only live integration is retained in
 `docs/AUDITORY_SYNTHETIC_INTEGRATION.json`; no natural tasks earned qualification.
-Use the [bounded real-media acceptance plan](docs/AUDITORY_ACCEPTANCE_PLAN.md)
+Use the [bounded real-media acceptance plan](AUDITORY_ACCEPTANCE_PLAN.md)
 for Jensen, Witch from Mercury, Girls Band Cry and To Be Hero X. Start with one
 authorized Jensen microclip, preserve the blind/contextual readings, and assess
 atomic audio separately. No broad real-media run has been authorized or executed

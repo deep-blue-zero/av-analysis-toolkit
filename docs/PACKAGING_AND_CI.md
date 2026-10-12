@@ -65,7 +65,7 @@ Targets retain the existing offline profiles: Linux x64 CPython 3.11 or 3.12
 (glibc 2.17+), and Windows x64 CPython 3.12. For Linux put the external four-wheel
 set in `wheelhouse/linux/cp311` or `wheelhouse/linux/cp312`; for Windows use the
 wheelhouse root. Exact NumPy/Pillow/Parselmouth/SciPy versions come from the
-preserved text locks. The builder checks distribution names, versions, ABI/OS
+preserved text locks under `requirements/`. The builder checks distribution names, versions, ABI/OS
 tags, source/wheel module equality and all transfer hashes. It includes the
 unmodified corresponding Parselmouth source archive to retain the previous
 GPL-dependency distribution materials. Wheel-contained upstream licenses remain
@@ -79,6 +79,14 @@ The cloud locks use SciPy 1.15.3; the original Windows offline profile uses SciP
 `09b6abfda71e5779e55d58993a2d68a301dd456ad0d36321622486997ce63a10`.
 Target-specific lock selection preserves both existing offline routes; the
 Windows profile is not silently replaced with the Linux dependency versions.
+
+The historical archive member named above is now stored at
+`requirements/requirements-windows-offline-cp312.txt` with the same bytes and hash.
+The Linux locks are `requirements/requirements-cloud-cp311.txt` and
+`requirements/requirements-cloud-cp312.txt`. Source distributions and portable
+ZIPs retain this layout, including guides under `docs/`, specifications under
+`docs/specs/` and the handoff prompt under `docs/prompts/`. Start at the root
+[README](../README.md); [repository layout](REPOSITORY_LAYOUT.md) maps older receipt paths.
 
 The resulting ZIP has the existing transfer manifest and checksum format. It
 supports private-runtime offline setup and the explicit compatible-host mode.

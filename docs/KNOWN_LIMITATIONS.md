@@ -3,8 +3,8 @@
 This is the 1.6.0a3 auditory-qualification iteration, stacked on music identity. It prepares and validates
 source-bound evidence, dependencies and review records. Its software contracts
 do not certify a literary interpretation, an acting judgment or model perception.
-The [holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md) describes the new
-event-level contracts; [claim-directed conformance](docs/CLAIM_DIRECTED_CONFORMANCE.md)
+The [holistic workflow](HOLISTIC_CROSS_MODAL_ANALYSIS.md) describes the new
+event-level contracts; [claim-directed conformance](CLAIM_DIRECTED_CONFORMANCE.md)
 retains the earlier task-by-task limits.
 
 - Music lookup generates candidates. Short/contaminated excerpts, covers,
@@ -13,7 +13,7 @@ retains the earlier task-by-task limits.
   no result never establishes originality. Composition support does not identify
   a master, singer, generated voice or arrangement. Scores are provider-native,
   not probabilities. Real-media identification and installed `fpcalc` execution
-  remain unvalidated by generated/mocked tests. [Music identity](docs/MUSIC_IDENTITY.md)
+  remain unvalidated by generated/mocked tests. [Music identity](MUSIC_IDENTITY.md)
   documents separate levels, external permission and portable metadata/replay limits.
 
 - All actual natural-audio task qualifications remain unearned. The framework can
@@ -94,8 +94,8 @@ actual source-bound receipts. Python 3.13 is outside the current offline targets
 
 The bare Git checkout contains no dependency wheels or decoder binaries. Optional
 portable builds select one ABI/platform profile; compatible wheel tags are not
-proof of native execution. See [packaging and CI](docs/PACKAGING_AND_CI.md) and
-[baseline migration](docs/MIGRATION_FROM_PORTABLE_1.5.0a2.md). Historical scripts,
+proof of native execution. See [packaging and CI](PACKAGING_AND_CI.md) and
+[baseline migration](MIGRATION_FROM_PORTABLE_1.5.0a2.md). Historical scripts,
 guides and release reports do not certify the current source.
 
 FFmpeg, Python, optional model weights and actual perceptual interfaces are
@@ -105,4 +105,4 @@ transports, never real anime/game media or paid APIs.
 
 Explicit `--method` always takes precedence, including in isolated/blind mode.
 Episode isolation constrains semantic evidence independently. The embedded method
-is a fallback only; see [method precedence](docs/METHOD_PRECEDENCE_PATCH.md).
+is a fallback only; see [method precedence](METHOD_PRECEDENCE_PATCH.md).

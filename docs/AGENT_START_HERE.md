@@ -1,6 +1,9 @@
-> **Current extension:** `1.6.0a1` introduces bounded dramatic-event packets, observation dependencies, contextual auditory reinspection, adaptive temporal evidence and claim deltas. Read [the holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md), [auditory profiles](docs/AUDITORY_TASK_PROFILES.md), and [temporal inspection](docs/TEMPORAL_INSPECTION.md). An explicitly supplied method always governs; episode isolation independently controls semantic evidence. Earlier trial prompts are historical examples, not authorization to resume a trial. Source authority is the Git repository; portable editions have their own build/test receipts.
+> **Current extension:** `1.6.0a3` includes bounded dramatic-event packets, observation dependencies, contextual auditory reinspection, adaptive temporal evidence and claim deltas. Read [the holistic workflow](HOLISTIC_CROSS_MODAL_ANALYSIS.md), [auditory profiles](AUDITORY_TASK_PROFILES.md), and [temporal inspection](TEMPORAL_INSPECTION.md). An explicitly supplied method always governs; episode isolation independently controls semantic evidence. Earlier trial prompts are historical examples, not authorization to resume a trial. Source authority is the Git repository; portable editions have their own build/test receipts.
 
 # Agent start here
+
+Begin at [README](../README.md). Commands and code paths below are relative to
+the toolkit root; use [the layout map](REPOSITORY_LAYOUT.md) for historical paths.
 
 This package prepares and verifies audiovisual evidence. It does not itself certify direct listening, continuous viewing, source authenticity, or literary conclusions.
 
@@ -19,7 +22,7 @@ utterance format. Index verified runs with `performance-index` and locate passag
 using the source time to request frames or a listening clip. Keep model estimates,
 on-screen labels, measured mixed-audio contours and actual listening observations separate.
 
-1. Read `AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md`, `docs/AUDIO_QUICKSTART.md`, `docs/METHODS.md`, and `docs/HOW_AGENTS_ANALYZE_MEDIA_WITH_THIS_TOOLKIT.md`.
+1. Read `README.md`, then `docs/ANALYSIS_WORKFLOW.md`, `docs/KNOWN_LIMITATIONS.md`, `docs/specs/AUDIO_ANALYSIS_SPEC_1.2.0_RC1.md`, `docs/AUDIO_QUICKSTART.md`, `docs/METHODS.md`, and `docs/HOW_AGENTS_ANALYZE_MEDIA_WITH_THIS_TOOLKIT.md`.
 2. Run `ave doctor`, then `python scripts/self_test.py` when the environment permits.
 3. Probe the authorized media and select explicit absolute stream indices when ambiguity exists.
 4. For long video, create one `frame-index` run and reuse it with bounded seek extraction.
@@ -28,9 +31,9 @@ on-screen labels, measured mixed-audio contours and actual listening observation
 7. Inspect generated images through an actual image interface before claiming visual observations. Treat signal measurements as measurements, not as human-like listening.
 8. Record direct text, inspected visual evidence, computed signal evidence, temporal inference, and interpretation as different evidentiary classes.
 9. Complete capability, presentation, and review declarations only after real review. Never invent receipts to make a gate pass.
-10. Verify runs and archives before transfer. The toolkit performs no uploads and no automatic canonical promotion.
+10. Verify runs and archives before transfer. Ordinary preparation performs no uploads; optional hosted/catalogue routes require their explicit authorization and guards. No automatic canonical promotion occurs.
 
-For a ready-made task prompt, use `PROMPT_FOR_OTHER_AGENTS.md`.
+For a ready-made task prompt, use `docs/prompts/PROMPT_FOR_OTHER_AGENTS.md`.
 
 
 RC2: consult `docs/RC2_MAPPING_AND_PORTABILITY.md`. Do not equate packet identity

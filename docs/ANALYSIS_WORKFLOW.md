@@ -9,13 +9,13 @@ adjudication, then `scene delta` to compare the result against a frozen earlier
 packet. A lexical error reopens its dependents; it does not erase unrelated
 delivery observations. Stage 2 contextual audio does not independently confirm
 Stage 1. Generating frames is not a declaration that they were reviewed.
-See [the event contracts and examples](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md).
+See [the event contracts and examples](HOLISTIC_CROSS_MODAL_ANALYSIS.md).
 For hosted sound, prepare a verified provider witness and explicitly choose the
 collection lane. Experimental output remains attributed and unqualified; routine
 qualified output requires a recomputed scoped benchmark. Attach an atomic review,
 declare essential versus supplementary roles/support routes, and adjudicate the
 exact proposition. Timing and emotion do not inherit delivery qualification.
-See [auditory admission](docs/AUDITORY_QUALIFICATION.md).
+See [auditory admission](AUDITORY_QUALIFICATION.md).
 
 1. Read the human's scope and method. Do an independent bounded source reading
    before consulting prior verdicts. Record available modalities and perception
@@ -48,10 +48,10 @@ See [auditory admission](docs/AUDITORY_QUALIFICATION.md).
     package compact durable evidence. Use explicit hash-bound relocation mappings
     when moving to another host. Do not rewrite historical provenance.
 
-[Current commands and contracts](docs/CLAIM_DIRECTED_ANALYSIS.md) ·
-[All 32 task states and limits](docs/CLAIM_DIRECTED_CONFORMANCE.md) ·
-[Persistent listening review](docs/PERFORMANCE_REVIEW.md) ·
-[Recording identity and reuse](docs/PERFORMANCE_REUSE.md)
+[Current commands and contracts](CLAIM_DIRECTED_ANALYSIS.md) ·
+[All 32 task states and limits](CLAIM_DIRECTED_CONFORMANCE.md) ·
+[Persistent listening review](PERFORMANCE_REVIEW.md) ·
+[Recording identity and reuse](PERFORMANCE_REUSE.md)
 
 `deep-read` prepares a preflight, plan, optional bounded local measurements and
 an analyst handoff. It does not invent the initial reading, claim reasoning,

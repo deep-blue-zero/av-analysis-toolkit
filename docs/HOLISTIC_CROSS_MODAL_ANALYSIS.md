@@ -246,5 +246,5 @@ formulation. The detector does not invent an improved reading or raise confidenc
 
 See [backward compatibility](BACKWARD_COMPATIBILITY.md),
 [packaging and CI](PACKAGING_AND_CI.md) and the
-[next validation plan](../NEXT_VALIDATION_PLAN.md). Preparation, extraction and
+[next validation plan](NEXT_VALIDATION_PLAN.md). Preparation, extraction and
 planning commands do not authorize hosted execution.
