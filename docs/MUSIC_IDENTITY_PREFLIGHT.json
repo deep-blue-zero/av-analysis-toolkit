@@ -1,0 +1,14 @@
+{
+  "schema": "ave.feature-preflight.v1",
+  "feature": "source-bound music identification and candidate-family reconciliation",
+  "base_commit": "5ef302c26f1658832b817e68b15a9a800ca6e9e9",
+  "base_version": "1.6.0a1",
+  "target_version": "1.6.0a2",
+  "branch": "feature/music-identity",
+  "reviewed": ["AGENTS.md", "README.md", "KNOWN_LIMITATIONS.md", "docs/PERFORMANCE_REUSE.md", "docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md", "docs/AUDITORY_TASK_PROFILES.md", "avevidence/musical_relations.py", "avevidence/reuse/fingerprint.py", "avevidence/reuse/correlate.py", "avevidence/reuse/workflow.py", "avevidence/scene_packets.py", "avevidence/cross_modal.py", "avevidence/auditory_profiles.py", "avevidence/providers", "avevidence/cli.py", "schemas", "pyproject.toml", ".github/workflows/zero-cost-ci.yml"],
+  "expected_changed_paths": ["avevidence/music_identity/", "avevidence/cli.py", "avevidence/event_contracts.py", "avevidence/scene_packets.py", "avevidence/cross_modal.py", "avevidence/scene_planning.py", "schemas/", "tests/test_music_identity*.py", "docs/", "README.md", "KNOWN_LIMITATIONS.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "pyproject.toml", "avevidence/__init__.py", "scripts/build_distributions.py", ".github/workflows/zero-cost-ci.yml"],
+  "dependencies": {"new_python_packages": [], "optional_music_extra": ["numpy>=1.26,<3", "scipy>=1.11"], "external_optional_executable": "Chromaprint fpcalc (not vendored)"},
+  "test_policy": {"synthetic_media_only": true, "mocked_network_only": true, "live_acoustid": false, "live_musicbrainz": false, "paid_calls": 0, "uploads": 0},
+  "output_policy": "New immutable source-bound runs; separate private execution bindings and allowlisted portable artifacts. Preserve previous receipts.",
+  "merge_policy": "Create and review a pull request; do not merge automatically"
+}

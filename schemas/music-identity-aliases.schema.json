@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.music-identity.aliases.v1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "alias": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "audio_stream": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clock": {
+          "const": "original_pts_minus_source_origin"
+        },
+        "interval_seconds": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "alias",
+        "sha256",
+        "display_name",
+        "audio_stream",
+        "clock",
+        "interval_seconds"
+      ]
+    },
+    "private_source_path": {
+      "const": "OMITTED"
+    },
+    "original_identity_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portable_identity_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portable_content_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "replay_status": {
+      "const": "SOURCE_REBINDING_REQUIRED"
+    },
+    "evidence_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "alias": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "alias",
+          "sha256"
+        ]
+      },
+      "maxItems": 1000
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    }
+  },
+  "required": [
+    "schema",
+    "source",
+    "private_source_path",
+    "original_identity_sha256",
+    "portable_identity_sha256",
+    "portable_content_id",
+    "replay_status",
+    "evidence_artifacts",
+    "scope"
+  ]
+}

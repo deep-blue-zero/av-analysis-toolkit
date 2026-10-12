@@ -105,6 +105,17 @@
           "maxItems": 1000,
           "minItems": 0
         },
+        "MID": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {"$ref": "#/$defs/evidenceRef"},
+              {"properties": {"locator": {"required": ["stream_index", "intervals_seconds"]}}}
+            ]
+          },
+          "maxItems": 1000,
+          "minItems": 0
+        },
         "AM": {
           "type": "array",
           "items": {
@@ -741,7 +752,12 @@
         "emotion",
         "speaker_identity",
         "speech_timing",
-        "interpretation"
+        "interpretation",
+        "recording_identity",
+        "performance_identity",
+        "composition_identity",
+        "arrangement_identity",
+        "musical_reference"
       ]
     },
     "state": {

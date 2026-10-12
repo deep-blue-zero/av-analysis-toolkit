@@ -15,6 +15,32 @@ def parser():
     p.add_argument("--version", action="version", version=__version__)
     commands = p.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor", help="Report software dependencies; does not verify perception")
+    music = commands.add_parser("music", help="Source-bound music identity candidates and explicit adjudication")
+    mc = music.add_subparsers(dest="music_command", required=True)
+    d = mc.add_parser("identify", help="Local metadata/reuse by default; external fingerprint lookup requires separate opt-in")
+    d.add_argument("input"); d.add_argument("output")
+    d.add_argument("--audio-stream", type=int); d.add_argument("--start"); d.add_argument("--end")
+    d.add_argument("--alias", help="Public logical source label; omit to use the source hash")
+    d.add_argument("--local-corpus", help="Existing reuse SQLite ledger, searched through a read-only snapshot")
+    d.add_argument("--reuse-cache-dir", help="Optional persistent reuse feature/index cache outside immutable output runs")
+    d.add_argument("--fingerprint", action="store_true"); d.add_argument("--fpcalc", help="Optional installed Chromaprint executable")
+    d.add_argument("--provider", choices=["acoustid"], action="append", default=[])
+    d.add_argument("--allow-external-lookup", choices=["acoustid", "musicbrainz"], action="append", default=[])
+    d.add_argument("--credential-env", default="ACOUSTID_API_KEY")
+    d.add_argument("--normalize-musicbrainz", action="store_true"); d.add_argument("--catalogue-cache")
+    d.add_argument("--reference", action="append", default=[]); d.add_argument("--reference-stream", type=int)
+    d.add_argument("--reference-start", type=float); d.add_argument("--reference-end", type=float)
+    d.add_argument("--transforms", action="store_true"); d.add_argument("--auditory-candidates")
+    d.add_argument("--max-candidates", type=int, default=20); d.add_argument("--max-external-requests", type=int, default=10)
+    d = mc.add_parser("adjudicate", help="Add scoped identity review without changing original observations")
+    d.add_argument("input"); d.add_argument("config"); d.add_argument("output")
+    d = mc.add_parser("export", help="Export portable identity metadata without private execution paths or media")
+    d.add_argument("input"); d.add_argument("output")
+    d = mc.add_parser("rebind", help="Bind portable source/evidence aliases to explicitly supplied hash-verified files")
+    d.add_argument("input"); d.add_argument("source"); d.add_argument("output"); d.add_argument("--evidence-bindings")
+    d = mc.add_parser("plan", help="Propose longer/neighboring intervals without submitting or separating audio")
+    d.add_argument("input"); d.add_argument("output"); d.add_argument("--padding-seconds", type=float, default=5.)
+    d.add_argument("--available-start", type=float, default=0.); d.add_argument("--available-end", type=float)
     reuse = commands.add_parser("reuse", help="Find recording reuse, preserve fragment provenance and audit performance counts")
     reuse_commands = reuse.add_subparsers(dest="reuse_command", required=True)
     for name in ("scan", "compare"):
@@ -323,6 +349,22 @@ def parser():
 
 def dispatch(a):
     c = a.command
+    if c == "music":
+        from .music_identity.workflow import identify
+        from .music_identity.review import adjudicate
+        from .music_identity.portability import export_portable, rebind, plan
+        if a.music_command == "identify":
+            return identify(a.input, a.output, audio_stream=a.audio_stream, start=a.start, end=a.end, alias=a.alias,
+                local_corpus=a.local_corpus, fingerprint=a.fingerprint, fpcalc=a.fpcalc, providers=a.provider,
+                allow_external_lookup=a.allow_external_lookup, credential_env=a.credential_env,
+                normalize_musicbrainz=a.normalize_musicbrainz, catalogue_cache=a.catalogue_cache,
+                references=a.reference, reference_stream=a.reference_stream, reference_start=a.reference_start,
+                reference_end=a.reference_end, transforms=a.transforms, auditory_candidates=a.auditory_candidates,
+                max_candidates=a.max_candidates, max_external_requests=a.max_external_requests, reuse_cache=a.reuse_cache_dir)
+        if a.music_command == "adjudicate": return adjudicate(a.input, a.config, a.output)
+        if a.music_command == "export": return export_portable(a.input, a.output)
+        if a.music_command == "rebind": return rebind(a.input, a.source, a.output, evidence_bindings=a.evidence_bindings)
+        return plan(a.input, a.output, padding_seconds=a.padding_seconds, available_start=a.available_start, available_end=a.available_end)
     if c == "scene":
         from .event_contracts import read_event_json
         from .scene_packets import load_scene_packet, packet_identity, prepare_scene_packet
@@ -487,7 +529,9 @@ def dispatch(a):
             from .common import read_json
             return graph.annotate(a.database, a.occurrence_id, read_json(a.changes), a.reason, a.reviewer)
     if c == "doctor":
-        return environment()
+        from .music_identity.fingerprint import doctor as music_doctor
+        return {**environment(), "music_identity": {"chromaprint": music_doctor(), "default_network_policy": "OFF",
+            "backends": {"embedded-metadata": "LOCAL_ONLY", "local-reuse": "LOCAL_ONLY", "acoustid": "DERIVED_FINGERPRINT_LOOKUP"}}}
     if c == "probe":
         source = probe_source(a.input)
         with output_transaction(a.output, [a.input]) as out:

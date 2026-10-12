@@ -1,11 +1,20 @@
 # Current limits
 
-This is the 1.6.0a1 holistic cross-modal iteration. It prepares and validates
+This is the 1.6.0a2 music-identity iteration. It prepares and validates
 source-bound evidence, dependencies and review records. Its software contracts
 do not certify a literary interpretation, an acting judgment or model perception.
 The [holistic workflow](docs/HOLISTIC_CROSS_MODAL_ANALYSIS.md) describes the new
 event-level contracts; [claim-directed conformance](docs/CLAIM_DIRECTED_CONFORMANCE.md)
 retains the earlier task-by-task limits.
+
+- Music lookup generates candidates. Short/contaminated excerpts, covers,
+  live/obscure/unreleased music, medleys/mashups, transformations, partial quotes
+  and AI reconstructions can defeat matching. Catalogue coverage is incomplete;
+  no result never establishes originality. Composition support does not identify
+  a master, singer, generated voice or arrangement. Scores are provider-native,
+  not probabilities. Real-media identification and installed `fpcalc` execution
+  remain unvalidated by generated/mocked tests. [Music identity](docs/MUSIC_IDENTITY.md)
+  documents separate levels, external permission and portable metadata/replay limits.
 
 - The optional hosted auditory adapter is implemented, but every new task profile
   remains `UNQUALIFIED` / `NOT_TESTED`. Historical probe failures remain failed.

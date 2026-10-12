@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ave.music-identity.family.v1"
+    },
+    "family_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "candidate_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "maxItems": 1000
+    },
+    "work_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    },
+    "basis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "status": {
+      "enum": [
+        "CANDIDATE",
+        "SUPPORTED"
+      ]
+    },
+    "composition_scope": {
+      "enum": [
+        "PARTIAL_OR_MEDLEY",
+        "QUERY_INTERVAL_CANDIDATE"
+      ]
+    },
+    "recording_identity_status": {
+      "const": "UNRESOLVED"
+    },
+    "score_aggregation": {
+      "const": "NONE"
+    },
+    "proposed_composition_status": {
+      "enum": [
+        "CANDIDATE",
+        "SUPPORTED_REQUIRES_ADJUDICATION"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "identity_level": {
+      "const": "COMPOSITION"
+    },
+    "canonical_title": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    },
+    "candidate_recordings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 1000
+    },
+    "supporting_providers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 1000
+    },
+    "adjudication_evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 1000
+    }
+  },
+  "required": [
+    "schema",
+    "family_id",
+    "candidate_ids",
+    "work_id",
+    "basis",
+    "status",
+    "composition_scope",
+    "recording_identity_status",
+    "score_aggregation",
+    "proposed_composition_status",
+    "reason",
+    "identity_level",
+    "canonical_title",
+    "candidate_recordings",
+    "supporting_providers",
+    "adjudication_evidence_ids"
+  ]
+}

@@ -14,6 +14,7 @@ COMPETENCE = {
     "TXT": {"wording"}, "VIS": {"visual_fact"},
     "TVIS": {"visual_fact", "motion", "contact", "event_order", "av_sync"},
     "AM": {"sound_level", "speech_timing"},
+    "MID": {"recording_identity", "composition_identity", "arrangement_identity", "performance_identity", "musical_reference"},
     "AO_STAGE1": {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speech_timing"},
     "AO_STAGE2": {"wording", "delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speech_timing"},
     "HL": {"delivery", "nonverbal_vocal", "music_structure", "performance_music", "soundscape", "speaker_identity", "speech_timing"},
@@ -48,6 +49,28 @@ def evidence_assessment(ref, binding, proposition, interval):
         result.update(authority=ref.get("authority", "textual_witness"),
                       adequate_for_support=ref.get("authority") in {"canonical_text", "best_available_text"})
         result["reasons"].append("Text authority is an attributed project declaration; byte hashes do not authenticate a translation")
+    elif channel == "MID":
+        from .music_identity.workflow import load_music_run
+        from .music_identity.review import decision_support, validate_decisions
+        folder, raw = load_music_run(Path(binding["path"]).parent)
+        from .common import sha256
+        if sha256(folder / "music-identity.json") != ref["artifact"]["sha256"]:
+            raise AVError("MID must cite the actual verified identity artifact, not another file in its run")
+        validate_decisions(raw)
+        src = raw["source"]
+        if (src["sha256"] != loc["source_sha256"] or src["audio_stream"] != loc["stream_index"] or src["clock"] != loc["clock"]
+            or missing_intervals(loc.get("intervals_seconds", []), [src["interval_seconds"]])):
+            raise AVError("Music identity source/stream/clock/scope differs from its scene locator")
+        level = {"recording_identity": "RECORDING", "composition_identity": "COMPOSITION", "arrangement_identity": "ARRANGEMENT",
+                 "performance_identity": "PERFORMANCE", "musical_reference": "PHRASE"}[proposition]
+        decisions = [d for d in raw["adjudication"] if d["level"] == level]
+        if len(decisions) != 1:
+            raise AVError("Music proposition needs a unique level-specific adjudication")
+        decision = decisions[0]
+        adequate, reason = decision_support(raw, decision)
+        result.update(authority="ATTRIBUTED_MUSIC_IDENTITY_ADJUDICATION", identity_level=level, identity_status=decision["status"],
+            adequate_for_support=bool(adequate and decision["status"] in {"SUPPORTED", "CONFIRMED"}))
+        result["reasons"].append(reason)
     elif channel == "VIS":
         result["authority"] = "STATIC_EVIDENCE_REQUIRES_SOURCE_BOUND_REVIEW"
         if not any(interval[0] <= point < interval[1] for point in loc.get("points_seconds", [])):

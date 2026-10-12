@@ -334,7 +334,8 @@
             "VO",
             "AVO",
             "INF",
-            "INT"
+            "INT",
+            "MID"
           ]
         },
         "competent": {
@@ -378,6 +379,12 @@
         },
         "context_contaminated": {
           "type": "boolean"
+        },
+        "identity_level": {
+          "enum": ["RECORDING", "PERFORMANCE", "ARRANGEMENT", "COMPOSITION", "PHRASE", "UNKNOWN"]
+        },
+        "identity_status": {
+          "enum": ["CONFIRMED", "SUPPORTED", "CANDIDATE", "AMBIGUOUS", "CONTRADICTED", "UNRESOLVED", "NOT_TESTED"]
         }
       },
       "required": [
@@ -527,7 +534,12 @@
         "emotion",
         "speaker_identity",
         "speech_timing",
-        "interpretation"
+        "interpretation",
+        "recording_identity",
+        "performance_identity",
+        "composition_identity",
+        "arrangement_identity",
+        "musical_reference"
       ]
     },
     "reconciledConflict": {

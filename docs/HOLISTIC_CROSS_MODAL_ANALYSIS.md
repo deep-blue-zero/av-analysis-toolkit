@@ -1,5 +1,12 @@
 # Separate provenance, integrated interpretation
 
+Version 1.6.0a2 adds the [music identity workflow](MUSIC_IDENTITY.md) and `MID`
+scene channel. Scoped adjudication can support recording/composition/arrangement/
+performance identity or a phrase reference. This channel cannot establish emotion,
+delivery, creator intent or narrative meaning alone. Composition evidence and a
+recording nonmatch address different propositions; adding identity evidence
+preserves raw historical observations and the existing premise recheck policy.
+
 The principal unit of targeted audiovisual analysis is a bounded dramatic event.
 A scene/event packet gathers separately attributable evidence, atomic
 observations, claims, dependencies, conflicts, alternatives and adjudication.

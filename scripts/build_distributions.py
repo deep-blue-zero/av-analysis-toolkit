@@ -35,6 +35,8 @@ def digest(path):
 def run(arguments, cwd=ROOT):
     environment = os.environ.copy()
     environment.pop('OPENAI_API_KEY', None)
+    environment.pop('ACOUSTID_API_KEY', None)
+    environment['AVE_RUN_NETWORK_INTEGRATION'] = '0'
     environment['AVE_ENABLE_PAID_TESTS'] = '0'
     return subprocess.run(arguments, cwd=cwd, env=environment, check=True,
                           capture_output=True, text=True, encoding='utf-8')
@@ -139,10 +141,26 @@ def install_check(artifact, output):
             "print(json.dumps({'module':str(module),'version':avevidence.__version__,'pillow_execution_check':True}))")
     probe = run([str(python), '-I', '-c', code], cwd=work)
     run([str(python), '-I', '-m', 'avevidence', '--help'], cwd=work)
+    run([str(python), '-I', '-m', 'avevidence', 'music', '--help'], cwd=work)
+    # Exercise the installed feature, including its default privacy, without network or numerical extras.
+    import wave
+    music_source = work / 'generated-music-source.wav'
+    with wave.open(str(music_source), 'wb') as target:
+        target.setnchannels(1); target.setsampwidth(2); target.setframerate(8000)
+        target.writeframes(bytes(16000))
+    music_output = work / 'music-smoke'
+    run([str(python), '-I', '-m', 'avevidence', 'music', 'identify', str(music_source),
+         str(music_output), '--audio-stream', '0', '--start', '0', '--end', '.5'], cwd=work)
+    music_result = json.loads((music_output / 'music-identity.json').read_text(encoding='utf-8'))
+    if (music_result.get('schema') != 'ave.music-identity.v1' or music_result.get('network_activity') !=
+        {'external_requests': 0, 'media_uploads': 0, 'paid_calls': 0} or
+        any(row['status'] != 'UNRESOLVED' for row in music_result.get('adjudication', []))):
+        raise ValueError('Installed music identity smoke violated its default evidence/privacy policy')
     imported = json.loads(probe.stdout)
     imported['module'] = Path(imported['module']).relative_to(environment).as_posix()
     return {'check': artifact.name + ' fresh-install import and CLI', 'passed': True,
             'network_used': False, 'dependency_mode': 'explicitly exposed build interpreter site-package directories',
+            'installed_music_identity_executed': True, 'music_default_network_free': True,
             'dependency_directory_count': len(dependency_paths),
             'source_tree_import_used': False, 'import': imported}
 
