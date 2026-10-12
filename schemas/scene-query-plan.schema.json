@@ -162,7 +162,7 @@
               "required": ["execution_requirement"],
               "anyOf": [
                 {
-                  "properties": {"route": {"enum": ["AUDITORY", "ACOUSTIC_MEASUREMENT", "ALIGNMENT_REVIEW"]}},
+                  "properties": {"route": {"enum": ["AUDITORY", "ACOUSTIC_MEASUREMENT", "ALIGNMENT_REVIEW", "MUSIC_IDENTITY"]}},
                   "required": ["audio_stream"],
                   "not": {"required": ["video_stream"]}
                 },

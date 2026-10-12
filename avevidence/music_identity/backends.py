@@ -13,6 +13,7 @@ import urllib.request
 
 from ..common import AVError, utc_now, write_json
 from ..event_contracts import canonical_digest, read_event_json
+from ..inventory import integer
 from .contracts import candidate, mbid, query_receipt
 
 MAX_RESPONSE = 2 * 1024 * 1024
@@ -127,6 +128,10 @@ class AcoustIDBackend(MusicIdentityBackend):
 
     def query(self, context):
         authorize(self.name, self.allowed)
+        max_candidates = context.get("max_candidates", 20)
+        integer(max_candidates, "candidate ceiling", 1)
+        if max_candidates > 100:
+            raise AVError("Music identification exceeds its bounded candidate budget")
         fp = context["fingerprint"]
         secret = credential(self.credential_env)
         receipt = query_receipt(context["source"], self.name, self.privacy_class,
@@ -149,7 +154,7 @@ class AcoustIDBackend(MusicIdentityBackend):
             receipt.update(status="UNRESOLVED", reason="Provider returned a non-success result; no identity conclusion")
             return receipt, []
         try:
-            candidates = self._candidates(response, context, receipt, fp)
+            candidates = self._candidates(response, context, receipt, fp, max_candidates)
         except (AVError, TypeError, ValueError, KeyError, AttributeError):
             receipt.update(status="UNRESOLVED", reason="Malformed or excessive provider candidates rejected; response hash retained without private details")
             return receipt, []
@@ -158,7 +163,7 @@ class AcoustIDBackend(MusicIdentityBackend):
                        reason="Provider-native scores are not probabilities; no result is not evidence of originality")
         return receipt, candidates
 
-    def _candidates(self, response, context, receipt, fp):
+    def _candidates(self, response, context, receipt, fp, max_candidates):
         results = response.get("results", [])
         if not isinstance(results, list) or len(results) > 100:
             raise AVError("Malformed or excessive AcoustID result list")
@@ -179,7 +184,10 @@ class AcoustIDBackend(MusicIdentityBackend):
                     fingerprint_sha256=fp["fingerprint_sha256"]))
         unique = {c["candidate_id"]: c for c in candidates}
         candidates = list(unique.values())
-        if len(candidates) > 1000:
+        # Validate the whole bounded response before enforcing the distinct
+        # candidate ceiling. Reject overflow rather than silently dropping
+        # alternatives or scheduling follow-up lookups beyond the requested cap.
+        if len(candidates) > max_candidates:
             raise AVError("AcoustID candidate budget exceeded")
         return candidates
 
